@@ -52,9 +52,9 @@ try {
   }
   Write-Host "Dispositivo autorizado." -ForegroundColor Green
 
-  # Descargar AndroidQF (ultima release)
+  # Descargar AndroidQF (ultima release) directamente en acquisition/
   Write-Host "==> Descargando AndroidQF (ultima release)..."
-  $aqfExe = Join-Path $outDir "androidqf.exe"
+  $aqfExe = Join-Path $acqDir "androidqf.exe"
   try {
     $release = Invoke-RestMethod -Uri "https://api.github.com/repos/mvt-project/androidqf/releases/latest" -UseBasicParsing
     $asset = $release.assets | Where-Object { $_.name -like "*windows_amd64*.exe" } | Select-Object -First 1
@@ -63,6 +63,22 @@ try {
     Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $aqfExe -UseBasicParsing
   } catch {
     throw "Fallo descargando AndroidQF: $_`nDescarga manual: https://github.com/mvt-project/androidqf/releases/latest"
+  }
+
+  # AndroidQF busca adb.exe en su carpeta de trabajo, no en el PATH.
+  # Copiamos adb.exe y sus DLLs junto al ejecutable para que lo encuentre.
+  Write-Host "==> Copiando adb.exe junto a AndroidQF..."
+  try {
+    $adbPath = (Get-Command adb).Source
+    $adbDir  = Split-Path $adbPath
+    Copy-Item $adbPath -Destination $acqDir -Force
+    foreach ($dll in @("AdbWinApi.dll","AdbWinUsbApi.dll")) {
+      $dllPath = Join-Path $adbDir $dll
+      if (Test-Path $dllPath) { Copy-Item $dllPath -Destination $acqDir -Force }
+    }
+    Write-Host "    adb.exe copiado desde $adbDir"
+  } catch {
+    Write-Host "AVISO: no se pudo copiar adb.exe ($_). AndroidQF puede fallar." -ForegroundColor Yellow
   }
 
   # Ejecutar AndroidQF (interactivo) en la carpeta acquisition

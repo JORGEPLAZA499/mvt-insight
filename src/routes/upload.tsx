@@ -405,6 +405,7 @@ function StepRun({
           },
         ]
       : [
+          preambleStep,
           {
             title: "Confía en el ordenador desde el iPhone",
             content: (

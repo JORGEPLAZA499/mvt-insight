@@ -2,7 +2,33 @@
 # Analizador automatico Android con MVT (Linux/macOS) - AndroidQF + check-androidqf
 # Uso directo:  curl -fsSL <url>/scripts/analizar-android.sh | bash
 # Uso local:    bash analizar-android.sh
-set -euo pipefail
+
+# Carpeta de trabajo (creada YA para poder loguear desde el principio)
+TS=$(date +%Y%m%d-%H%M%S)
+OUT_DIR="$(pwd)/mvt-resultados-android-$TS"
+ACQ_DIR="$OUT_DIR/acquisition"
+REPORT_DIR="$OUT_DIR/report"
+LOG_FILE="$OUT_DIR/run.log"
+mkdir -p "$ACQ_DIR" "$REPORT_DIR"
+
+# Duplicar toda la salida (stdout+stderr) tambien al log
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+# Mantener la terminal abierta al salir (exito o error) para que el usuario pueda leer
+_pause_on_exit() {
+  local rc=$?
+  echo ""
+  if [ $rc -ne 0 ]; then
+    echo "ERROR: el script termino con codigo $rc. Detalle en: $LOG_FILE"
+  fi
+  # Solo pausa si estamos en una terminal interactiva
+  if [ -t 0 ]; then
+    read -r -p "Pulsa Enter para cerrar..." _
+  fi
+}
+trap _pause_on_exit EXIT
+
+set -uo pipefail
 
 echo ""
 echo "============================================================"
@@ -10,6 +36,9 @@ echo "  Spyware Forensic Analyzer - Analisis Android"
 echo "  1) AndroidQF realiza la adquisicion forense del dispositivo"
 echo "  2) mvt-android check-androidqf analiza la adquisicion"
 echo "============================================================"
+echo ""
+echo "Carpeta de trabajo: $OUT_DIR"
+echo "Log:                $LOG_FILE"
 echo ""
 
 # Verificar binarios
@@ -20,14 +49,21 @@ for cmd in adb mvt-android curl; do
   fi
 done
 
-# Verificar dispositivo
+# Verificar dispositivo + estado
 echo "==> Verificando conexion USB..."
-DEVICES=$(adb devices | awk 'NR>1 && $2=="device"' | wc -l | tr -d ' ')
-if [ "$DEVICES" -eq 0 ]; then
-  echo "No se detecta ningun dispositivo. Activa 'Depuracion USB' y acepta el RSA en el telefono." >&2
+ADB_OUT=$(adb devices)
+echo "$ADB_OUT"
+DEV_LINES=$(echo "$ADB_OUT" | awk 'NR>1 && NF>=2')
+if [ -z "$DEV_LINES" ]; then
+  echo "No se detecta ningun dispositivo. Activa 'Depuracion USB' y conecta el cable de datos." >&2
   exit 1
 fi
-echo "Dispositivo detectado."
+if echo "$DEV_LINES" | awk '{print $2}' | grep -Eq '^(unauthorized|offline)$'; then
+  echo "El dispositivo aparece como 'unauthorized' u 'offline'." >&2
+  echo "Desbloquea el movil, acepta el RSA (Permitir siempre) y vuelve a lanzar el comando." >&2
+  exit 1
+fi
+echo "Dispositivo autorizado."
 
 # Detectar OS y arquitectura
 OS_RAW=$(uname -s)
@@ -47,13 +83,7 @@ else
   esac
 fi
 
-# Carpeta de trabajo
-TS=$(date +%Y%m%d-%H%M%S)
-OUT_DIR="$(pwd)/mvt-resultados-android-$TS"
-ACQ_DIR="$OUT_DIR/acquisition"
-REPORT_DIR="$OUT_DIR/report"
 ZIP_FILE="$OUT_DIR.zip"
-mkdir -p "$ACQ_DIR" "$REPORT_DIR"
 
 # Descargar AndroidQF
 echo "==> Descargando AndroidQF (ultima release, $AQF_PATTERN)..."
@@ -78,19 +108,30 @@ echo "==> Lanzando AndroidQF..."
 echo "    Es interactivo: responde en la consola."
 echo "    Acepta cualquier prompt que aparezca en el movil."
 echo ""
-( cd "$ACQ_DIR" && "$AQF_BIN" )
+AQF_EXIT=0
+( cd "$ACQ_DIR" && "$AQF_BIN" ) || AQF_EXIT=$?
 
-# IOCs (best-effort) + analisis
+ACQ_COUNT=$(find "$ACQ_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
 echo ""
-echo "==> Actualizando indicadores (IOCs)..."
-mvt-android download-iocs || true
+echo "AndroidQF exit code: $AQF_EXIT ; ficheros en acquisition/: $ACQ_COUNT"
 
-echo "==> Analizando adquisicion con mvt-android check-androidqf..."
-if ! mvt-android check-androidqf -o "$REPORT_DIR" "$ACQ_DIR"; then
-  echo "check-androidqf termino con codigo distinto de 0 (puede haber detecciones; continuamos)."
+if [ "$ACQ_COUNT" -eq 0 ]; then
+  echo "AVISO: AndroidQF no genero ficheros. Posibles causas:"
+  echo "  - Saliste del menu sin elegir modulos."
+  echo "  - El movil quedo bloqueado o se rechazo un permiso."
+  echo "  - El RSA caduco o el cable se desconecto."
+  echo "Revisa run.log y vuelve a lanzar el comando."
+else
+  echo "==> Actualizando indicadores (IOCs)..."
+  mvt-android download-iocs || true
+
+  echo "==> Analizando adquisicion con mvt-android check-androidqf..."
+  if ! mvt-android check-androidqf -o "$REPORT_DIR" "$ACQ_DIR"; then
+    echo "check-androidqf termino con codigo distinto de 0 (puede haber detecciones; continuamos)."
+  fi
 fi
 
-# Empaquetar
+# Empaquetar (siempre)
 echo "==> Comprimiendo resultados..."
 if command -v zip >/dev/null 2>&1; then
   ( cd "$(dirname "$OUT_DIR")" && zip -rq "$ZIP_FILE" "$(basename "$OUT_DIR")" )
@@ -100,10 +141,10 @@ else
 fi
 
 echo ""
-echo "Listo. Archivo: $ZIP_FILE"
-echo "Subelo en la plataforma: https://mvt-insight.lovable.app/upload"
+echo "Listo. Archivo:  $ZIP_FILE"
+echo "Log completo:    $LOG_FILE"
+echo "Subelo en: https://mvt-insight.lovable.app/upload"
 
-# Intentar abrir el navegador
 if command -v open >/dev/null 2>&1; then
   open "https://mvt-insight.lovable.app/upload" >/dev/null 2>&1 || true
 elif command -v xdg-open >/dev/null 2>&1; then

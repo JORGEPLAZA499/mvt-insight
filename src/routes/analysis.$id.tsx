@@ -1,10 +1,13 @@
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getAnalysis, deleteAnalysis, riskColor, riskLabel, platformLabel, Analysis } from "@/lib/mock-store";
-import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Trash2, Activity } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Trash2, Activity, User, Code2 } from "lucide-react";
 import { generatePdfReport } from "@/lib/pdf-report";
+import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, CATEGORY_LABEL, CATEGORY_DESC, type Category } from "@/lib/mvt-translate";
+import type { MvtDetection, RiskLevel } from "@/lib/mvt-parser";
 
 export const Route = createFileRoute("/analysis/$id")({
   head: () => ({ meta: [{ title: "Resultado de análisis — Spyware Forensic Analyzer" }] }),
@@ -129,27 +132,7 @@ function AnalysisPage() {
             MVT no encontró coincidencias con indicadores conocidos en los archivos subidos.
           </div>
         ) : (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            {r.detections.slice(0, 100).map((d, i) => (
-              <div key={i} className="p-4 border-b border-border last:border-0 flex items-start gap-4">
-                <div className="h-9 w-9 rounded-lg bg-destructive/10 text-destructive grid place-items-center shrink-0">
-                  <AlertOctagon className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-xs uppercase tracking-wider text-muted-foreground">{d.module}</span>
-                    {d.timestamp && <span className="text-xs text-muted-foreground">{d.timestamp}</span>}
-                  </div>
-                  <div className="font-mono text-sm mt-1 break-all">{d.summary}</div>
-                </div>
-              </div>
-            ))}
-            {r.detections.length > 100 && (
-              <div className="p-3 text-xs text-muted-foreground text-center border-t border-border">
-                Mostrando 100 de {r.detections.length}. Descarga el PDF para más detalle.
-              </div>
-            )}
-          </div>
+          <DetectionsTabs detections={r.detections} />
         )}
 
         {r.timeline.length > 0 && (
@@ -186,5 +169,169 @@ function SmallStat({ icon: Icon, label, value }: { icon: any; label: string; val
       </div>
       <div className="text-2xl font-semibold mt-2 tabular-nums">{value}</div>
     </div>
+  );
+}
+
+// ---------- Agrupado por entidad (deduplicación) ----------
+
+const LEVEL_RANK: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+const CATEGORY_ORDER: Category[] = ["mercenary", "stalkerware", "suspicious"];
+
+type Group = {
+  key: string;
+  label: string;
+  category: Category;
+  level: RiskLevel;
+  count: number;
+  modules: Map<string, number>;
+  sample: MvtDetection;
+  firstSeen?: string;
+  lastSeen?: string;
+};
+
+function buildGroups(detections: MvtDetection[]): Record<Category, Group[]> {
+  const buckets: Record<Category, Map<string, Group>> = {
+    mercenary: new Map(), stalkerware: new Map(), suspicious: new Map(),
+  };
+  for (const d of detections) {
+    const cat = classifyDetection(d);
+    const { key, label } = detectionKey(d);
+    const bucket = buckets[cat];
+    let g = bucket.get(key);
+    if (!g) {
+      g = { key, label, category: cat, level: d.level ?? "low", count: 0, modules: new Map(), sample: d };
+      bucket.set(key, g);
+    }
+    g.count += 1;
+    g.modules.set(d.module, (g.modules.get(d.module) ?? 0) + 1);
+    const dLevel: RiskLevel = d.level ?? "low";
+    if ((LEVEL_RANK[dLevel] ?? 0) > (LEVEL_RANK[g.level] ?? 0)) {
+      g.level = dLevel;
+      g.sample = d;
+    }
+    if (d.timestamp) {
+      if (!g.firstSeen || d.timestamp < g.firstSeen) g.firstSeen = d.timestamp;
+      if (!g.lastSeen || d.timestamp > g.lastSeen) g.lastSeen = d.timestamp;
+    }
+  }
+  return {
+    mercenary: [...buckets.mercenary.values()].sort((a, b) => b.count - a.count),
+    stalkerware: [...buckets.stalkerware.values()].sort((a, b) => b.count - a.count),
+    suspicious: [...buckets.suspicious.values()].sort((a, b) => b.count - a.count),
+  };
+}
+
+function severityClasses(level: RiskLevel | undefined): string {
+  switch (level) {
+    case "critical": return "bg-destructive/15 text-destructive border-destructive/30";
+    case "high": return "bg-destructive/10 text-destructive border-destructive/20";
+    case "medium": return "bg-warning/15 text-warning border-warning/30";
+    case "low": return "bg-muted text-muted-foreground border-border";
+    default: return "bg-muted text-muted-foreground border-border";
+  }
+}
+
+function DetectionsTabs({ detections }: { detections: MvtDetection[] }) {
+  const groups = useMemo(() => buildGroups(detections), [detections]);
+  const uniqueTotal = groups.mercenary.length + groups.stalkerware.length + groups.suspicious.length;
+
+  return (
+    <Tabs defaultValue="user" className="w-full">
+      <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsTrigger value="user"><User className="h-4 w-4 mr-2" /> Para ti</TabsTrigger>
+        <TabsTrigger value="dev"><Code2 className="h-4 w-4 mr-2" /> Modo desarrollador</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="user" className="mt-4">
+        <div className="text-xs text-muted-foreground mb-3">
+          {uniqueTotal} entidad(es) única(s) agrupadas a partir de {detections.length} indicio(s) técnico(s).
+        </div>
+        <div className="space-y-6">
+          {CATEGORY_ORDER.map((cat) => {
+            const list = groups[cat];
+            if (list.length === 0) return null;
+            const totalOccur = list.reduce((s, g) => s + g.count, 0);
+            return (
+              <div key={cat}>
+                <div className="flex items-baseline justify-between mb-2">
+                  <h3 className="text-sm font-semibold">{CATEGORY_LABEL[cat]}</h3>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {list.length} entidad(es) · {totalOccur} ocurrencias
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">{CATEGORY_DESC[cat]}</p>
+                <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+                  {list.map((g, i) => (
+                    <div key={g.key} className="p-4 flex items-start gap-4">
+                      <div className="h-9 w-9 rounded-lg bg-destructive/10 text-destructive grid place-items-center shrink-0 tabular-nums text-xs font-semibold">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm truncate">{g.label}</span>
+                          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${severityClasses(g.level)}`}>
+                            {severityLabel(g.level)}
+                          </span>
+                          <span className="text-xs text-muted-foreground tabular-nums">· {g.count}×</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Detectado en:{" "}
+                          {[...g.modules.entries()]
+                            .sort((a, b) => b[1] - a[1])
+                            .slice(0, 4)
+                            .map(([m, c]) => `${humanizeModule(m)} (${c})`)
+                            .join(" · ")}
+                          {g.modules.size > 4 && ` · +${g.modules.size - 4} más`}
+                        </div>
+                        <div className="text-sm mt-1.5">{humanizeDetection(g.sample.summary)}</div>
+                        {(g.firstSeen || g.lastSeen) && (
+                          <div className="text-[11px] text-muted-foreground mt-1">
+                            {g.firstSeen && <>1ª vez: <span className="font-mono">{g.firstSeen}</span></>}
+                            {g.firstSeen && g.lastSeen && g.firstSeen !== g.lastSeen && " · "}
+                            {g.lastSeen && g.firstSeen !== g.lastSeen && <>última: <span className="font-mono">{g.lastSeen}</span></>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="dev" className="mt-4">
+        <div className="text-xs text-muted-foreground mb-3">
+          Salida cruda de MVT — un registro por cada indicio detectado ({detections.length} en total).
+        </div>
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          {detections.slice(0, 200).map((d, i) => (
+            <div key={i} className="p-4 border-b border-border last:border-0 flex items-start gap-4">
+              <div className="h-9 w-9 rounded-lg bg-destructive/10 text-destructive grid place-items-center shrink-0">
+                <AlertOctagon className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">{d.module}</span>
+                  {d.level && (
+                    <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${severityClasses(d.level)}`}>
+                      {severityLabel(d.level)}
+                    </span>
+                  )}
+                  {d.timestamp && <span className="text-xs text-muted-foreground font-mono">{d.timestamp}</span>}
+                </div>
+                <div className="font-mono text-xs mt-1 break-all whitespace-pre-wrap">{d.summary}</div>
+              </div>
+            </div>
+          ))}
+          {detections.length > 200 && (
+            <div className="p-3 text-xs text-muted-foreground text-center border-t border-border">
+              Mostrando 200 de {detections.length}. Descarga el PDF para el listado completo.
+            </div>
+          )}
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 }

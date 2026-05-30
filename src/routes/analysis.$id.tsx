@@ -103,23 +103,8 @@ function AnalysisPage() {
           </TabsList>
 
           {/* ---------- Pestaña usuario no experto ---------- */}
-          <TabsContent value="user" className="mt-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <SmallStat icon={Layers} label="Módulos" value={r.modules.length} />
-              <SmallStat icon={Database} label="Entradas" value={r.totalEntries} />
-              <SmallStat icon={AlertOctagon} label="Detecciones" value={r.totalDetections} />
-              <SmallStat icon={ShieldCheck} label="Plataforma" value={r.platform.toUpperCase()} />
-            </div>
-
-            <h2 className="text-lg font-semibold mt-10 mb-4">Indicadores detectados</h2>
-            {r.detections.length === 0 ? (
-              <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm text-success-foreground">
-                <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
-                MVT no encontró coincidencias con indicadores conocidos en los archivos subidos.
-              </div>
-            ) : (
-              <UserDetections detections={r.detections} />
-            )}
+          <TabsContent value="user" className="mt-6 space-y-10">
+            <UserReport analysis={analysis} />
           </TabsContent>
 
           {/* ---------- Pestaña modo desarrollador ---------- */}

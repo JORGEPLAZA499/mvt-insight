@@ -7,6 +7,7 @@ export interface MvtDetection {
   module: string;
   timestamp?: string;
   summary: string;
+  level?: RiskLevel;
   raw: any;
 }
 

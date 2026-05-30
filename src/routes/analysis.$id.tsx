@@ -199,13 +199,14 @@ function buildGroups(detections: MvtDetection[]): Record<Category, Group[]> {
     const bucket = buckets[cat];
     let g = bucket.get(key);
     if (!g) {
-      g = { key, label, category: cat, level: d.level ?? "info", count: 0, modules: new Map(), sample: d };
+      g = { key, label, category: cat, level: d.level ?? "low", count: 0, modules: new Map(), sample: d };
       bucket.set(key, g);
     }
     g.count += 1;
     g.modules.set(d.module, (g.modules.get(d.module) ?? 0) + 1);
-    if ((LEVEL_RANK[d.level ?? "info"] ?? 0) > (LEVEL_RANK[g.level ?? "info"] ?? 0)) {
-      g.level = d.level ?? g.level;
+    const dLevel: RiskLevel = d.level ?? "low";
+    if ((LEVEL_RANK[dLevel] ?? 0) > (LEVEL_RANK[g.level] ?? 0)) {
+      g.level = dLevel;
       g.sample = d;
     }
     if (d.timestamp) {

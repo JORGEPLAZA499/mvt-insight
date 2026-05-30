@@ -147,8 +147,9 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
       for (const it of items.slice(0, 200)) {
         const ts = pickTimestamp(it);
         const summary = summarize(it);
-        detections.push({ module: meta.key, timestamp: ts, summary, raw: it });
-        if (ts) timeline.push({ timestamp: ts, module: existing.label, summary, severity: "high" });
+        const level = pickLevel(it, "high");
+        detections.push({ module: meta.key, timestamp: ts, summary, level, raw: it });
+        if (ts) timeline.push({ timestamp: ts, module: existing.label, summary, severity: level });
       }
     } else {
       existing.entries += count;

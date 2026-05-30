@@ -1,55 +1,28 @@
-## Objetivo
+## Igualar el tamaño de todas las tarjetas del hero
 
-Rediseñar `/dashboard` como un **panel de control forense moderno** con medidores circulares estilo reloj (gauges con agujas), marcadores luminosos y micro-animaciones — manteniendo los mismos datos actuales (totales, completados, riesgo alto, coincidencias) y la tabla de análisis recientes.
+Actualmente la tarjeta **"Nivel de amenaza global"** ocupa el doble de ancho (`lg:col-span-2`) que las 3 mini-tarjetas apiladas a su derecha, por eso se ve desproporcionada.
 
-## Qué se construye
+### Cambios
 
-### 1. Hero metric — Reloj de riesgo (gauge grande)
-Reemplaza la fila plana de 4 tarjetas por una composición de **2 columnas**:
+**`src/routes/dashboard.tsx`**
+- Cambiar el grid hero de `lg:grid-cols-3` con `col-span-2` a un grid de **4 columnas iguales** (`lg:grid-cols-4`), donde cada tarjeta ocupa 1 columna.
+- Quitar el contenedor `flex flex-col` que apila las 3 mini-gauges verticalmente. Pasarán a estar en línea junto a la principal.
+- Resultado: 4 tarjetas del mismo tamaño en fila (Nivel amenaza | Totales | Completados | Coincidencias).
 
-- **Izquierda — Gauge principal "Nivel de amenaza"** (SVG):
-  - Arco semicircular de 270°, gradiente de verde → ámbar → rojo
-  - Aguja animada que se mueve al cargar (transición `cubic-bezier`)
-  - Valor central grande + etiqueta de riesgo
-  - Marcas (ticks) cada 30°, marcas mayores etiquetadas
-  - Glow pulsante detrás de la aguja cuando el riesgo es alto
+**`src/components/gauge-clock.tsx`**
+- Ajustar el `GaugeClock` para que se adapte a un contenedor más estrecho: reducir el tamaño del SVG (de ~grande a ~tamaño coherente con MiniGauge), centrar el contenido y mantener `h-full` para que la altura coincida con las mini-gauges.
 
-- **Derecha — 3 mini-gauges circulares** apilados (donut + aguja corta):
-  - Análisis totales (azul)
-  - Completados (verde)
-  - Coincidencias (ámbar)
-  - Cada uno con número grande al centro y aguja que apunta al porcentaje relativo
+**`src/components/mini-gauge.tsx`**
+- Sin cambios estructurales; ya tienen `h-full`. Solo verificar que el padding interno coincida con el de GaugeClock para que se vean visualmente iguales.
 
-### 2. Banda de marcadores con efectos
-Fila horizontal con 4 "pills" tipo HUD:
-- LED pulsante (punto con `animate-ping`) por categoría: pendientes, procesando, completados, error
-- Contador animado (count-up al montar)
-- Glow lateral en el color de cada estado
+### Sin cambios
+- Lógica de datos, `stats`, tabla de análisis recientes, HUD pills, rutas, navegación.
 
-### 3. Tabla de análisis recientes
-Se mantiene la tabla actual pero con:
-- Fila destacada con borde-izquierdo de color según riesgo
-- Mini-barra de "intensidad" (sparkline-like) en la columna de detecciones
-- Hover con leve elevación (shadow)
-
-## Detalles técnicos
-
-- **Sin librerías nuevas**. Los gauges se dibujan con SVG puro + `stroke-dasharray` animado y `transform: rotate()` para la aguja.
-- Componente reutilizable `<GaugeClock value={0-100} max label tone />` en `src/components/gauge-clock.tsx`.
-- Componente `<MiniGauge />` para los donuts pequeños.
-- Animaciones existentes (`animate-fade-in`, `animate-scale-in`) + nuevos keyframes `needle-sweep` y `pulse-glow` en `src/styles.css`.
-- Tokens semánticos ya definidos (`--primary`, `--success`, `--destructive`, `--gradient-primary`, `--shadow-glow`). Solo se añade `--gradient-gauge` (verde→ámbar→rojo) si hace falta.
-- Sin cambios de datos ni de lógica: lee `getAnalyses()` igual que ahora y calcula el riesgo agregado a partir de `items`.
-
-## Archivos a tocar
-
-1. `src/components/gauge-clock.tsx` — nuevo (gauge semicircular con aguja)
-2. `src/components/mini-gauge.tsx` — nuevo (donut con aguja corta)
-3. `src/routes/dashboard.tsx` — recompuesto con la nueva sección hero + banda de marcadores; la tabla se conserva con retoques visuales
-4. `src/styles.css` — añadir keyframes `needle-sweep`, `pulse-glow` y token `--gradient-gauge`
-
-## Qué NO cambia
-
-- Rutas, navegación, lógica de datos
-- Otras páginas (`/upload`, `/history`, `/reports`, `/analysis/$id`)
-- Tabla de columnas (mismos campos)
+### Resultado visual
+```
+┌──────────┬──────────┬──────────┬──────────┐
+│  Nivel   │ Totales  │Completad │Coinciden │
+│ amenaza  │          │          │   IOC    │
+└──────────┴──────────┴──────────┴──────────┘
+```
+Todas con la misma anchura y altura.

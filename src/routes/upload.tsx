@@ -428,6 +428,11 @@ function StepRun({
             <strong className="text-foreground">no la cierres</strong>, está trabajando.
             El proceso puede tardar entre <strong className="text-foreground">5 y 15 minutos</strong>;
             verás texto avanzando, es normal.
+            {device === "android" && (
+              <span className="block mt-2 text-warning">
+                ⚠ AndroidQF te hará varias preguntas en la ventana negra. En el siguiente paso te decimos qué pulsar en cada una.
+              </span>
+            )}
             {device === "ios" && (
               <span className="block mt-2">
                 Cuando te pida la <strong className="text-foreground">contraseña del backup</strong>, escríbela y pulsa Enter.

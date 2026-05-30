@@ -27,5 +27,11 @@
       "reportsHint": "Resultados",
       "historyHint": "Análisis previos"
     }
+  },
+  "analysis": {
+    "tabs": {
+      "user": "Para ti",
+      "dev": "Modo desarrollador"
+    }
   }
 }

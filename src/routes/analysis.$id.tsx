@@ -16,6 +16,7 @@ export const Route = createFileRoute("/analysis/$id")({
 });
 
 function AnalysisPage() {
+  const { t } = useTranslation();
   const { id } = useParams({ from: "/analysis/$id" });
   const [analysis, setAnalysis] = useState<Analysis | undefined>();
   const navigate = useNavigate();

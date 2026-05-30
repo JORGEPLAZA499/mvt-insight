@@ -244,7 +244,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 h-screen overflow-y-auto">
         <div className="md:hidden border-b border-border px-4 py-3 flex items-center gap-2">
           <Shield className="h-5 w-5 text-primary" />
           <span className="text-sm font-semibold">Spyware Forensic Analyzer</span>

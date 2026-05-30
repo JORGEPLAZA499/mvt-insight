@@ -16,7 +16,10 @@ import {
   Monitor,
   HelpCircle,
   CheckCircle2,
+  Download,
+  Terminal,
 } from "lucide-react";
+
 import { upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 

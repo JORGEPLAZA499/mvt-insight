@@ -220,7 +220,7 @@ function HudPill({
 }) {
   return (
     <div
-      className="relative overflow-hidden rounded-xl border border-border bg-card px-4 py-3 shadow-card group hover:border-primary/40 transition-colors"
+      className="relative overflow-hidden rounded-xl border border-border bg-card px-4 py-3 shadow-card group hover:border-primary/40 transition-colors h-full"
       style={{ boxShadow: `inset 0 0 0 1px transparent, 0 0 0 transparent` }}
     >
       <div

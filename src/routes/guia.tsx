@@ -75,6 +75,7 @@ function Guide() {
 
 type OS = "mac" | "linux" | "windows";
 type Device = "android" | "ios";
+const SCRIPT_BASE_URL = "https://mvt-insight.lovable.app";
 
 function detectOS(): OS {
   if (typeof navigator === "undefined") return "mac";
@@ -87,15 +88,8 @@ function detectOS(): OS {
 function QuickStart() {
   const [os, setOs] = useState<OS>("mac");
   const [device, setDevice] = useState<Device>("android");
-  const [origin, setOrigin] = useState("");
   const [showTerminalHelp, setShowTerminalHelp] = useState(false);
-
-  useEffect(() => {
-    setOs(detectOS());
-    setOrigin(window.location.origin);
-  }, []);
-
-  const base = origin || "https://tu-dominio.lovable.app";
+  const base = SCRIPT_BASE_URL;
 
   const installCmd: Record<OS, string> = {
     mac: `curl -fsSL ${base}/api/public/scripts/instalar-mvt-macos.sh | bash`,
@@ -127,6 +121,13 @@ function QuickStart() {
     linux: "Pulsa Ctrl + Alt + T. Si no funciona, busca «Terminal» en el menú de aplicaciones.",
     windows: "Pulsa la tecla Windows, escribe «powershell», haz clic derecho sobre «Windows PowerShell» y elige «Ejecutar como administrador».",
   };
+
+  useEffect(() => {
+    setOs(detectOS());
+  }, []);
+
+  const installFile = os === "mac" ? "instalar-mvt-macos.sh" : os === "linux" ? "instalar-mvt-linux.sh" : "instalar-mvt-windows.ps1";
+  const analyzerFile = device === "ios" ? "analizar-ios.sh" : os === "windows" ? "analizar-android.ps1" : "analizar-android.sh";
 
   return (
     <div className="mt-6 rounded-xl border border-primary/40 bg-gradient-to-br from-primary/5 to-transparent p-5">
@@ -221,10 +222,10 @@ function QuickStart() {
           <Download className="h-3.5 w-3.5" /> ¿El comando falla? Descargar el script manualmente
         </summary>
         <div className="mt-2 flex flex-col gap-1.5 pl-5">
-          <a href={`/api/public/scripts/instalar-mvt-${os === "mac" ? "macos.sh" : os === "linux" ? "linux.sh" : "windows.ps1"}`} download className="text-primary hover:underline">
+          <a href={`${base}/api/public/scripts/${installFile}`} download className="text-primary hover:underline">
             Descargar instalador
           </a>
-          <a href={`/api/public/scripts/analizar-${device}${os === "windows" ? ".ps1" : ".sh"}`} download className="text-primary hover:underline">
+          <a href={`${base}/api/public/scripts/${analyzerFile}`} download className="text-primary hover:underline">
             Descargar analizador
           </a>
         </div>

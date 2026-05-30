@@ -88,6 +88,33 @@ try {
   Write-Host "    Acepta cualquier prompt que aparezca en el movil."
   Write-Host ""
   $prevEAP = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+  $aqfStart = Get-Date
+
+  # Heartbeat en background: cada 15s imprime tiempo, ficheros y tamano de acquisition/
+  $hbJob = Start-Job -ArgumentList $acqDir, $aqfStart -ScriptBlock {
+    param($watchDir, $startTime)
+    $phaseHints = @('bugreport','dumpsys','logs','settings','services','processes','packages')
+    while ($true) {
+      Start-Sleep -Seconds 15
+      try {
+        $elapsed = (Get-Date) - $startTime
+        $mm = [int]$elapsed.TotalMinutes
+        $ss = $elapsed.Seconds
+        $files = @(Get-ChildItem -Path $watchDir -Recurse -File -ErrorAction SilentlyContinue)
+        $count = $files.Count
+        $sizeMB = if ($count -gt 0) { [math]::Round((($files | Measure-Object Length -Sum).Sum / 1MB), 1) } else { 0 }
+        $last = $files | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        $lastName = if ($last) { $last.FullName.Substring($watchDir.Length).TrimStart('\','/') } else { "(sin ficheros aun)" }
+        $phase = ""
+        foreach ($p in $phaseHints) {
+          if ($lastName -match $p) { $phase = " | fase: $p"; break }
+        }
+        $line = ("[heartbeat {0:D2}:{1:D2}] acquisition: {2} ficheros, {3} MB{4} - ultimo: {5}" -f $mm, $ss, $count, $sizeMB, $phase, $lastName)
+        [Console]::WriteLine($line)
+      } catch {}
+    }
+  }
+
   Push-Location $acqDir
   try {
     & $aqfExe
@@ -95,6 +122,13 @@ try {
   } finally {
     Pop-Location
     $ErrorActionPreference = $prevEAP
+    try {
+      Stop-Job $hbJob -ErrorAction SilentlyContinue | Out-Null
+      Receive-Job $hbJob -ErrorAction SilentlyContinue | Out-Host
+      Remove-Job $hbJob -Force -ErrorAction SilentlyContinue | Out-Null
+    } catch {}
+    $aqfElapsed = (Get-Date) - $aqfStart
+    Write-Host ("AndroidQF tiempo total: {0:D2}:{1:D2}" -f [int]$aqfElapsed.TotalMinutes, $aqfElapsed.Seconds) -ForegroundColor Cyan
   }
 
   $acqFiles = @(Get-ChildItem -Path $acqDir -Recurse -File -ErrorAction SilentlyContinue)

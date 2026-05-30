@@ -183,6 +183,7 @@ function StepRun({
 }) {
   const [showHelp, setShowHelp] = useState(false);
   const [showAlt, setShowAlt] = useState(false);
+  const [subStep, setSubStep] = useState<number>(1);
   const [downloaded, setDownloaded] = useState(false);
 
   const blocked = device === "ios" && os === "windows";

@@ -123,3 +123,20 @@
     background-size: 40px 40px;
   }
 }
+
+@keyframes usb-flow {
+  0% { stroke-dashoffset: 60; }
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes usb-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+@keyframes usb-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.usb-cable { stroke-dasharray: 8 8; animation: usb-flow 1.2s linear infinite; }
+.usb-pulse { transform-origin: center; animation: usb-pulse 1.6s ease-in-out infinite; transform-box: fill-box; }
+.usb-float { animation: usb-float 3s ease-in-out infinite; }
+.usb-float-delay { animation: usb-float 3s ease-in-out infinite; animation-delay: 1.5s; }

@@ -96,64 +96,87 @@ function AnalysisPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <SmallStat icon={Layers} label="Módulos" value={r.modules.length} />
-          <SmallStat icon={Database} label="Entradas" value={r.totalEntries} />
-          <SmallStat icon={AlertOctagon} label="Detecciones" value={r.totalDetections} />
-          <SmallStat icon={ShieldCheck} label="Plataforma" value={r.platform.toUpperCase()} />
-        </div>
+        <Tabs defaultValue="user" className="w-full mt-8">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="user"><User className="h-4 w-4 mr-2" /> {t("analysis.tabs.user")}</TabsTrigger>
+            <TabsTrigger value="dev"><Code2 className="h-4 w-4 mr-2" /> {t("analysis.tabs.dev")}</TabsTrigger>
+          </TabsList>
 
-        <h2 className="text-lg font-semibold mt-10 mb-4">Módulos MVT analizados</h2>
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
-            <div className="col-span-6">Módulo</div>
-            <div className="col-span-3 text-right">Entradas</div>
-            <div className="col-span-3 text-right">Detecciones</div>
-          </div>
-          {r.modules.map((m) => (
-            <div key={m.key} className="grid grid-cols-12 px-4 py-3 border-b border-border last:border-0 text-sm items-center">
-              <div className="col-span-6 min-w-0">
-                <div className="font-medium truncate">{m.label}</div>
-                <div className="text-xs text-muted-foreground font-mono truncate">{m.key}</div>
-              </div>
-              <div className="col-span-3 text-right tabular-nums">{m.entries}</div>
-              <div className={`col-span-3 text-right tabular-nums font-semibold ${m.detected > 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                {m.detected}
-              </div>
+          {/* ---------- Pestaña usuario no experto ---------- */}
+          <TabsContent value="user" className="mt-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SmallStat icon={Layers} label="Módulos" value={r.modules.length} />
+              <SmallStat icon={Database} label="Entradas" value={r.totalEntries} />
+              <SmallStat icon={AlertOctagon} label="Detecciones" value={r.totalDetections} />
+              <SmallStat icon={ShieldCheck} label="Plataforma" value={r.platform.toUpperCase()} />
             </div>
-          ))}
-          {r.modules.length === 0 && (
-            <div className="p-6 text-sm text-muted-foreground text-center">No se reconocieron módulos MVT en los archivos subidos.</div>
-          )}
-        </div>
 
-        <h2 className="text-lg font-semibold mt-10 mb-4">Indicadores detectados</h2>
-        {r.detections.length === 0 ? (
-          <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm text-success-foreground">
-            <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
-            MVT no encontró coincidencias con indicadores conocidos en los archivos subidos.
-          </div>
-        ) : (
-          <DetectionsTabs detections={r.detections} />
-        )}
+            <h2 className="text-lg font-semibold mt-10 mb-4">Indicadores detectados</h2>
+            {r.detections.length === 0 ? (
+              <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm text-success-foreground">
+                <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
+                MVT no encontró coincidencias con indicadores conocidos en los archivos subidos.
+              </div>
+            ) : (
+              <UserDetections detections={r.detections} />
+            )}
+          </TabsContent>
 
-        {r.timeline.length > 0 && (
-          <>
-            <h2 className="text-lg font-semibold mt-10 mb-4">Línea de tiempo ({r.timeline.length} eventos)</h2>
-            <div className="rounded-xl border border-border bg-card p-6">
-              <ol className="relative border-l border-border ml-3 space-y-4">
-                {r.timeline.slice(0, 30).map((e, i) => (
-                  <li key={i} className="ml-6 relative">
-                    <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-destructive" />
-                    <div className="text-xs text-muted-foreground">{e.timestamp}</div>
-                    <div className="text-sm font-medium mt-0.5">{e.module}</div>
-                    <div className="text-xs text-muted-foreground font-mono break-all">{e.summary}</div>
-                  </li>
-                ))}
-              </ol>
+          {/* ---------- Pestaña modo desarrollador ---------- */}
+          <TabsContent value="dev" className="mt-6">
+            <h2 className="text-lg font-semibold mb-4">Módulos MVT analizados</h2>
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                <div className="col-span-6">Módulo</div>
+                <div className="col-span-3 text-right">Entradas</div>
+                <div className="col-span-3 text-right">Detecciones</div>
+              </div>
+              {r.modules.map((m) => (
+                <div key={m.key} className="grid grid-cols-12 px-4 py-3 border-b border-border last:border-0 text-sm items-center">
+                  <div className="col-span-6 min-w-0">
+                    <div className="font-medium truncate">{m.label}</div>
+                    <div className="text-xs text-muted-foreground font-mono truncate">{m.key}</div>
+                  </div>
+                  <div className="col-span-3 text-right tabular-nums">{m.entries}</div>
+                  <div className={`col-span-3 text-right tabular-nums font-semibold ${m.detected > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                    {m.detected}
+                  </div>
+                </div>
+              ))}
+              {r.modules.length === 0 && (
+                <div className="p-6 text-sm text-muted-foreground text-center">No se reconocieron módulos MVT en los archivos subidos.</div>
+              )}
             </div>
-          </>
-        )}
+
+            <h2 className="text-lg font-semibold mt-10 mb-4">Detecciones crudas</h2>
+            {r.detections.length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground text-center">
+                Sin detecciones registradas.
+              </div>
+            ) : (
+              <DevDetections detections={r.detections} />
+            )}
+
+            {r.timeline.length > 0 && (
+              <>
+                <h2 className="text-lg font-semibold mt-10 mb-4">Línea de tiempo ({r.timeline.length} eventos)</h2>
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <ol className="relative border-l border-border ml-3 space-y-4">
+                    {r.timeline.slice(0, 30).map((e, i) => (
+                      <li key={i} className="ml-6 relative">
+                        <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-destructive" />
+                        <div className="text-xs text-muted-foreground">{e.timestamp}</div>
+                        <div className="text-sm font-medium mt-0.5">{e.module}</div>
+                        <div className="text-xs text-muted-foreground font-mono break-all">{e.summary}</div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
+
 
         <div className="mt-8 text-xs text-muted-foreground">
           <Link to="/dashboard" className="hover:text-foreground">← Volver al dashboard</Link>

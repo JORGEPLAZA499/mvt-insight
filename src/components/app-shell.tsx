@@ -38,9 +38,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const emailShort = session?.email?.split("@")[0] ?? "usuario";
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="h-screen flex w-full bg-background overflow-hidden">
       <aside
-        className="relative w-64 hidden md:flex flex-col overflow-hidden"
+        className="relative w-64 hidden md:flex flex-col overflow-hidden shrink-0 h-screen sticky top-0"
         style={{
           background:
             "linear-gradient(180deg, var(--sidebar) 0%, color-mix(in oklab, var(--sidebar) 92%, var(--background)) 100%)",
@@ -244,7 +244,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 h-screen overflow-y-auto">
         <div className="md:hidden border-b border-border px-4 py-3 flex items-center gap-2">
           <Shield className="h-5 w-5 text-primary" />
           <span className="text-sm font-semibold">Spyware Forensic Analyzer</span>

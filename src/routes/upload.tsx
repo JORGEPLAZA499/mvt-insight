@@ -22,6 +22,7 @@ import {
 
 import { upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
+import { UsbConnect } from "@/components/usb-connect";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),

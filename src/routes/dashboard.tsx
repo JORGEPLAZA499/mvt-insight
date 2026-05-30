@@ -75,40 +75,37 @@ function Dashboard() {
           </Button>
         </div>
 
-        {/* Hero: gauge + mini gauges */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-          <div className="lg:col-span-2">
-            <GaugeClock
-              value={stats.threatScore}
-              label="Nivel de amenaza global"
-              sublabel={`${stats.completed} análisis evaluados`}
-              tone={stats.tone}
-            />
-          </div>
-          <div className="flex flex-col gap-4 h-full">
-            <MiniGauge
-              value={stats.total}
-              max={Math.max(stats.total, 10)}
-              label="Análisis totales"
-              icon={Activity}
-              tone="primary"
-            />
-            <MiniGauge
-              value={stats.completed}
-              max={Math.max(stats.total, 1)}
-              label="Completados"
-              icon={ShieldCheck}
-              tone="success"
-            />
-            <MiniGauge
-              value={stats.matches}
-              max={Math.max(stats.matches, 20)}
-              label="Coincidencias IOC"
-              icon={FileSearch}
-              tone="warning"
-            />
-          </div>
+        {/* Hero: gauge + mini gauges (4 columnas iguales) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in auto-rows-fr">
+          <GaugeClock
+            value={stats.threatScore}
+            label="Nivel de amenaza global"
+            sublabel={`${stats.completed} análisis evaluados`}
+            tone={stats.tone}
+          />
+          <MiniGauge
+            value={stats.total}
+            max={Math.max(stats.total, 10)}
+            label="Análisis totales"
+            icon={Activity}
+            tone="primary"
+          />
+          <MiniGauge
+            value={stats.completed}
+            max={Math.max(stats.total, 1)}
+            label="Completados"
+            icon={ShieldCheck}
+            tone="success"
+          />
+          <MiniGauge
+            value={stats.matches}
+            max={Math.max(stats.matches, 20)}
+            label="Coincidencias IOC"
+            icon={FileSearch}
+            tone="warning"
+          />
         </div>
+
 
         {/* HUD strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 animate-fade-in">

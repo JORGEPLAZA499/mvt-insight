@@ -108,8 +108,91 @@ echo "==> Lanzando AndroidQF..."
 echo "    Es interactivo: responde en la consola."
 echo "    Acepta cualquier prompt que aparezca en el movil."
 echo ""
+echo "============================================================"
+echo "  Se va a abrir OTRA ventana titulada 'Estado del analisis'"
+echo "  NO LA CIERRES. Te muestra que el proceso sigue trabajando."
+echo "  Si esta ventana parece parada, mira la otra."
+echo "============================================================"
+echo ""
+
+# Mini-script de estado (segunda ventana con spinner + contador)
+STATUS_SH="$OUT_DIR/_status.sh"
+STATUS_PID_FILE="$OUT_DIR/_status.pid"
+cat > "$STATUS_SH" <<'STATUS_EOF'
+#!/usr/bin/env bash
+WATCH="$1"
+PID_FILE="$2"
+echo $$ > "$PID_FILE"
+trap 'exit 0' TERM INT
+FRAMES='|/-\'
+i=0
+START=$(date +%s)
+while :; do
+  NOW=$(date +%s); E=$((NOW-START))
+  HH=$((E/3600)); MM=$(((E%3600)/60)); SS=$((E%60))
+  COUNT=$(find "$WATCH" -type f 2>/dev/null | wc -l | tr -d ' ')
+  SIZE=$(du -sh "$WATCH" 2>/dev/null | awk '{print $1}')
+  [ -z "$SIZE" ] && SIZE="0"
+  LAST=$(ls -t "$WATCH" 2>/dev/null | head -1)
+  [ -z "$LAST" ] && LAST="(aun nada)"
+  C="${FRAMES:i++%4:1}"
+  printf '\033[2J\033[H'
+  echo
+  echo "  $C  Analizando movil... NO CIERRES esta ventana"
+  echo
+  printf '     Tiempo:    %02d:%02d:%02d\n' "$HH" "$MM" "$SS"
+  echo  "     Ficheros:  $COUNT"
+  echo  "     Tamano:    $SIZE"
+  echo  "     Ultimo:    $LAST"
+  echo
+  echo "  Responde a las preguntas en la OTRA ventana."
+  echo "  Esto puede tardar 5-15 minutos. Es NORMAL."
+  sleep 0.25
+done
+STATUS_EOF
+chmod +x "$STATUS_SH"
+
+# Abrir la segunda ventana segun la plataforma
+STATUS_TERM_PID=""
+_open_status_window() {
+  if [ "$OS_TAG" = "macos" ] && command -v osascript >/dev/null 2>&1; then
+    osascript -e "tell application \"Terminal\" to do script \"bash '$STATUS_SH' '$ACQ_DIR' '$STATUS_PID_FILE'\"" >/dev/null 2>&1 && return 0
+  fi
+  for term in x-terminal-emulator gnome-terminal konsole xfce4-terminal xterm; do
+    if command -v "$term" >/dev/null 2>&1; then
+      case "$term" in
+        gnome-terminal) "$term" -- bash "$STATUS_SH" "$ACQ_DIR" "$STATUS_PID_FILE" >/dev/null 2>&1 & ;;
+        *)              "$term" -e bash "$STATUS_SH" "$ACQ_DIR" "$STATUS_PID_FILE" >/dev/null 2>&1 & ;;
+      esac
+      STATUS_TERM_PID=$!
+      return 0
+    fi
+  done
+  # Fallback: heartbeat ligero a stderr cada 30s (no rompe tanto la TUI)
+  ( while :; do
+      sleep 30
+      C=$(find "$ACQ_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
+      printf '\n[estado] sigue trabajando... %s ficheros recolectados\n' "$C" >&2
+    done ) &
+  STATUS_TERM_PID=$!
+  return 0
+}
+_open_status_window || true
+
+_kill_status() {
+  if [ -f "$STATUS_PID_FILE" ]; then
+    SPID=$(cat "$STATUS_PID_FILE" 2>/dev/null || true)
+    [ -n "$SPID" ] && kill "$SPID" 2>/dev/null || true
+  fi
+  [ -n "$STATUS_TERM_PID" ] && kill "$STATUS_TERM_PID" 2>/dev/null || true
+  rm -f "$STATUS_SH" "$STATUS_PID_FILE" 2>/dev/null || true
+}
+trap '_kill_status; _pause_on_exit' EXIT
+
 AQF_EXIT=0
 ( cd "$ACQ_DIR" && "$AQF_BIN" ) || AQF_EXIT=$?
+_kill_status
+trap _pause_on_exit EXIT
 
 ACQ_COUNT=$(find "$ACQ_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
 echo ""

@@ -208,6 +208,11 @@ function QuickStart() {
             : "Antes: crea un backup cifrado del iPhone con Finder/iTunes y guarda la contraseña."}
         </p>
         <CopyCommand command={analyzeCmd[device][os]} label={`Terminal · ${osOptions.find(o => o.id === os)?.label}`} />
+        {device === "android" && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Si la ventana parece cerrarse sola, vuelve a lanzar el comando: el script se queda abierto hasta que pulses Enter y guarda <code className="px-1 rounded bg-muted">run.log</code> dentro de la carpeta de resultados con el detalle del error.
+          </p>
+        )}
       </div>
 
       {/* Paso 3 */}

@@ -72,7 +72,8 @@ export function GaugeClock({ value, label, sublabel, tone = "low" }: GaugeClockP
   }[tone];
 
   return (
-    <div className="relative rounded-2xl border border-border bg-card shadow-card p-6 overflow-hidden">
+    <div className="relative h-full rounded-xl border border-border bg-card shadow-card p-4 overflow-hidden flex flex-col">
+
       {/* Glow background */}
       <div
         className="absolute inset-0 opacity-40 pointer-events-none"

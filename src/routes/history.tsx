@@ -40,7 +40,7 @@ function HistoryPage() {
                     <td className="px-4 py-3 truncate max-w-[280px]">{a.fileName}</td>
                     <td className="px-4 py-3 text-muted-foreground">{new Date(a.uploadedAt).toLocaleString()}</td>
                     <td className="px-4 py-3 capitalize">{a.status}</td>
-                    <td className={`px-4 py-3 font-semibold ${riskColor(a.risk)}`}>{riskLabel(a.risk)}</td>
+                    <td className={`px-4 py-3 font-semibold ${riskColor(a.result?.risk)}`}>{riskLabel(a.result?.risk)}</td>
                     <td className="px-4 py-3 text-right space-x-2">
                       <Button asChild variant="ghost" size="sm"><Link to="/analysis/$id" params={{ id: a.id }}>Ver</Link></Button>
                       <Button variant="ghost" size="sm" onClick={() => { deleteAnalysis(a.id); setItems(getAnalyses()); }}>

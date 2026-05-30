@@ -16,8 +16,8 @@ function Dashboard() {
 
   const total = items.length;
   const completed = items.filter((i) => i.status === "completed").length;
-  const highRisk = items.filter((i) => i.risk === "high" || i.risk === "critical").length;
-  const matches = items.reduce((acc, i) => acc + (i.matches || 0), 0);
+  const highRisk = items.filter((i) => i.result?.risk === "high" || i.result?.risk === "critical").length;
+  const matches = items.reduce((acc, i) => acc + (i.result?.totalDetections || 0), 0);
 
   return (
     <AppShell>
@@ -49,10 +49,10 @@ function Dashboard() {
                 <thead className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider">
                   <tr>
                     <th className="text-left px-4 py-3 font-medium">Archivo</th>
-                    <th className="text-left px-4 py-3 font-medium">Dispositivo</th>
+                    <th className="text-left px-4 py-3 font-medium">Plataforma</th>
                     <th className="text-left px-4 py-3 font-medium">Estado</th>
                     <th className="text-left px-4 py-3 font-medium">Riesgo</th>
-                    <th className="text-left px-4 py-3 font-medium">Coincidencias</th>
+                    <th className="text-left px-4 py-3 font-medium">Detecciones</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -60,10 +60,10 @@ function Dashboard() {
                   {items.slice(0, 8).map((a) => (
                     <tr key={a.id} className="border-t border-border hover:bg-muted/20">
                       <td className="px-4 py-3 font-medium truncate max-w-[260px]">{a.fileName}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{a.device || "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{a.result?.platform?.toUpperCase() || "—"}</td>
                       <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
-                      <td className={`px-4 py-3 font-semibold ${riskColor(a.risk)}`}>{riskLabel(a.risk)}</td>
-                      <td className="px-4 py-3">{a.matches ?? "—"}</td>
+                      <td className={`px-4 py-3 font-semibold ${riskColor(a.result?.risk)}`}>{riskLabel(a.result?.risk)}</td>
+                      <td className="px-4 py-3">{a.result?.totalDetections ?? "—"}</td>
                       <td className="px-4 py-3 text-right">
                         <Button asChild variant="ghost" size="sm">
                           <Link to="/analysis/$id" params={{ id: a.id }}>Ver</Link>

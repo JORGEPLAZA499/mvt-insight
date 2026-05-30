@@ -183,6 +183,7 @@ function StepRun({
 }) {
   const [showHelp, setShowHelp] = useState(false);
   const [showAlt, setShowAlt] = useState(false);
+  const [subStep, setSubStep] = useState<number>(1);
   const [downloaded, setDownloaded] = useState(false);
 
   const blocked = device === "ios" && os === "windows";
@@ -332,186 +333,237 @@ function StepRun({
     <CopyCommand command={command} label="Terminal" />
   );
 
-  return (
-    <section>
-      <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-        Sigue estos pasos en orden
-      </h1>
-      <p className="text-sm text-muted-foreground mt-1">
-        No te saltes ninguno. Si fallas uno, el análisis no funcionará.
-      </p>
-
-      <div className="mt-4 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 p-3 text-xs text-muted-foreground">
-        <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-        <span>
-          Ten a mano un <strong className="text-foreground">cable USB</strong> y mantén el móvil
-          <strong className="text-foreground"> desbloqueado y con la pantalla encendida</strong> durante todo el proceso.
-        </span>
-      </div>
-
-      <ol className="mt-6 space-y-4">
-        {device === "android" ? (
-          <>
-            <NumberedStep n={1} title="Activa el modo desarrollador en el móvil">
-              <p>
-                Abre <strong className="text-foreground">Ajustes</strong> →{" "}
-                <strong className="text-foreground">Información del teléfono</strong> y toca{" "}
-                <strong className="text-foreground">7 veces</strong> sobre "Número de compilación".
-                Verás un mensaje: "Ya eres desarrollador".
-              </p>
-              <details className="mt-2">
-                <summary className="cursor-pointer text-primary hover:underline">
-                  Ruta exacta por marca
-                </summary>
-                <ul className="mt-2 space-y-1 pl-4 list-disc">
-                  <li><strong className="text-foreground">Samsung:</strong> Ajustes → Acerca del teléfono → Información del software → tocar "Número de compilación" 7 veces.</li>
-                  <li><strong className="text-foreground">Xiaomi/Redmi:</strong> Ajustes → Sobre el teléfono → tocar "Versión MIUI" 7 veces.</li>
-                  <li><strong className="text-foreground">Pixel/Android puro:</strong> Ajustes → Acerca del teléfono → tocar "Número de compilación" 7 veces.</li>
-                  <li><strong className="text-foreground">Huawei/Honor:</strong> Ajustes → Sistema → Acerca del teléfono → tocar "Número de compilación" 7 veces.</li>
-                </ul>
-              </details>
-            </NumberedStep>
-
-            <NumberedStep n={2} title="Activa la Depuración USB">
+  const subSteps: { title: string; content: React.ReactNode }[] =
+    device === "android"
+      ? [
+          {
+            title: "Activa el modo desarrollador en el móvil",
+            content: (
+              <>
+                <p>
+                  Abre <strong className="text-foreground">Ajustes</strong> →{" "}
+                  <strong className="text-foreground">Información del teléfono</strong> y toca{" "}
+                  <strong className="text-foreground">7 veces</strong> sobre "Número de compilación".
+                  Verás un mensaje: "Ya eres desarrollador".
+                </p>
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-primary hover:underline text-sm">
+                    Ruta exacta por marca
+                  </summary>
+                  <ul className="mt-2 space-y-1 pl-4 list-disc text-sm">
+                    <li><strong className="text-foreground">Samsung:</strong> Ajustes → Acerca del teléfono → Información del software → tocar "Número de compilación" 7 veces.</li>
+                    <li><strong className="text-foreground">Xiaomi/Redmi:</strong> Ajustes → Sobre el teléfono → tocar "Versión MIUI" 7 veces.</li>
+                    <li><strong className="text-foreground">Pixel/Android puro:</strong> Ajustes → Acerca del teléfono → tocar "Número de compilación" 7 veces.</li>
+                    <li><strong className="text-foreground">Huawei/Honor:</strong> Ajustes → Sistema → Acerca del teléfono → tocar "Número de compilación" 7 veces.</li>
+                  </ul>
+                </details>
+              </>
+            ),
+          },
+          {
+            title: "Activa la Depuración USB",
+            content: (
               <p>
                 Vuelve a <strong className="text-foreground">Ajustes</strong> →{" "}
                 <strong className="text-foreground">Sistema</strong> →{" "}
                 <strong className="text-foreground">Opciones de desarrollador</strong> y activa{" "}
                 <strong className="text-foreground">"Depuración USB"</strong>. Confirma cuando te lo pida.
               </p>
-            </NumberedStep>
-
-            <NumberedStep n={3} title="Conecta el móvil al ordenador con un cable USB">
+            ),
+          },
+          {
+            title: "Conecta el móvil al ordenador con un cable USB",
+            content: (
               <p>
                 Usa el <strong className="text-foreground">cable original</strong> si puedes (algunos cables solo cargan, no transmiten datos).
                 En el móvil aparecerá un aviso: <strong className="text-foreground">"¿Permitir depuración USB?"</strong>.
                 Marca <strong className="text-foreground">"Permitir siempre desde este ordenador"</strong> y pulsa Aceptar.
               </p>
-            </NumberedStep>
-          </>
-        ) : (
-          <>
-            <NumberedStep n={1} title="Confía en el ordenador desde el iPhone">
+            ),
+          },
+        ]
+      : [
+          {
+            title: "Confía en el ordenador desde el iPhone",
+            content: (
               <p>
                 Conecta el iPhone por USB, <strong className="text-foreground">desbloquéalo</strong> y, cuando aparezca el aviso{" "}
                 <strong className="text-foreground">"¿Confiar en este ordenador?"</strong>, pulsa{" "}
                 <strong className="text-foreground">Confiar</strong> e introduce el código del iPhone.
               </p>
-            </NumberedStep>
-
-            <NumberedStep n={2} title="Crea un backup cifrado del iPhone">
+            ),
+          },
+          {
+            title: "Crea un backup cifrado del iPhone",
+            content: (
               <p>
                 Abre <strong className="text-foreground">Finder</strong> (macOS Catalina o superior) o{" "}
                 <strong className="text-foreground">iTunes</strong>, selecciona el iPhone, marca{" "}
                 <strong className="text-foreground">"Cifrar copia de seguridad local"</strong> y define una contraseña.
-                <span className="block mt-1 text-warning">⚠ Apunta la contraseña: la necesitarás en el paso 4.</span>
+                <span className="block mt-1 text-warning">⚠ Apunta la contraseña: la necesitarás más adelante.</span>
               </p>
-            </NumberedStep>
-
-            <NumberedStep n={3} title="Mantén el iPhone conectado y desbloqueado">
+            ),
+          },
+          {
+            title: "Mantén el iPhone conectado y desbloqueado",
+            content: (
               <p>
                 Durante todo el análisis el iPhone debe estar <strong className="text-foreground">conectado por USB</strong> y{" "}
                 <strong className="text-foreground">desbloqueado</strong>. Si se bloquea, vuelve a desbloquearlo.
               </p>
-            </NumberedStep>
-          </>
+            ),
+          },
+        ];
+
+  subSteps.push({
+    title: launcherPrimary ? "Descarga el lanzador y haz doble clic" : "Ejecuta el comando en la Terminal",
+    content: (
+      <>
+        {launcherPrimary ? (
+          <p className="mb-3">
+            Descarga el archivo de abajo. Búscalo en tu carpeta{" "}
+            <strong className="text-foreground">Descargas</strong> y haz{" "}
+            <strong className="text-foreground">doble clic</strong> sobre él.
+            Se abrirá una <strong className="text-foreground">ventana negra</strong> (Terminal/PowerShell):{" "}
+            <strong className="text-foreground">no la cierres</strong>, está trabajando.
+            El proceso puede tardar entre <strong className="text-foreground">5 y 15 minutos</strong>;
+            verás texto avanzando, es normal.
+            {device === "ios" && (
+              <span className="block mt-2">
+                Cuando te pida la <strong className="text-foreground">contraseña del backup</strong>, escríbela y pulsa Enter.
+              </span>
+            )}
+          </p>
+        ) : (
+          <p className="mb-3">
+            Abre la Terminal, pega el comando y pulsa Enter. No cierres la ventana hasta que termine
+            (puede tardar entre 5 y 15 minutos).
+          </p>
+        )}
+        {launcherBlock}
+
+        <button
+          type="button"
+          onClick={() => setShowAlt((v) => !v)}
+          className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+        >
+          <Terminal className="h-3.5 w-3.5" />
+          {launcherPrimary
+            ? "Prefiero copiar el comando manualmente"
+            : "Prefiero descargar un script"}
+        </button>
+
+        {showAlt && (
+          <div className="mt-3">
+            {launcherPrimary ? (
+              <CopyCommand command={command} label="Terminal" />
+            ) : (
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium">{launcher.filename}</div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Descárgalo y ejecuta:{" "}
+                      <code className="font-mono text-foreground">bash ~/Downloads/{launcher.filename}</code>
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={downloadLauncher}>
+                    <Download className="h-4 w-4 mr-1.5" /> Descargar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
-        <NumberedStep
-          n={4}
-          title={launcherPrimary ? "Descarga el lanzador y haz doble clic" : "Ejecuta el comando en la Terminal"}
+        <button
+          type="button"
+          onClick={() => setShowHelp((v) => !v)}
+          className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
         >
-          {launcherPrimary ? (
-            <p className="mb-3">
-              Descarga el archivo de abajo. Búscalo en tu carpeta{" "}
-              <strong className="text-foreground">Descargas</strong> y haz{" "}
-              <strong className="text-foreground">doble clic</strong> sobre él.
-              Se abrirá una <strong className="text-foreground">ventana negra</strong> (Terminal/PowerShell):{" "}
-              <strong className="text-foreground">no la cierres</strong>, está trabajando.
-              El proceso puede tardar entre <strong className="text-foreground">5 y 15 minutos</strong>;
-              verás texto avanzando, es normal.
-              {device === "ios" && (
-                <span className="block mt-2">
-                  Cuando te pida la <strong className="text-foreground">contraseña del backup</strong>, escríbela y pulsa Enter.
-                </span>
-              )}
-            </p>
-          ) : (
-            <p className="mb-3">
-              Abre la Terminal, pega el comando y pulsa Enter. No cierres la ventana hasta que termine
-              (puede tardar entre 5 y 15 minutos).
-            </p>
-          )}
-          {launcherBlock}
+          <HelpCircle className="h-3.5 w-3.5" />
+          ¿Cómo abro la Terminal?
+        </button>
+        {showHelp && (
+          <div className="mt-2 text-xs text-muted-foreground p-3 rounded-md bg-card border border-border">
+            {terminalHelp[os]}
+          </div>
+        )}
+      </>
+    ),
+  });
 
-          <button
-            type="button"
-            onClick={() => setShowAlt((v) => !v)}
-            className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-          >
-            <Terminal className="h-3.5 w-3.5" />
-            {launcherPrimary
-              ? "Prefiero copiar el comando manualmente"
-              : "Prefiero descargar un script"}
-          </button>
+  subSteps.push({
+    title: "Cuando termine, busca el archivo ZIP",
+    content: (
+      <p>
+        Al acabar, el script deja un archivo{" "}
+        <code className="font-mono text-foreground">mvt-resultados-AAAAMMDD.zip</code> en la misma carpeta
+        donde ejecutaste el lanzador (normalmente <strong className="text-foreground">Descargas</strong>).
+        Cuando lo tengas, pulsa el botón de abajo para subirlo.
+      </p>
+    ),
+  });
 
-          {showAlt && (
-            <div className="mt-3">
-              {launcherPrimary ? (
-                <CopyCommand command={command} label="Terminal" />
-              ) : (
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium">{launcher.filename}</div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Descárgalo y ejecuta:{" "}
-                        <code className="font-mono text-foreground">bash ~/Downloads/{launcher.filename}</code>
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={downloadLauncher}>
-                      <Download className="h-4 w-4 mr-1.5" /> Descargar
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+  const total = subSteps.length;
+  const current = Math.min(subStep, total);
+  const active = subSteps[current - 1];
+  const isLast = current === total;
 
-          <button
-            type="button"
-            onClick={() => setShowHelp((v) => !v)}
-            className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <HelpCircle className="h-3.5 w-3.5" />
-            ¿Cómo abro la Terminal?
-          </button>
-          {showHelp && (
-            <div className="mt-2 text-xs text-muted-foreground p-3 rounded-md bg-card border border-border">
-              {terminalHelp[os]}
-            </div>
-          )}
+  return (
+    <section>
+      <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+        Sigue los pasos en orden
+      </h1>
+      <p className="text-sm text-muted-foreground mt-1">
+        Un paso cada vez. No te saltes ninguno o el análisis no funcionará.
+      </p>
+
+      <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          Paso {current} de {total}
+        </span>
+        <span className="truncate ml-3">{active.title}</span>
+      </div>
+      <Progress value={(current / total) * 100} className="h-1 mt-2" />
+
+      {current === 1 && (
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 p-3 text-xs text-muted-foreground">
+          <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+          <span>
+            Ten a mano un <strong className="text-foreground">cable USB</strong> y mantén el móvil{" "}
+            <strong className="text-foreground">desbloqueado y con la pantalla encendida</strong> durante todo el proceso.
+          </span>
+        </div>
+      )}
+
+      <div className="mt-6">
+        <NumberedStep n={current} title={active.title}>
+          {active.content}
         </NumberedStep>
-
-        <NumberedStep n={5} title="Cuando termine, busca el archivo ZIP">
-          <p>
-            Al acabar, el script deja un archivo{" "}
-            <code className="font-mono text-foreground">mvt-resultados-AAAAMMDD.zip</code> en la misma carpeta
-            donde ejecutaste el lanzador (normalmente <strong className="text-foreground">Descargas</strong>).
-            Cuando lo tengas, pulsa el botón de abajo para subirlo.
-          </p>
-        </NumberedStep>
-      </ol>
-
-      <div className="mt-6 rounded-lg border border-border bg-card/40 p-4 text-xs text-muted-foreground">
-        {prep} El script instala MVT si hace falta, realiza la adquisición y deja un{" "}
-        <code className="font-mono text-foreground">.zip</code> en tu carpeta.
       </div>
 
-      <div className="mt-6 flex justify-end">
-        <Button onClick={onDone} className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
-          <CheckCircle2 className="h-4 w-4 mr-1.5" /> Ya tengo el ZIP
+      <div className="mt-6 flex items-center justify-between gap-3">
+        <Button
+          variant="ghost"
+          onClick={() => setSubStep((s) => Math.max(1, s - 1))}
+          disabled={current === 1}
+          className="disabled:opacity-0"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1.5" /> Anterior
         </Button>
+        {isLast ? (
+          <Button onClick={onDone} className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
+            <CheckCircle2 className="h-4 w-4 mr-1.5" /> Ya tengo el ZIP
+          </Button>
+        ) : (
+          <Button
+            onClick={() => setSubStep((s) => Math.min(total, s + 1))}
+            className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+          >
+            Hecho, siguiente →
+          </Button>
+        )}
       </div>
     </section>
   );

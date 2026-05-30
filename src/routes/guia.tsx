@@ -98,20 +98,20 @@ function QuickStart() {
   const base = origin || "https://tu-dominio.lovable.app";
 
   const installCmd: Record<OS, string> = {
-    mac: `curl -fsSL ${base}/scripts/instalar-mvt-macos.sh | bash`,
-    linux: `curl -fsSL ${base}/scripts/instalar-mvt-linux.sh | bash`,
-    windows: `irm ${base}/scripts/instalar-mvt-windows.ps1 | iex`,
+    mac: `curl -fsSL ${base}/api/public/scripts/instalar-mvt-macos.sh | bash`,
+    linux: `curl -fsSL ${base}/api/public/scripts/instalar-mvt-linux.sh | bash`,
+    windows: `irm ${base}/api/public/scripts/instalar-mvt-windows.ps1 | iex`,
   };
 
   const analyzeCmd: Record<Device, Record<OS, string>> = {
     android: {
-      mac: `curl -fsSL ${base}/scripts/analizar-android.sh | bash`,
-      linux: `curl -fsSL ${base}/scripts/analizar-android.sh | bash`,
-      windows: `irm ${base}/scripts/analizar-android.ps1 | iex`,
+      mac: `curl -fsSL ${base}/api/public/scripts/analizar-android.sh | bash`,
+      linux: `curl -fsSL ${base}/api/public/scripts/analizar-android.sh | bash`,
+      windows: `irm ${base}/api/public/scripts/analizar-android.ps1 | iex`,
     },
     ios: {
-      mac: `curl -fsSL ${base}/scripts/analizar-ios.sh | bash`,
-      linux: `curl -fsSL ${base}/scripts/analizar-ios.sh | bash`,
+      mac: `curl -fsSL ${base}/api/public/scripts/analizar-ios.sh | bash`,
+      linux: `curl -fsSL ${base}/api/public/scripts/analizar-ios.sh | bash`,
       windows: `# iOS no soportado en Windows. Usa un Mac con Finder.`,
     },
   };
@@ -221,10 +221,10 @@ function QuickStart() {
           <Download className="h-3.5 w-3.5" /> ¿El comando falla? Descargar el script manualmente
         </summary>
         <div className="mt-2 flex flex-col gap-1.5 pl-5">
-          <a href={`/scripts/instalar-mvt-${os === "mac" ? "macos.sh" : os === "linux" ? "linux.sh" : "windows.ps1"}`} download className="text-primary hover:underline">
+          <a href={`/api/public/scripts/instalar-mvt-${os === "mac" ? "macos.sh" : os === "linux" ? "linux.sh" : "windows.ps1"}`} download className="text-primary hover:underline">
             Descargar instalador
           </a>
-          <a href={`/scripts/analizar-${device}${os === "windows" ? ".ps1" : ".sh"}`} download className="text-primary hover:underline">
+          <a href={`/api/public/scripts/analizar-${device}${os === "windows" ? ".ps1" : ".sh"}`} download className="text-primary hover:underline">
             Descargar analizador
           </a>
         </div>

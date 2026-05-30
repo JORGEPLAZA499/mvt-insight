@@ -72,7 +72,8 @@ export function GaugeClock({ value, label, sublabel, tone = "low" }: GaugeClockP
   }[tone];
 
   return (
-    <div className="relative rounded-2xl border border-border bg-card shadow-card p-6 overflow-hidden">
+    <div className="relative h-full rounded-xl border border-border bg-card shadow-card p-4 overflow-hidden flex flex-col">
+
       {/* Glow background */}
       <div
         className="absolute inset-0 opacity-40 pointer-events-none"
@@ -80,14 +81,14 @@ export function GaugeClock({ value, label, sublabel, tone = "low" }: GaugeClockP
           background: `radial-gradient(circle at 50% 60%, ${toneColor === "var(--destructive)" ? "oklch(0.65 0.24 25 / 0.18)" : "oklch(0.82 0.16 200 / 0.12)"}, transparent 60%)`,
         }}
       />
-      <div className="relative">
-        <div className="flex items-start justify-between mb-2">
-          <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-            {sublabel && <div className="text-xs text-muted-foreground/70 mt-1">{sublabel}</div>}
+      <div className="relative flex-1 flex flex-col">
+        <div className="flex items-start justify-between mb-2 gap-2">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground truncate">{label}</div>
+            {sublabel && <div className="text-[10px] text-muted-foreground/70 mt-1 truncate">{sublabel}</div>}
           </div>
           <span
-            className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border"
+            className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border flex-shrink-0"
             style={{
               color: toneColor,
               borderColor: `color-mix(in oklab, ${toneColor} 40%, transparent)`,
@@ -102,7 +103,8 @@ export function GaugeClock({ value, label, sublabel, tone = "low" }: GaugeClockP
           </span>
         </div>
 
-        <div className="relative mx-auto" style={{ width: 300, height: 220 }}>
+        <div className="relative mx-auto flex-1 flex items-center justify-center w-full" style={{ maxWidth: 200 }}>
+
           <svg viewBox="0 0 300 240" className="w-full h-auto">
             <defs>
               <linearGradient id="gauge-grad" x1="0" y1="0" x2="1" y2="0">

@@ -28,7 +28,7 @@ export const Route = createFileRoute("/upload")({
   component: Upload,
 });
 
-const MAX_SIZE = 50 * 1024 * 1024;
+const MAX_SIZE = 500 * 1024 * 1024;
 const SCRIPT_BASE_URL = "https://mvt-insight.lovable.app";
 const TOTAL_STEPS = 4;
 
@@ -428,7 +428,7 @@ function StepUpload() {
         continue;
       }
       if (f.size > MAX_SIZE) {
-        setError(`El archivo ${f.name} supera el límite de 50 MB.`);
+        setError(`El archivo ${f.name} supera el límite de 500 MB.`);
         continue;
       }
       ok.push(f);
@@ -491,7 +491,7 @@ function StepUpload() {
           <UploadCloud className="h-6 w-6 text-primary-foreground" />
         </div>
         <p className="text-sm font-medium">Arrastra aquí o haz clic</p>
-        <p className="text-xs text-muted-foreground mt-1">.json o .zip · máx. 50 MB</p>
+        <p className="text-xs text-muted-foreground mt-1">.json o .zip · máx. 500 MB</p>
         <input
           ref={inputRef}
           type="file"

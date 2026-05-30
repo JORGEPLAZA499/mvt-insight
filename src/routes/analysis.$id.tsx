@@ -132,27 +132,7 @@ function AnalysisPage() {
             MVT no encontró coincidencias con indicadores conocidos en los archivos subidos.
           </div>
         ) : (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            {r.detections.slice(0, 100).map((d, i) => (
-              <div key={i} className="p-4 border-b border-border last:border-0 flex items-start gap-4">
-                <div className="h-9 w-9 rounded-lg bg-destructive/10 text-destructive grid place-items-center shrink-0">
-                  <AlertOctagon className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-xs uppercase tracking-wider text-muted-foreground">{d.module}</span>
-                    {d.timestamp && <span className="text-xs text-muted-foreground">{d.timestamp}</span>}
-                  </div>
-                  <div className="font-mono text-sm mt-1 break-all">{d.summary}</div>
-                </div>
-              </div>
-            ))}
-            {r.detections.length > 100 && (
-              <div className="p-3 text-xs text-muted-foreground text-center border-t border-border">
-                Mostrando 100 de {r.detections.length}. Descarga el PDF para más detalle.
-              </div>
-            )}
-          </div>
+          <DetectionsTabs detections={r.detections} />
         )}
 
         {r.timeline.length > 0 && (

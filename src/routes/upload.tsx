@@ -22,6 +22,7 @@ import {
 
 import { upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
+import { UsbConnect } from "@/components/usb-connect";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),
@@ -333,9 +334,30 @@ function StepRun({
     <CopyCommand command={command} label="Terminal" />
   );
 
+  const preambleStep = {
+    title: "Prepara el cable y el móvil",
+    content: (
+      <>
+        <p>
+          Ten a mano un <strong className="text-foreground">cable USB</strong> (mejor el original,
+          que transmita datos, no solo carga). Mantén el móvil{" "}
+          <strong className="text-foreground">desbloqueado y con la pantalla encendida</strong> durante
+          todo el proceso.
+        </p>
+        <p className="mt-2 text-xs">
+          Cuando estés listo, conecta el móvil al ordenador con el cable, así:
+        </p>
+        <div className="mt-4 rounded-xl border border-border bg-card/40 p-4">
+          <UsbConnect />
+        </div>
+      </>
+    ),
+  };
+
   const subSteps: { title: string; content: React.ReactNode }[] =
     device === "android"
       ? [
+          preambleStep,
           {
             title: "Activa el modo desarrollador en el móvil",
             content: (
@@ -383,6 +405,7 @@ function StepRun({
           },
         ]
       : [
+          preambleStep,
           {
             title: "Confía en el ordenador desde el iPhone",
             content: (
@@ -598,15 +621,6 @@ function StepRun({
       </div>
       <Progress value={(current / total) * 100} className="h-1 mt-2" />
 
-      {current === 1 && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 p-3 text-xs text-muted-foreground">
-          <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-          <span>
-            Ten a mano un <strong className="text-foreground">cable USB</strong> y mantén el móvil{" "}
-            <strong className="text-foreground">desbloqueado y con la pantalla encendida</strong> durante todo el proceso.
-          </span>
-        </div>
-      )}
 
       <div className="mt-6">
         <NumberedStep n={current} title={active.title}>

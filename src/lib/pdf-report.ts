@@ -1,12 +1,11 @@
 import jsPDF from "jspdf";
 import { Analysis, riskLabel, platformLabel } from "./mock-store";
-import type { MvtDetection, MvtParsedResult, RiskLevel } from "./mvt-parser";
+import type { RiskLevel } from "./mvt-parser";
 import {
   humanizeModule,
   humanizeDetection,
   severityLabel,
   explainSeverity,
-  riskNarrative,
   nextSteps,
   classifyDetection,
   buildVerdict,

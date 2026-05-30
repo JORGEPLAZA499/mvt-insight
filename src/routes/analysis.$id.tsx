@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/analysis/$id")({
 });
 
 function AnalysisPage() {
+  const { t } = useTranslation();
   const { id } = useParams({ from: "/analysis/$id" });
   const [analysis, setAnalysis] = useState<Analysis | undefined>();
   const navigate = useNavigate();
@@ -94,64 +96,87 @@ function AnalysisPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <SmallStat icon={Layers} label="Módulos" value={r.modules.length} />
-          <SmallStat icon={Database} label="Entradas" value={r.totalEntries} />
-          <SmallStat icon={AlertOctagon} label="Detecciones" value={r.totalDetections} />
-          <SmallStat icon={ShieldCheck} label="Plataforma" value={r.platform.toUpperCase()} />
-        </div>
+        <Tabs defaultValue="user" className="w-full mt-8">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="user"><User className="h-4 w-4 mr-2" /> {t("analysis.tabs.user")}</TabsTrigger>
+            <TabsTrigger value="dev"><Code2 className="h-4 w-4 mr-2" /> {t("analysis.tabs.dev")}</TabsTrigger>
+          </TabsList>
 
-        <h2 className="text-lg font-semibold mt-10 mb-4">Módulos MVT analizados</h2>
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
-            <div className="col-span-6">Módulo</div>
-            <div className="col-span-3 text-right">Entradas</div>
-            <div className="col-span-3 text-right">Detecciones</div>
-          </div>
-          {r.modules.map((m) => (
-            <div key={m.key} className="grid grid-cols-12 px-4 py-3 border-b border-border last:border-0 text-sm items-center">
-              <div className="col-span-6 min-w-0">
-                <div className="font-medium truncate">{m.label}</div>
-                <div className="text-xs text-muted-foreground font-mono truncate">{m.key}</div>
-              </div>
-              <div className="col-span-3 text-right tabular-nums">{m.entries}</div>
-              <div className={`col-span-3 text-right tabular-nums font-semibold ${m.detected > 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                {m.detected}
-              </div>
+          {/* ---------- Pestaña usuario no experto ---------- */}
+          <TabsContent value="user" className="mt-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SmallStat icon={Layers} label="Módulos" value={r.modules.length} />
+              <SmallStat icon={Database} label="Entradas" value={r.totalEntries} />
+              <SmallStat icon={AlertOctagon} label="Detecciones" value={r.totalDetections} />
+              <SmallStat icon={ShieldCheck} label="Plataforma" value={r.platform.toUpperCase()} />
             </div>
-          ))}
-          {r.modules.length === 0 && (
-            <div className="p-6 text-sm text-muted-foreground text-center">No se reconocieron módulos MVT en los archivos subidos.</div>
-          )}
-        </div>
 
-        <h2 className="text-lg font-semibold mt-10 mb-4">Indicadores detectados</h2>
-        {r.detections.length === 0 ? (
-          <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm text-success-foreground">
-            <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
-            MVT no encontró coincidencias con indicadores conocidos en los archivos subidos.
-          </div>
-        ) : (
-          <DetectionsTabs detections={r.detections} />
-        )}
+            <h2 className="text-lg font-semibold mt-10 mb-4">Indicadores detectados</h2>
+            {r.detections.length === 0 ? (
+              <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm text-success-foreground">
+                <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
+                MVT no encontró coincidencias con indicadores conocidos en los archivos subidos.
+              </div>
+            ) : (
+              <UserDetections detections={r.detections} />
+            )}
+          </TabsContent>
 
-        {r.timeline.length > 0 && (
-          <>
-            <h2 className="text-lg font-semibold mt-10 mb-4">Línea de tiempo ({r.timeline.length} eventos)</h2>
-            <div className="rounded-xl border border-border bg-card p-6">
-              <ol className="relative border-l border-border ml-3 space-y-4">
-                {r.timeline.slice(0, 30).map((e, i) => (
-                  <li key={i} className="ml-6 relative">
-                    <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-destructive" />
-                    <div className="text-xs text-muted-foreground">{e.timestamp}</div>
-                    <div className="text-sm font-medium mt-0.5">{e.module}</div>
-                    <div className="text-xs text-muted-foreground font-mono break-all">{e.summary}</div>
-                  </li>
-                ))}
-              </ol>
+          {/* ---------- Pestaña modo desarrollador ---------- */}
+          <TabsContent value="dev" className="mt-6">
+            <h2 className="text-lg font-semibold mb-4">Módulos MVT analizados</h2>
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                <div className="col-span-6">Módulo</div>
+                <div className="col-span-3 text-right">Entradas</div>
+                <div className="col-span-3 text-right">Detecciones</div>
+              </div>
+              {r.modules.map((m) => (
+                <div key={m.key} className="grid grid-cols-12 px-4 py-3 border-b border-border last:border-0 text-sm items-center">
+                  <div className="col-span-6 min-w-0">
+                    <div className="font-medium truncate">{m.label}</div>
+                    <div className="text-xs text-muted-foreground font-mono truncate">{m.key}</div>
+                  </div>
+                  <div className="col-span-3 text-right tabular-nums">{m.entries}</div>
+                  <div className={`col-span-3 text-right tabular-nums font-semibold ${m.detected > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                    {m.detected}
+                  </div>
+                </div>
+              ))}
+              {r.modules.length === 0 && (
+                <div className="p-6 text-sm text-muted-foreground text-center">No se reconocieron módulos MVT en los archivos subidos.</div>
+              )}
             </div>
-          </>
-        )}
+
+            <h2 className="text-lg font-semibold mt-10 mb-4">Detecciones crudas</h2>
+            {r.detections.length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground text-center">
+                Sin detecciones registradas.
+              </div>
+            ) : (
+              <DevDetections detections={r.detections} />
+            )}
+
+            {r.timeline.length > 0 && (
+              <>
+                <h2 className="text-lg font-semibold mt-10 mb-4">Línea de tiempo ({r.timeline.length} eventos)</h2>
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <ol className="relative border-l border-border ml-3 space-y-4">
+                    {r.timeline.slice(0, 30).map((e, i) => (
+                      <li key={i} className="ml-6 relative">
+                        <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-destructive" />
+                        <div className="text-xs text-muted-foreground">{e.timestamp}</div>
+                        <div className="text-sm font-medium mt-0.5">{e.module}</div>
+                        <div className="text-xs text-muted-foreground font-mono break-all">{e.summary}</div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
+
 
         <div className="mt-8 text-xs text-muted-foreground">
           <Link to="/dashboard" className="hover:text-foreground">← Volver al dashboard</Link>
@@ -231,107 +256,105 @@ function severityClasses(level: RiskLevel | undefined): string {
   }
 }
 
-function DetectionsTabs({ detections }: { detections: MvtDetection[] }) {
+function UserDetections({ detections }: { detections: MvtDetection[] }) {
   const groups = useMemo(() => buildGroups(detections), [detections]);
   const uniqueTotal = groups.mercenary.length + groups.stalkerware.length + groups.suspicious.length;
 
   return (
-    <Tabs defaultValue="user" className="w-full">
-      <TabsList className="grid w-full max-w-md grid-cols-2">
-        <TabsTrigger value="user"><User className="h-4 w-4 mr-2" /> Para ti</TabsTrigger>
-        <TabsTrigger value="dev"><Code2 className="h-4 w-4 mr-2" /> Modo desarrollador</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="user" className="mt-4">
-        <div className="text-xs text-muted-foreground mb-3">
-          {uniqueTotal} entidad(es) única(s) agrupadas a partir de {detections.length} indicio(s) técnico(s).
-        </div>
-        <div className="space-y-6">
-          {CATEGORY_ORDER.map((cat) => {
-            const list = groups[cat];
-            if (list.length === 0) return null;
-            const totalOccur = list.reduce((s, g) => s + g.count, 0);
-            return (
-              <div key={cat}>
-                <div className="flex items-baseline justify-between mb-2">
-                  <h3 className="text-sm font-semibold">{CATEGORY_LABEL[cat]}</h3>
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {list.length} entidad(es) · {totalOccur} ocurrencias
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">{CATEGORY_DESC[cat]}</p>
-                <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
-                  {list.map((g, i) => (
-                    <div key={g.key} className="p-4 flex items-start gap-4">
-                      <div className="h-9 w-9 rounded-lg bg-destructive/10 text-destructive grid place-items-center shrink-0 tabular-nums text-xs font-semibold">
-                        {i + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm truncate">{g.label}</span>
-                          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${severityClasses(g.level)}`}>
-                            {severityLabel(g.level)}
-                          </span>
-                          <span className="text-xs text-muted-foreground tabular-nums">· {g.count}×</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Detectado en:{" "}
-                          {[...g.modules.entries()]
-                            .sort((a, b) => b[1] - a[1])
-                            .slice(0, 4)
-                            .map(([m, c]) => `${humanizeModule(m)} (${c})`)
-                            .join(" · ")}
-                          {g.modules.size > 4 && ` · +${g.modules.size - 4} más`}
-                        </div>
-                        <div className="text-sm mt-1.5">{humanizeDetection(g.sample.summary)}</div>
-                        {(g.firstSeen || g.lastSeen) && (
-                          <div className="text-[11px] text-muted-foreground mt-1">
-                            {g.firstSeen && <>1ª vez: <span className="font-mono">{g.firstSeen}</span></>}
-                            {g.firstSeen && g.lastSeen && g.firstSeen !== g.lastSeen && " · "}
-                            {g.lastSeen && g.firstSeen !== g.lastSeen && <>última: <span className="font-mono">{g.lastSeen}</span></>}
-                          </div>
-                        )}
-                      </div>
+    <div>
+      <div className="text-xs text-muted-foreground mb-3">
+        {uniqueTotal} entidad(es) única(s) agrupadas a partir de {detections.length} indicio(s) técnico(s).
+      </div>
+      <div className="space-y-6">
+        {CATEGORY_ORDER.map((cat) => {
+          const list = groups[cat];
+          if (list.length === 0) return null;
+          const totalOccur = list.reduce((s, g) => s + g.count, 0);
+          return (
+            <div key={cat}>
+              <div className="flex items-baseline justify-between mb-2">
+                <h3 className="text-sm font-semibold">{CATEGORY_LABEL[cat]}</h3>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {list.length} entidad(es) · {totalOccur} ocurrencias
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">{CATEGORY_DESC[cat]}</p>
+              <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+                {list.map((g, i) => (
+                  <div key={g.key} className="p-4 flex items-start gap-4">
+                    <div className="h-9 w-9 rounded-lg bg-destructive/10 text-destructive grid place-items-center shrink-0 tabular-nums text-xs font-semibold">
+                      {i + 1}
                     </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </TabsContent>
-
-      <TabsContent value="dev" className="mt-4">
-        <div className="text-xs text-muted-foreground mb-3">
-          Salida cruda de MVT — un registro por cada indicio detectado ({detections.length} en total).
-        </div>
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          {detections.slice(0, 200).map((d, i) => (
-            <div key={i} className="p-4 border-b border-border last:border-0 flex items-start gap-4">
-              <div className="h-9 w-9 rounded-lg bg-destructive/10 text-destructive grid place-items-center shrink-0">
-                <AlertOctagon className="h-4 w-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-xs uppercase tracking-wider text-muted-foreground">{d.module}</span>
-                  {d.level && (
-                    <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${severityClasses(d.level)}`}>
-                      {severityLabel(d.level)}
-                    </span>
-                  )}
-                  {d.timestamp && <span className="text-xs text-muted-foreground font-mono">{d.timestamp}</span>}
-                </div>
-                <div className="font-mono text-xs mt-1 break-all whitespace-pre-wrap">{d.summary}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm truncate">{g.label}</span>
+                        <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${severityClasses(g.level)}`}>
+                          {severityLabel(g.level)}
+                        </span>
+                        <span className="text-xs text-muted-foreground tabular-nums">· {g.count}×</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Detectado en:{" "}
+                        {[...g.modules.entries()]
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 4)
+                          .map(([m, c]) => `${humanizeModule(m)} (${c})`)
+                          .join(" · ")}
+                        {g.modules.size > 4 && ` · +${g.modules.size - 4} más`}
+                      </div>
+                      <div className="text-sm mt-1.5">{humanizeDetection(g.sample.summary)}</div>
+                      {(g.firstSeen || g.lastSeen) && (
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          {g.firstSeen && <>1ª vez: <span className="font-mono">{g.firstSeen}</span></>}
+                          {g.firstSeen && g.lastSeen && g.firstSeen !== g.lastSeen && " · "}
+                          {g.lastSeen && g.firstSeen !== g.lastSeen && <>última: <span className="font-mono">{g.lastSeen}</span></>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-          {detections.length > 200 && (
-            <div className="p-3 text-xs text-muted-foreground text-center border-t border-border">
-              Mostrando 200 de {detections.length}. Descarga el PDF para el listado completo.
-            </div>
-          )}
-        </div>
-      </TabsContent>
-    </Tabs>
+          );
+        })}
+      </div>
+    </div>
   );
 }
+
+function DevDetections({ detections }: { detections: MvtDetection[] }) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground mb-3">
+        Salida cruda de MVT — un registro por cada indicio detectado ({detections.length} en total).
+      </div>
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {detections.slice(0, 200).map((d, i) => (
+          <div key={i} className="p-4 border-b border-border last:border-0 flex items-start gap-4">
+            <div className="h-9 w-9 rounded-lg bg-destructive/10 text-destructive grid place-items-center shrink-0">
+              <AlertOctagon className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">{d.module}</span>
+                {d.level && (
+                  <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${severityClasses(d.level)}`}>
+                    {severityLabel(d.level)}
+                  </span>
+                )}
+                {d.timestamp && <span className="text-xs text-muted-foreground font-mono">{d.timestamp}</span>}
+              </div>
+              <div className="font-mono text-xs mt-1 break-all whitespace-pre-wrap">{d.summary}</div>
+            </div>
+          </div>
+        ))}
+        {detections.length > 200 && (
+          <div className="p-3 text-xs text-muted-foreground text-center border-t border-border">
+            Mostrando 200 de {detections.length}. Descarga el PDF para el listado completo.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+

@@ -27,5 +27,11 @@
       "reportsHint": "Results",
       "historyHint": "Previous analyses"
     }
+  },
+  "analysis": {
+    "tabs": {
+      "user": "For you",
+      "dev": "Developer mode"
+    }
   }
 }

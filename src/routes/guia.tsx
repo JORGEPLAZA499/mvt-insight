@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { CodeBlock } from "@/components/code-block";
-import { Apple, Smartphone, ShieldCheck, AlertTriangle, ExternalLink, Download, Zap } from "lucide-react";
+import { CopyCommand } from "@/components/copy-command";
+import { Apple, Smartphone, ShieldCheck, AlertTriangle, ExternalLink, Download, Zap, Monitor, HelpCircle } from "lucide-react";
+
 
 export const Route = createFileRoute("/guia")({
   head: () => ({ meta: [

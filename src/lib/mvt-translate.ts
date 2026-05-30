@@ -182,6 +182,40 @@ export function classifyDetection(d: MvtDetection): Category {
   return "suspicious";
 }
 
+// ---------- Clave canónica para deduplicar indicios ----------
+// Devuelve una "entidad" (package, dominio, familia) y una etiqueta legible.
+export function detectionKey(d: MvtDetection): { key: string; label: string } {
+  const s = (d.summary || "").trim();
+
+  // 1) Familia conocida entre comillas: "Pegasus", "Life360"…
+  for (const fam of ALL_FAMILIES) {
+    if (s.includes(`"${fam}"`)) {
+      // intentar añadir el package si está disponible en el mismo summary
+      const pkgM = s.match(/\b([a-z][a-z0-9_]+(?:\.[a-z0-9_]+){2,})\b/i);
+      const label = pkgM ? `${fam} (${pkgM[1]})` : fam;
+      return { key: `fam:${fam.toLowerCase()}${pkgM ? `|${pkgM[1].toLowerCase()}` : ""}`, label };
+    }
+  }
+
+  // 2) Package Android (com.foo.bar) o bundle iOS
+  const pkgM = s.match(/\b([a-z][a-z0-9_]+(?:\.[a-z0-9_]+){2,})\b/i);
+  if (pkgM) return { key: `pkg:${pkgM[1].toLowerCase()}`, label: pkgM[1] };
+
+  // 3) Dominio
+  const domM = s.match(/\b((?:[a-z0-9-]+\.)+[a-z]{2,})\b/i);
+  if (domM) return { key: `dom:${domM[1].toLowerCase()}`, label: domM[1] };
+
+  // 4) Fallback: summary normalizado (sin rutas/IDs)
+  const norm = s
+    .toLowerCase()
+    .replace(/\/[^\s"']+/g, "")
+    .replace(/\b\d{3,}\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+  return { key: `raw:${norm}`, label: s.slice(0, 80) };
+}
+
 function detectFamilies(detections: MvtDetection[]): Map<string, number> {
   const counts = new Map<string, number>();
   for (const d of detections) {

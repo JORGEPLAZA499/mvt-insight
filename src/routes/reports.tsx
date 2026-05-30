@@ -39,8 +39,8 @@ function Reports() {
                   </div>
                 </div>
                 <div className="mt-4 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{a.matches} coincidencias</span>
-                  <span className={`font-semibold ${riskColor(a.risk)}`}>{riskLabel(a.risk)}</span>
+                  <span className="text-muted-foreground">{a.result?.totalDetections ?? 0} detecciones</span>
+                  <span className={`font-semibold ${riskColor(a.result?.risk)}`}>{riskLabel(a.result?.risk)}</span>
                 </div>
                 <div className="mt-4 flex gap-2">
                   <Button asChild size="sm" variant="outline" className="flex-1">

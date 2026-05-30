@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Shield, LayoutDashboard, UploadCloud, FileSearch, History, LogOut } from "lucide-react";
+import { Shield, LayoutDashboard, UploadCloud, FileSearch, History, LogOut, BookOpen } from "lucide-react";
 import { ReactNode, useEffect } from "react";
 import { getSession, setSession } from "@/lib/mock-store";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/upload", label: "Nuevo análisis", icon: UploadCloud },
+  { to: "/guia", label: "Guía MVT", icon: BookOpen },
   { to: "/reports", label: "Informes", icon: FileSearch },
   { to: "/history", label: "Historial", icon: History },
 ];

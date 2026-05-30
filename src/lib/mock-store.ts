@@ -1,16 +1,8 @@
-// Simple mock store using localStorage. Replace with real backend later.
-export type AnalysisStatus = "pending" | "processing" | "completed" | "error";
-export type RiskLevel = "low" | "medium" | "high" | "critical";
+// Almacén simple en localStorage. Guarda análisis MVT reales parseados en cliente.
+import type { MvtParsedResult, RiskLevel } from "./mvt-parser";
 
-export interface Indicator {
-  id: string;
-  type: "domain" | "process" | "file" | "event" | "ioc";
-  value: string;
-  source: string;
-  timestamp: string;
-  severity: RiskLevel;
-  description: string;
-}
+export type AnalysisStatus = "pending" | "processing" | "completed" | "error";
+export type { RiskLevel };
 
 export interface Analysis {
   id: string;
@@ -19,13 +11,11 @@ export interface Analysis {
   uploadedAt: string;
   status: AnalysisStatus;
   progress: number;
-  device?: string;
-  risk?: RiskLevel;
-  matches?: number;
-  indicators?: Indicator[];
+  result?: MvtParsedResult;
+  error?: string;
 }
 
-const KEY = "sfa.analyses.v1";
+const KEY = "sfa.analyses.v2";
 const SESSION_KEY = "sfa.session.v1";
 
 export function getAnalyses(): Analysis[] {
@@ -57,26 +47,6 @@ export function setSession(s: { email: string } | null) {
   else localStorage.removeItem(SESSION_KEY);
 }
 
-// Mock analysis result generator
-export function generateMockResult(): Pick<Analysis, "risk" | "matches" | "indicators" | "device"> {
-  const seed = Math.random();
-  const risk: RiskLevel = seed > 0.8 ? "critical" : seed > 0.55 ? "high" : seed > 0.25 ? "medium" : "low";
-  const sampleIndicators: Indicator[] = [
-    { id: "i1", type: "domain", value: "api.suspicious-c2[.]net", source: "stix2/pegasus.json", timestamp: "2025-04-12T08:34:00Z", severity: "high", description: "Conexión saliente a dominio incluido en lista de comando y control." },
-    { id: "i2", type: "process", value: "com.apple.WebKit.GPU", source: "processes.json", timestamp: "2025-04-12T08:36:11Z", severity: "medium", description: "Proceso atípico con uso elevado de memoria fuera de horario habitual." },
-    { id: "i3", type: "file", value: "/private/var/folders/.tmp/.cache-9f2a", source: "filesystem.json", timestamp: "2025-04-12T08:40:02Z", severity: "high", description: "Archivo oculto creado por proceso sin firma." },
-    { id: "i4", type: "event", value: "iMessage attachment auto-rendered", source: "shutdown.log", timestamp: "2025-04-12T08:33:55Z", severity: "critical", description: "Patrón compatible con cadena de explotación zero-click." },
-    { id: "i5", type: "ioc", value: "SHA256: 9a3f...c2", source: "iocs/amnesty.stix2", timestamp: "2025-04-12T08:41:00Z", severity: "medium", description: "Hash coincide con muestra documentada por investigadores." },
-  ];
-  const count = risk === "low" ? 1 : risk === "medium" ? 3 : risk === "high" ? 4 : 5;
-  return {
-    risk,
-    matches: count,
-    device: "iPhone 14 Pro · iOS 17.4.1",
-    indicators: sampleIndicators.slice(0, count),
-  };
-}
-
 export function riskColor(r?: RiskLevel) {
   switch (r) {
     case "critical": return "text-destructive";
@@ -88,4 +58,7 @@ export function riskColor(r?: RiskLevel) {
 }
 export function riskLabel(r?: RiskLevel) {
   return r === "critical" ? "Crítico" : r === "high" ? "Alto" : r === "medium" ? "Medio" : r === "low" ? "Bajo" : "—";
+}
+export function platformLabel(p?: string) {
+  return p === "ios" ? "iOS (mvt-ios)" : p === "android" ? "Android (mvt-android)" : "Desconocida";
 }

@@ -13,7 +13,6 @@ import { Route as UploadRouteImport } from './routes/upload'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HistoryRouteImport } from './routes/history'
-import { Route as GuiaRouteImport } from './routes/guia'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalysisIdRouteImport } from './routes/analysis.$id'
@@ -37,11 +36,6 @@ const LoginRoute = LoginRouteImport.update({
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GuiaRoute = GuiaRouteImport.update({
-  id: '/guia',
-  path: '/guia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -68,7 +62,6 @@ const ApiPublicScriptsFileRoute = ApiPublicScriptsFileRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/guia': typeof GuiaRoute
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
@@ -79,7 +72,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/guia': typeof GuiaRoute
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
@@ -91,7 +83,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/guia': typeof GuiaRoute
   '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
@@ -104,7 +95,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
-    | '/guia'
     | '/history'
     | '/login'
     | '/reports'
@@ -115,7 +105,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
-    | '/guia'
     | '/history'
     | '/login'
     | '/reports'
@@ -126,7 +115,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
-    | '/guia'
     | '/history'
     | '/login'
     | '/reports'
@@ -138,7 +126,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
-  GuiaRoute: typeof GuiaRoute
   HistoryRoute: typeof HistoryRoute
   LoginRoute: typeof LoginRoute
   ReportsRoute: typeof ReportsRoute
@@ -177,13 +164,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/guia': {
-      id: '/guia'
-      path: '/guia'
-      fullPath: '/guia'
-      preLoaderRoute: typeof GuiaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -218,7 +198,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
-  GuiaRoute: GuiaRoute,
   HistoryRoute: HistoryRoute,
   LoginRoute: LoginRoute,
   ReportsRoute: ReportsRoute,
@@ -229,3 +208,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

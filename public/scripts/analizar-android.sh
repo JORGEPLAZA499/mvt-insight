@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
 # Analizador automático Android con MVT
-# Uso: bash analizar-android.sh
+# Uso directo:  curl -fsSL <url>/scripts/analizar-android.sh | bash
+# Uso local:    bash analizar-android.sh
 set -e
+
+cat <<'BANNER'
+============================================================
+  Spyware Forensic Analyzer — Análisis Android
+  Ejecuta mvt-android check-adb sobre el dispositivo
+  conectado por USB y empaqueta los resultados en ZIP.
+============================================================
+BANNER
 
 OUT_DIR="mvt-resultados-android-$(date +%Y%m%d-%H%M%S)"
 ZIP_FILE="${OUT_DIR}.zip"
-
-echo "==> Análisis Android con MVT"
 echo
 
 # Verificar comandos

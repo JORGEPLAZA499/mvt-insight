@@ -367,6 +367,23 @@ export function generatePdfReport(a: Analysis) {
         doc.text("limpio", M.left + CW - 10, ctx.y, { align: "right" });
       }
       ctx.y += rowH + 4;
+
+      // Detalle: qué entidades concretas hay detrás del agregado
+      if (m.detected > 0) {
+        const highlights = buildModuleHighlights(r.detections, m.key, 8);
+        if (highlights.length) {
+          highlights.forEach((h) => {
+            const line = `• ${h.count}× ${h.label}${h.detail ? ` — ${h.detail}` : ""}`;
+            doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+            setText(NAVY_SOFT);
+            const lines = doc.splitTextToSize(line, CW - 24);
+            ensure(lines.length * 10 + 2);
+            doc.text(lines, M.left + 18, ctx.y);
+            ctx.y += lines.length * 10 + 1;
+          });
+          ctx.y += 4;
+        }
+      }
     });
     ctx.y += 8;
   }

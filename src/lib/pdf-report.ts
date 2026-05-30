@@ -13,6 +13,7 @@ import {
   CATEGORY_DESC,
   CROSS_CHECK_STEPS,
   detectionKey,
+  buildModuleHighlights,
   type Category,
 } from "./mvt-translate";
 

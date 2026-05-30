@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { CodeBlock } from "@/components/code-block";
-import { Apple, Smartphone, ShieldCheck, AlertTriangle, ExternalLink } from "lucide-react";
+import { Apple, Smartphone, ShieldCheck, AlertTriangle, ExternalLink, Download, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/guia")({
   head: () => ({ meta: [
@@ -32,7 +32,9 @@ function Guide() {
           </div>
         </div>
 
-        <div className="mt-6 inline-flex rounded-lg border border-border bg-card p-1">
+        <QuickStart />
+
+        <div className="mt-8 inline-flex rounded-lg border border-border bg-card p-1">
           <button
             onClick={() => setTab("ios")}
             className={`px-4 py-1.5 text-sm rounded-md flex items-center gap-2 transition-colors ${tab === "ios" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
@@ -66,6 +68,82 @@ function Guide() {
         </p>
       </div>
     </AppShell>
+  );
+}
+
+function QuickStart() {
+  const installers: { label: string; file: string }[] = [
+    { label: "macOS", file: "/scripts/instalar-mvt-macos.sh" },
+    { label: "Linux", file: "/scripts/instalar-mvt-linux.sh" },
+    { label: "Windows", file: "/scripts/instalar-mvt-windows.ps1" },
+  ];
+  const analyzers: { label: string; file: string }[] = [
+    { label: "Android (macOS/Linux)", file: "/scripts/analizar-android.sh" },
+    { label: "Android (Windows)", file: "/scripts/analizar-android.ps1" },
+    { label: "iOS (macOS/Linux)", file: "/scripts/analizar-ios.sh" },
+  ];
+
+  return (
+    <div className="mt-6 rounded-xl border border-primary/40 bg-gradient-to-br from-primary/5 to-transparent p-5">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <Zap className="h-4 w-4 text-primary" /> Modo rápido — 2 pasos
+      </div>
+      <p className="text-xs text-muted-foreground mt-1">
+        Descarga los scripts y ejecútalos en tu terminal. Automatizan toda la instalación y análisis.
+      </p>
+
+      <div className="mt-4 grid md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-xs font-medium text-foreground mb-2">1. Instalador (una sola vez)</div>
+          <div className="flex flex-col gap-1.5">
+            {installers.map((s) => (
+              <a
+                key={s.file}
+                href={s.file}
+                download
+                className="inline-flex items-center justify-between gap-2 text-xs px-3 py-2 rounded-md border border-border bg-card hover:bg-secondary transition-colors"
+              >
+                <span className="flex items-center gap-2"><Download className="h-3.5 w-3.5" /> {s.label}</span>
+                <span className="font-mono text-muted-foreground">{s.file.split("/").pop()}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs font-medium text-foreground mb-2">2. Analizador (cada vez)</div>
+          <div className="flex flex-col gap-1.5">
+            {analyzers.map((s) => (
+              <a
+                key={s.file}
+                href={s.file}
+                download
+                className="inline-flex items-center justify-between gap-2 text-xs px-3 py-2 rounded-md border border-border bg-card hover:bg-secondary transition-colors"
+              >
+                <span className="flex items-center gap-2"><Download className="h-3.5 w-3.5" /> {s.label}</span>
+                <span className="font-mono text-muted-foreground">{s.file.split("/").pop()}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 text-xs text-muted-foreground">
+        <p className="font-medium text-foreground mb-1">Cómo ejecutarlos:</p>
+        <CodeBlock code={`# macOS / Linux
+bash instalar-mvt-macos.sh      # o instalar-mvt-linux.sh
+bash analizar-android.sh        # o analizar-ios.sh
+
+# Windows (PowerShell como Administrador)
+Set-ExecutionPolicy -Scope Process Bypass -Force
+.\\instalar-mvt-windows.ps1
+.\\analizar-android.ps1`} />
+        <p className="mt-2">El script abrirá automáticamente la página de subida con tu ZIP listo.</p>
+      </div>
+
+      <p className="text-xs text-muted-foreground mt-3">
+        ¿Prefieres entender cada paso manualmente? Sigue la guía detallada abajo.
+      </p>
+    </div>
   );
 }
 

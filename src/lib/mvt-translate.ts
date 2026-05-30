@@ -201,12 +201,14 @@ export function detectionKey(d: MvtDetection): { key: string; label: string } {
   const s = (d.summary || "").trim();
 
   // 1) Familia conocida entre comillas: "Pegasus", "Life360"…
+  // Dedup SIEMPRE por familia (ignorar package del summary) para que todas las
+  // evidencias de la misma familia (receivers, certificados, packages…) se sumen
+  // a un único grupo.
   for (const fam of ALL_FAMILIES) {
     if (s.includes(`"${fam}"`)) {
-      // intentar añadir el package si está disponible en el mismo summary
       const pkgM = s.match(/\b([a-z][a-z0-9_]+(?:\.[a-z0-9_]+){2,})\b/i);
       const label = pkgM ? `${fam} (${pkgM[1]})` : fam;
-      return { key: `fam:${fam.toLowerCase()}${pkgM ? `|${pkgM[1].toLowerCase()}` : ""}`, label };
+      return { key: `fam:${fam.toLowerCase()}`, label };
     }
   }
 

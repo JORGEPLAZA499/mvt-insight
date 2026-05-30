@@ -17,6 +17,7 @@ import { Route as GuiaRouteImport } from './routes/guia'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalysisIdRouteImport } from './routes/analysis.$id'
+import { Route as ApiPublicScriptsFileRouteImport } from './routes/api/public/scripts/$file'
 
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
@@ -58,6 +59,11 @@ const AnalysisIdRoute = AnalysisIdRouteImport.update({
   path: '/analysis/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicScriptsFileRoute = ApiPublicScriptsFileRouteImport.update({
+  id: '/api/public/scripts/$file',
+  path: '/api/public/scripts/$file',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/upload'
     | '/analysis/$id'
+    | '/api/public/scripts/$file'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/upload'
     | '/analysis/$id'
+    | '/api/public/scripts/$file'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/upload'
     | '/analysis/$id'
+    | '/api/public/scripts/$file'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   UploadRoute: typeof UploadRoute
   AnalysisIdRoute: typeof AnalysisIdRoute
+  ApiPublicScriptsFileRoute: typeof ApiPublicScriptsFileRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalysisIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/scripts/$file': {
+      id: '/api/public/scripts/$file'
+      path: '/api/public/scripts/$file'
+      fullPath: '/api/public/scripts/$file'
+      preLoaderRoute: typeof ApiPublicScriptsFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,7 +224,18 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   UploadRoute: UploadRoute,
   AnalysisIdRoute: AnalysisIdRoute,
+  ApiPublicScriptsFileRoute: ApiPublicScriptsFileRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

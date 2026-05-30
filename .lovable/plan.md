@@ -1,48 +1,27 @@
-# Unificar indicios repetidos en el PDF
+# Pestañas globales en la página de resultado de análisis
 
 ## Problema
-En el informe, `com.life360.android.safetymapd` aparece como crítico decenas de veces. El agrupado actual (`pdf-report.ts` líneas 431-441) solo colapsa indicios **consecutivos** con `module + summary + level` idénticos. Cuando MVT reporta el mismo paquete en varios módulos (permissions, packages, processes…) o con summaries ligeramente distintos (rutas, timestamps), cada variante genera una tarjeta nueva y satura el PDF.
+Las pestañas "Para ti" / "Modo desarrollador" hoy viven solo dentro de la sección "Indicadores detectados" (componente `DetectionsTabs`). Si el análisis no tiene detecciones, no aparecen. El usuario las quiere visibles siempre, abarcando toda la página de resultado.
 
-## Objetivo
-Una sola tarjeta por "entidad" (paquete, dominio o indicador) dentro de cada categoría, con:
-- contador total de apariciones (`42×`)
-- lista compacta de los módulos donde apareció
-- severidad = la más alta encontrada
-- una línea de evidencia representativa (la más larga / informativa)
+## Cambios en `src/routes/analysis.$id.tsx`
 
-## Cambios
+1. **Reestructurar `AnalysisPage`** para que, tras la cabecera (título del archivo, botones Eliminar / Descargar PDF y la tarjeta de "Nivel de riesgo estimado"), todo el resto del contenido viva dentro de un `<Tabs defaultValue="user">` global.
 
-### 1. `src/lib/mvt-translate.ts`
-Añadir helper `detectionKey(d)` que devuelva la "entidad" canónica del indicio:
-- Si el summary contiene un package id (`com.xxx.yyy`) → ese package.
-- Si contiene un dominio → ese dominio.
-- Si contiene una familia conocida (Pegasus, Predator, Life360…) → nombre de familia.
-- Fallback: `summary` normalizado (minúsculas, sin rutas/IDs numéricos).
+2. **Pestaña "Para ti" (usuario no experto)** — vista resumida y amigable:
+   - Stats principales (Módulos, Entradas, Detecciones, Plataforma).
+   - Resumen narrativo: "Se encontraron N indicadores agrupados en X categorías" o mensaje verde tranquilizador si 0.
+   - Detecciones agrupadas por categoría con descripción humana (`CATEGORY_LABEL` + `CATEGORY_DESC` + `humanizeDetection`), sin paths técnicos ni JSON. Reutilizar el contenido actual del `TabsContent value="user"` de `DetectionsTabs`.
 
-### 2. `src/lib/pdf-report.ts` (sección 05, líneas ~422-441)
-Reemplazar el agrupado consecutivo por un agrupado global dentro de cada categoría:
+3. **Pestaña "Modo desarrollador"** — vista técnica completa:
+   - Tabla de "Módulos MVT analizados" (la actual, líneas 104-126).
+   - Lista cruda de detecciones con `detectionKey`, severidad, módulo y datos técnicos (el contenido actual del `TabsContent value="dev"` de `DetectionsTabs`).
+   - "Línea de tiempo" (la actual, líneas 138-154).
 
-```text
-groupsMap: key -> {
-  key, label, level (max), count, modules: Set<string>,
-  sampleSummary, sampleDetection
-}
-```
+4. **Eliminar `DetectionsTabs`** ya que su contenido se distribuye entre las dos pestañas globales. Conservar los imports de `Tabs`, `User`, `Code2`.
 
-Render de cada tarjeta:
-- Título: `N. <label>  ·  <count>×`
-- Chip de severidad máxima
-- Línea "Detectado en: módulo A, módulo B, módulo C (+3 más)"
-- Evidencia representativa (1 línea, no por cada ocurrencia)
-- Si `count > 1` y hay rangos de timestamps en `sampleDetection`, añadir "Primera/última vez vista" cuando estén disponibles
+5. **Internacionalización**: usar `t()` de `useTranslation` para los labels "Para ti" y "Modo desarrollador" (claves `analysis.tabs.user` y `analysis.tabs.dev` en `es.json` / `en.json`).
 
-### 3. Distribución por categoría
-Recalcular `distLine` con el número de **entidades únicas** además del total bruto: `12 stalkerware (1 entidad única)`.
+6. **Enlace "Volver al dashboard"** y la cabecera quedan FUERA de las pestañas, siempre visibles.
 
-## Resultado esperado
-Las ~40 entradas de Life360 colapsan en una sola tarjeta:
-> **1. Life360 (com.life360.android.safetymapd)  ·  42×**  
-> Detectado en: packages, permissions, processes, dumpsys_appops  
-> Evidencia: `com.life360.android.safetymapd matched indicator 'stalkerware-life360'`
-
-Sin cambios en el parser ni en la lógica de detección — solo presentación.
+## Resultado
+El usuario verá siempre dos pestañas grandes bajo la tarjeta de riesgo: una con lenguaje claro para no técnicos y otra con todos los detalles forenses. Funciona haya o no detecciones.

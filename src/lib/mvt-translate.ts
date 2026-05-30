@@ -40,14 +40,27 @@ const PERMISSION_LABELS: Record<string, string> = {
   RECORD_AUDIO: "grabar audio del micrófono",
   CAMERA: "usar la cámara",
   ACCESS_FINE_LOCATION: "acceder a tu ubicación precisa",
+  ACCESS_COARSE_LOCATION: "acceder a tu ubicación aproximada",
   ACCESS_BACKGROUND_LOCATION: "acceder a tu ubicación en segundo plano",
   READ_CONTACTS: "leer tus contactos",
   READ_CALL_LOG: "leer tu historial de llamadas",
   PROCESS_OUTGOING_CALLS: "interceptar llamadas salientes",
   WRITE_SETTINGS: "modificar ajustes del sistema",
+  READ_MEDIA_VISUAL_USER_SELECTED: "ver fotos/vídeos que selecciones",
+  READ_MEDIA_IMAGES: "leer todas tus fotos",
+  READ_MEDIA_AUDIO: "leer tus archivos de audio",
+  READ_MEDIA_VIDEO: "leer todos tus vídeos",
+  POST_NOTIFICATIONS: "enviarte notificaciones",
+  MANAGE_EXTERNAL_STORAGE: "gestionar todo el almacenamiento del dispositivo",
+  READ_PHONE_STATE: "leer el estado del teléfono y tu número",
+  READ_EXTERNAL_STORAGE: "leer archivos del almacenamiento",
+  WRITE_EXTERNAL_STORAGE: "escribir en el almacenamiento",
+  GET_ACCOUNTS: "ver las cuentas configuradas en el dispositivo",
+  READ_CALENDAR: "leer tu calendario",
+  WRITE_CALENDAR: "modificar tu calendario",
 };
 
-function humanPermission(p: string): string {
+export function humanPermission(p: string): string {
   return PERMISSION_LABELS[p] ?? `usar el permiso sensible '${p}'`;
 }
 

@@ -1,13 +1,18 @@
 import jsPDF from "jspdf";
 import { Analysis, riskLabel, platformLabel } from "./mock-store";
-import type { MvtDetection, MvtParsedResult, RiskLevel } from "./mvt-parser";
+import type { RiskLevel } from "./mvt-parser";
 import {
   humanizeModule,
   humanizeDetection,
   severityLabel,
   explainSeverity,
-  riskNarrative,
   nextSteps,
+  classifyDetection,
+  buildVerdict,
+  CATEGORY_LABEL,
+  CATEGORY_DESC,
+  CROSS_CHECK_STEPS,
+  type Category,
 } from "./mvt-translate";
 
 // ---------- Paleta ----------
@@ -207,12 +212,41 @@ export function generatePdfReport(a: Analysis) {
 
   // 01 · Resumen ejecutivo
   sectionTitle("01", "Resumen ejecutivo");
+
+  // Bloque de VEREDICTO en una frase
+  if (r) {
+    const v = buildVerdict(r);
+    const verdictColor: [number, number, number] =
+      v.level === "mercenary" ? SEV_COLOR.critical
+      : v.level === "stalkerware" ? SEV_COLOR.high
+      : v.level === "suspicious" ? SEV_COLOR.medium
+      : [22, 163, 74];
+    ensure(110);
+    setFill(verdictColor);
+    doc.roundedRect(M.left, ctx.y, CW, 8, 2, 2, "F");
+    ctx.y += 14;
+    setFill(SOFT_BG);
+    doc.roundedRect(M.left, ctx.y, CW, 86, 4, 4, "F");
+    setStroke(LINE); doc.setLineWidth(0.5);
+    doc.roundedRect(M.left, ctx.y, CW, 86, 4, 4, "S");
+    setText(MUTED);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+    doc.text("VEREDICTO", M.left + 16, ctx.y + 18);
+    setText(verdictColor);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    const hLines = doc.splitTextToSize(v.headline, CW - 32);
+    doc.text(hLines, M.left + 16, ctx.y + 36);
+    setText(INK);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    const dLines = doc.splitTextToSize(v.detail, CW - 32);
+    doc.text(dLines, M.left + 16, ctx.y + 36 + hLines.length * 15);
+    ctx.y += 86 + 14;
+  }
+
   const baseSummary = r
     ? `Se ha analizado el archivo "${a.fileName}". La plataforma detectada es ${platformLabel(r.platform)}. Se procesaron ${r.modules.length} módulos MVT con un total de ${r.totalEntries.toLocaleString()} entradas y se identificaron ${r.totalDetections} indicios técnicos. El nivel de riesgo estimado es ${riskLabel(r.risk)}.`
     : `Análisis de "${a.fileName}". Estado actual: ${a.status}.`;
   paragraph(baseSummary);
-  ctx.y += 4;
-  if (r) paragraph(riskNarrative(r), { color: NAVY_SOFT });
   ctx.y += 8;
 
   // Panel KPIs
@@ -335,106 +369,121 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += 8;
   }
 
-  // 05 · Indicios detectados
+  // 05 · Indicios detectados — agrupados por CATEGORÍA y luego severidad
   if (r && r.detections.length) {
     sectionTitle("05", `Indicios detectados (${r.detections.length})`);
 
+    // Clasificar por categoría
+    const byCat: Record<Category, typeof r.detections> = {
+      mercenary: [], stalkerware: [], suspicious: [],
+    };
+    for (const d of r.detections) byCat[classifyDetection(d)].push(d);
+
+    // Resumen de distribución por categoría
+    const distLine = (["mercenary", "stalkerware", "suspicious"] as Category[])
+      .filter((c) => byCat[c].length)
+      .map((c) => `${byCat[c].length} ${CATEGORY_LABEL[c].toLowerCase()}`)
+      .join(" · ");
+    if (distLine) {
+      paragraph(`Distribución: ${distLine}.`, { size: 9, color: MUTED, italic: true });
+      ctx.y += 6;
+    }
+
+    const CAT_COLOR: Record<Category, [number, number, number]> = {
+      mercenary: SEV_COLOR.critical,
+      stalkerware: SEV_COLOR.high,
+      suspicious: SEV_COLOR.medium,
+    };
+
     const sevRank: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-    const sorted = [...r.detections].sort((a, b) => {
-      const ra = sevRank[a.level ?? "high"] ?? 4;
-      const rb = sevRank[b.level ?? "high"] ?? 4;
-      if (ra !== rb) return ra - rb;
-      if (a.module !== b.module) return a.module.localeCompare(b.module);
-      return a.summary.localeCompare(b.summary);
-    });
+    const MAX_PER_CAT = 80;
 
-    type Group = { module: string; summary: string; level: string; count: number };
-    const groups: Group[] = [];
-    for (const d of sorted) {
-      const last = groups[groups.length - 1];
-      const lvl = d.level ?? "high";
-      if (last && last.module === d.module && last.summary === d.summary && last.level === lvl) {
-        last.count += 1;
-      } else {
-        groups.push({ module: d.module, summary: d.summary, level: lvl, count: 1 });
+    (["mercenary", "stalkerware", "suspicious"] as Category[]).forEach((cat) => {
+      const list = byCat[cat];
+      if (!list.length) return;
+
+      // Cabecera de categoría
+      ensure(60);
+      ctx.y += 6;
+      const [cr, cg, cb] = CAT_COLOR[cat];
+      setFill([cr, cg, cb]);
+      doc.roundedRect(M.left, ctx.y, CW, 4, 1, 1, "F");
+      ctx.y += 12;
+      setText([cr, cg, cb]);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.text(`${CATEGORY_LABEL[cat]}  ·  ${list.length}`, M.left, ctx.y);
+      ctx.y += 14;
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      const descLines = doc.splitTextToSize(CATEGORY_DESC[cat], CW);
+      doc.text(descLines, M.left, ctx.y);
+      ctx.y += descLines.length * 12 + 6;
+
+      // Ordenar y agrupar consecutivos
+      const sorted = [...list].sort((a, b) => {
+        const ra = sevRank[a.level ?? "high"] ?? 4;
+        const rb = sevRank[b.level ?? "high"] ?? 4;
+        if (ra !== rb) return ra - rb;
+        if (a.module !== b.module) return a.module.localeCompare(b.module);
+        return a.summary.localeCompare(b.summary);
+      });
+
+      type Group = { module: string; summary: string; level: string; count: number };
+      const groups: Group[] = [];
+      for (const d of sorted) {
+        const last = groups[groups.length - 1];
+        const lvl = d.level ?? "high";
+        if (last && last.module === d.module && last.summary === d.summary && last.level === lvl) {
+          last.count += 1;
+        } else {
+          groups.push({ module: d.module, summary: d.summary, level: lvl, count: 1 });
+        }
       }
-    }
 
-    // Contadores por severidad
-    const counters: Record<string, number> = {};
-    for (const d of sorted) counters[d.level ?? "high"] = (counters[d.level ?? "high"] ?? 0) + 1;
-    const summaryLine = (["critical", "high", "medium", "low"] as const)
-      .filter((l) => counters[l]).map((l) => `${counters[l]} ${severityLabel(l).toLowerCase()}`).join(" · ");
-    if (summaryLine) {
-      paragraph(`Distribución: ${summaryLine}.`, { size: 9, color: MUTED, italic: true });
-      ctx.y += 4;
-    }
+      groups.slice(0, MAX_PER_CAT).forEach((g, idx) => {
+        const human = humanizeDetection(g.summary);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+        const humanLines = doc.splitTextToSize(human, CW - 24);
+        doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+        const techLines = doc.splitTextToSize(`Evidencia original: ${g.summary}`, CW - 24);
+        const cardH2 = 28 + humanLines.length * 12 + techLines.length * 10 + 10;
+        ensure(cardH2 + 6);
 
-    const MAX = 200;
-    let lastLevel: string | null = null;
+        setFill(SOFT_BG);
+        doc.roundedRect(M.left, ctx.y - 4, CW, cardH2, 4, 4, "F");
+        const [sr, sg, sb] = SEV_COLOR[g.level] ?? MUTED;
+        setFill([sr, sg, sb]);
+        doc.rect(M.left, ctx.y - 4, 3, cardH2, "F");
 
-    groups.slice(0, MAX).forEach((g, idx) => {
-      // Subtítulo por severidad
-      if (g.level !== lastLevel) {
-        ensure(28);
-        ctx.y += 6;
-        setText(SEV_COLOR[g.level] ?? INK);
+        let yy = ctx.y + 12;
+        const chipW = severityChip(g.level, M.left + 12, yy);
+        setText(INK);
         doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-        doc.text(`Severidad ${severityLabel(g.level as RiskLevel)}`.toUpperCase(), M.left, ctx.y);
-        setStroke(SEV_COLOR[g.level] ?? LINE); doc.setLineWidth(1);
-        doc.line(M.left, ctx.y + 4, W - M.right, ctx.y + 4);
-        ctx.y += 14;
-        lastLevel = g.level;
+        const head = `${idx + 1}. ${humanizeModule(g.module)}${g.count > 1 ? `  ·  ${g.count}×` : ""}`;
+        doc.text(head, M.left + 12 + chipW + 6, yy);
+        yy += 14;
+        setText(MUTED);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+        doc.text(`Módulo MVT: ${g.module}`, M.left + 12, yy);
+        yy += 10;
+
+        setText(INK);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+        doc.text(humanLines, M.left + 12, yy);
+        yy += humanLines.length * 12 + 2;
+
+        setText(MUTED);
+        doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+        doc.text(techLines, M.left + 12, yy);
+
+        ctx.y += cardH2 + 6;
+      });
+
+      if (groups.length > MAX_PER_CAT) {
+        ensure(20);
+        paragraph(`… y ${groups.length - MAX_PER_CAT} grupos más en esta categoría.`, { italic: true, color: MUTED, size: 9 });
       }
-
-      // Card por indicio
-      const human = humanizeDetection(g.summary);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-      const humanLines = doc.splitTextToSize(human, CW - 24);
-      doc.setFont("helvetica", "italic"); doc.setFontSize(8);
-      const techLines = doc.splitTextToSize(`Evidencia original: ${g.summary}`, CW - 24);
-      const cardH2 = 28 + humanLines.length * 12 + techLines.length * 10 + 10;
-      ensure(cardH2 + 6);
-
-      // Fondo card
-      setFill(SOFT_BG);
-      doc.roundedRect(M.left, ctx.y - 4, CW, cardH2, 4, 4, "F");
-      // Barra lateral con color de severidad
-      const [sr, sg, sb] = SEV_COLOR[g.level] ?? MUTED;
-      setFill([sr, sg, sb]);
-      doc.rect(M.left, ctx.y - 4, 3, cardH2, "F");
-
-      // Cabecera card
-      let yy = ctx.y + 12;
-      const chipW = severityChip(g.level, M.left + 12, yy);
-      setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-      const head = `${idx + 1}. ${humanizeModule(g.module)}${g.count > 1 ? `  ·  ${g.count}×` : ""}`;
-      doc.text(head, M.left + 12 + chipW + 6, yy);
-      yy += 14;
-      setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-      doc.text(`Módulo MVT: ${g.module}`, M.left + 12, yy);
-      yy += 10;
-
-      // Explicación humana
-      setText(INK);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-      doc.text(humanLines, M.left + 12, yy);
-      yy += humanLines.length * 12 + 2;
-
-      // Evidencia técnica
-      setText(MUTED);
-      doc.setFont("helvetica", "italic"); doc.setFontSize(8);
-      doc.text(techLines, M.left + 12, yy);
-
-      ctx.y += cardH2 + 6;
     });
-
-    if (groups.length > MAX) {
-      ensure(20);
-      paragraph(`… y ${groups.length - MAX} grupos de indicios más (consultar dashboard).`, { italic: true, color: MUTED, size: 9 });
-    }
   }
 
   // 06 · Próximos pasos
@@ -457,11 +506,37 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += Math.max(20, lines.length * 13 + 4);
   });
 
-  // 07 · Aviso legal
-  sectionTitle("07", "Aviso legal y metodología");
+  // 07 · Verificación cruzada
+  sectionTitle("07", "Cómo verificar este resultado");
+  paragraph("MVT solo detecta amenazas con firma conocida. Si tienes una sospecha real, no te quedes solo con este informe: contrasta el resultado con la herramienta oficial y, si es necesario, con un equipo especializado.", { size: 10 });
+  ctx.y += 6;
+  CROSS_CHECK_STEPS.forEach((step) => {
+    const titleLines = doc.splitTextToSize(step.title, CW - 24);
+    const detailLines = doc.splitTextToSize(step.detail, CW - 24);
+    const boxH = 14 + titleLines.length * 13 + detailLines.length * 12 + 12;
+    ensure(boxH + 6);
+    setFill(SOFT_BG);
+    doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
+    setFill(ACCENT);
+    doc.rect(M.left, ctx.y, 3, boxH, "F");
+    let yy = ctx.y + 18;
+    setText(NAVY);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    doc.text(titleLines, M.left + 14, yy);
+    yy += titleLines.length * 13 + 2;
+    setText(INK);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.text(detailLines, M.left + 14, yy);
+    ctx.y += boxH + 6;
+  });
+
+  // 08 · Aviso legal
+  sectionTitle("08", "Aviso legal y metodología");
   paragraph("Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.", { size: 9 });
   ctx.y += 2;
-  paragraph("Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La interpretación final corresponde a un analista cualificado.", { size: 9 });
+  paragraph("Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.", { size: 9 });
+  ctx.y += 2;
+  paragraph("La ausencia de indicios no garantiza que el dispositivo esté limpio: MVT solo cubre amenazas con firma pública conocida. Spyware nuevo o muestras privadas pueden no detectarse.", { size: 9 });
   ctx.y += 2;
   paragraph("Los archivos se procesan localmente en el navegador. No se transmite información del dispositivo analizado a terceros. El análisis se realiza con el consentimiento del propietario del dispositivo.", { size: 9, italic: true, color: MUTED });
 

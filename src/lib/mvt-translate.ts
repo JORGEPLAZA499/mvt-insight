@@ -40,14 +40,27 @@ const PERMISSION_LABELS: Record<string, string> = {
   RECORD_AUDIO: "grabar audio del micrófono",
   CAMERA: "usar la cámara",
   ACCESS_FINE_LOCATION: "acceder a tu ubicación precisa",
+  ACCESS_COARSE_LOCATION: "acceder a tu ubicación aproximada",
   ACCESS_BACKGROUND_LOCATION: "acceder a tu ubicación en segundo plano",
   READ_CONTACTS: "leer tus contactos",
   READ_CALL_LOG: "leer tu historial de llamadas",
   PROCESS_OUTGOING_CALLS: "interceptar llamadas salientes",
   WRITE_SETTINGS: "modificar ajustes del sistema",
+  READ_MEDIA_VISUAL_USER_SELECTED: "ver fotos/vídeos que selecciones",
+  READ_MEDIA_IMAGES: "leer todas tus fotos",
+  READ_MEDIA_AUDIO: "leer tus archivos de audio",
+  READ_MEDIA_VIDEO: "leer todos tus vídeos",
+  POST_NOTIFICATIONS: "enviarte notificaciones",
+  MANAGE_EXTERNAL_STORAGE: "gestionar todo el almacenamiento del dispositivo",
+  READ_PHONE_STATE: "leer el estado del teléfono y tu número",
+  READ_EXTERNAL_STORAGE: "leer archivos del almacenamiento",
+  WRITE_EXTERNAL_STORAGE: "escribir en el almacenamiento",
+  GET_ACCOUNTS: "ver las cuentas configuradas en el dispositivo",
+  READ_CALENDAR: "leer tu calendario",
+  WRITE_CALENDAR: "modificar tu calendario",
 };
 
-function humanPermission(p: string): string {
+export function humanPermission(p: string): string {
   return PERMISSION_LABELS[p] ?? `usar el permiso sensible '${p}'`;
 }
 
@@ -188,12 +201,14 @@ export function detectionKey(d: MvtDetection): { key: string; label: string } {
   const s = (d.summary || "").trim();
 
   // 1) Familia conocida entre comillas: "Pegasus", "Life360"…
+  // Dedup SIEMPRE por familia (ignorar package del summary) para que todas las
+  // evidencias de la misma familia (receivers, certificados, packages…) se sumen
+  // a un único grupo.
   for (const fam of ALL_FAMILIES) {
     if (s.includes(`"${fam}"`)) {
-      // intentar añadir el package si está disponible en el mismo summary
       const pkgM = s.match(/\b([a-z][a-z0-9_]+(?:\.[a-z0-9_]+){2,})\b/i);
       const label = pkgM ? `${fam} (${pkgM[1]})` : fam;
-      return { key: `fam:${fam.toLowerCase()}${pkgM ? `|${pkgM[1].toLowerCase()}` : ""}`, label };
+      return { key: `fam:${fam.toLowerCase()}`, label };
     }
   }
 
@@ -332,4 +347,96 @@ export function nextSteps(result: MvtParsedResult): string[] {
     "Revisa periódicamente qué apps tienen permisos sensibles (ubicación, SMS, accesibilidad).",
     "Repite el análisis cada cierto tiempo para detectar cambios.",
   ];
+}
+
+// ---------- Highlights por módulo ("qué" hay detrás de cada cifra) ----------
+
+export interface ModuleHighlight {
+  label: string;
+  count: number;
+  detail?: string;
+}
+
+export function buildModuleHighlights(
+  detections: MvtDetection[],
+  moduleKey: string,
+  limit = 8,
+): ModuleHighlight[] {
+  const items = detections.filter((d) => d.module === moduleKey);
+  if (items.length === 0) return [];
+
+  const buckets = new Map<string, ModuleHighlight>();
+  const push = (label: string, detail?: string) => {
+    const key = `${label}|${detail ?? ""}`;
+    const cur = buckets.get(key);
+    if (cur) cur.count += 1;
+    else buckets.set(key, { label, count: 1, detail });
+  };
+
+  for (const d of items) {
+    const s = (d.summary || "").trim();
+
+    if (moduleKey === "dumpsys_appops") {
+      const m = s.match(/^Package '([^']+)' had risky permission '([^']+)' set to '([^']+)'/i);
+      if (m) {
+        const verb = /access|allow/i.test(m[3]) ? "puede" : "ya no puede";
+        push(m[1], `${verb} ${humanPermission(m[2])}`);
+        continue;
+      }
+      const m2 = s.match(/^Risky package '([^']+)' had '([^']+)' permission set to '([^']+)'/i);
+      if (m2) {
+        const verb = /access|allow/i.test(m2[3]) ? "puede" : "ya no puede";
+        push(m2[1], `${verb} ${humanPermission(m2[2])}`);
+        continue;
+      }
+    }
+
+    if (moduleKey === "dumpsys_battery_daily") {
+      const down = s.match(/^Detected downgrade of package ([^\s]+) from vers (\d+) to vers (\d+)/i);
+      if (down) { push(down[1], `downgrade ${down[2]} → ${down[3]}`); continue; }
+      const uni = s.match(/^Detected uninstall of package ([^\s]+)/i);
+      if (uni) { push(uni[1], "desinstalación detectada"); continue; }
+    }
+
+    if (moduleKey === "aqf_packages" || moduleKey === "dumpsys_packages") {
+      const adb = s.match(/^Found a non-system package installed via adb[^:]*:\s*"([^"]+)"/i);
+      if (adb) { push(adb[1], "instalada por USB/ADB"); continue; }
+      const br = s.match(/^Found a package installed via a browser[^:]*:\s*"([^"]+)"/i);
+      if (br) { push(br[1], "instalada desde el navegador"); continue; }
+      const via = s.match(/^Found a package installed via (?:an? )?(.+?):\s*"([^"]+)"/i);
+      if (via) { push(via[2], `instalada vía ${via[1]}`); continue; }
+      const cert = s.match(/^Found a known suspicious app certf?ificate.+from "([^"]+)"/i);
+      if (cert) { push(cert[1], "certificado de firma sospechoso"); continue; }
+      const sus = s.match(/^Found a known suspicious app with ID "([^"]+)" matching indicators from "([^"]+)"/i);
+      if (sus) { push(sus[1], `coincide con ${sus[2]}`); continue; }
+    }
+
+    if (moduleKey === "dumpsys_receivers") {
+      const m = s.match(/^Found a known suspicious receiver with name\s+"([^"\/]+)\/([^"]+)" matching indicators from "([^"]+)"/i);
+      if (m) {
+        const comp = m[2].split(".").pop() || m[2];
+        push(m[1], `receptor "${comp}" (${m[3]})`);
+        continue;
+      }
+    }
+
+    if (moduleKey === "dumpsys_activities") {
+      const m = s.match(/^Found .*?"([^"\/]+)\/([^"]+)".*from "([^"]+)"/i);
+      if (m) {
+        const comp = m[2].split(".").pop() || m[2];
+        push(m[1], `actividad "${comp}" (${m[3]})`);
+        continue;
+      }
+    }
+
+    if (moduleKey === "tombstones") {
+      const m = s.match(/crash in process '([^']+)'.*at (.+)$/i);
+      if (m) { push(m[1], `fallo el ${m[2]}`); continue; }
+    }
+
+    const { label } = detectionKey(d);
+    push(label, humanizeDetection(s).slice(0, 120));
+  }
+
+  return [...buckets.values()].sort((a, b) => b.count - a.count).slice(0, limit);
 }

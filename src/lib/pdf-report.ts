@@ -8,6 +8,12 @@ import {
   explainSeverity,
   riskNarrative,
   nextSteps,
+  classifyDetection,
+  buildVerdict,
+  CATEGORY_LABEL,
+  CATEGORY_DESC,
+  CROSS_CHECK_STEPS,
+  type Category,
 } from "./mvt-translate";
 
 // ---------- Paleta ----------

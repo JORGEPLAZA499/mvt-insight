@@ -87,33 +87,61 @@ try {
   Write-Host "    Es interactivo: responde a sus preguntas en la consola."
   Write-Host "    Acepta cualquier prompt que aparezca en el movil."
   Write-Host ""
+  Write-Host "============================================================" -ForegroundColor Yellow
+  Write-Host "  Se va a abrir OTRA ventana titulada 'Estado del analisis'" -ForegroundColor Yellow
+  Write-Host "  NO LA CIERRES. Te muestra que el proceso sigue trabajando." -ForegroundColor Yellow
+  Write-Host "  Si esta ventana parece parada (sobre todo en 'Collecting"   -ForegroundColor Yellow
+  Write-Host "  information on installed apps'), mira la otra ventana."     -ForegroundColor Yellow
+  Write-Host "============================================================" -ForegroundColor Yellow
+  Write-Host ""
+
+  # Escribir el mini-script de estado y lanzarlo en una ventana aparte
+  $statusScript = Join-Path $outDir "_status.ps1"
+  $statusBody = @'
+param($watchDir)
+$Host.UI.RawUI.WindowTitle = "Estado del analisis MVT - NO CERRAR"
+$frames = '|','/','-','\'
+$phaseHints = @('bugreport','dumpsys','logs','settings','services','processes','packages','backup')
+$i = 0
+$start = Get-Date
+while ($true) {
+  $e = (Get-Date) - $start
+  $files = @(Get-ChildItem -Path $watchDir -Recurse -File -ErrorAction SilentlyContinue)
+  $count = $files.Count
+  $mb = if ($count -gt 0) { [math]::Round((($files | Measure-Object Length -Sum).Sum / 1MB), 1) } else { 0 }
+  $last = $files | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  $lastName = if ($last) { $last.FullName.Substring($watchDir.Length).TrimStart('\','/') } else { '(aun nada)' }
+  $phase = '(arrancando)'
+  foreach ($p in $phaseHints) { if ($lastName -match $p) { $phase = $p; break } }
+  Clear-Host
+  Write-Host ''
+  Write-Host ("  {0}  Analizando movil... NO CIERRES esta ventana" -f $frames[$i % 4]) -ForegroundColor Cyan
+  Write-Host ''
+  Write-Host ('     Tiempo:    {0:D2}:{1:D2}:{2:D2}' -f [int]$e.TotalHours, $e.Minutes, $e.Seconds)
+  Write-Host ('     Ficheros:  {0}' -f $count)
+  Write-Host ('     Tamano:    {0} MB' -f $mb)
+  Write-Host ('     Fase:      {0}' -f $phase)
+  Write-Host ('     Ultimo:    {0}' -f $lastName) -ForegroundColor DarkGray
+  Write-Host ''
+  Write-Host '  Responde a las preguntas en la OTRA ventana.' -ForegroundColor Yellow
+  Write-Host '  Esto puede tardar 5-15 minutos. Es NORMAL.' -ForegroundColor Yellow
+  $i++
+  Start-Sleep -Milliseconds 250
+}
+'@
+  Set-Content -Path $statusScript -Value $statusBody -Encoding UTF8
+
+  $statusProc = $null
+  try {
+    $statusProc = Start-Process -PassThru powershell -ArgumentList @(
+      "-NoProfile","-ExecutionPolicy","Bypass","-File",$statusScript,$acqDir
+    )
+  } catch {
+    Write-Host "AVISO: no se pudo abrir la ventana de estado ($_). Continuo sin ella." -ForegroundColor Yellow
+  }
+
   $prevEAP = $ErrorActionPreference; $ErrorActionPreference = "Continue"
   $aqfStart = Get-Date
-
-  # Heartbeat en background: cada 15s imprime tiempo, ficheros y tamano de acquisition/
-  $hbJob = Start-Job -ArgumentList $acqDir, $aqfStart -ScriptBlock {
-    param($watchDir, $startTime)
-    $phaseHints = @('bugreport','dumpsys','logs','settings','services','processes','packages')
-    while ($true) {
-      Start-Sleep -Seconds 15
-      try {
-        $elapsed = (Get-Date) - $startTime
-        $mm = [int]$elapsed.TotalMinutes
-        $ss = $elapsed.Seconds
-        $files = @(Get-ChildItem -Path $watchDir -Recurse -File -ErrorAction SilentlyContinue)
-        $count = $files.Count
-        $sizeMB = if ($count -gt 0) { [math]::Round((($files | Measure-Object Length -Sum).Sum / 1MB), 1) } else { 0 }
-        $last = $files | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        $lastName = if ($last) { $last.FullName.Substring($watchDir.Length).TrimStart('\','/') } else { "(sin ficheros aun)" }
-        $phase = ""
-        foreach ($p in $phaseHints) {
-          if ($lastName -match $p) { $phase = " | fase: $p"; break }
-        }
-        $line = ("[heartbeat {0:D2}:{1:D2}] acquisition: {2} ficheros, {3} MB{4} - ultimo: {5}" -f $mm, $ss, $count, $sizeMB, $phase, $lastName)
-        [Console]::WriteLine($line)
-      } catch {}
-    }
-  }
 
   Push-Location $acqDir
   try {
@@ -122,11 +150,10 @@ try {
   } finally {
     Pop-Location
     $ErrorActionPreference = $prevEAP
-    try {
-      Stop-Job $hbJob -ErrorAction SilentlyContinue | Out-Null
-      Receive-Job $hbJob -ErrorAction SilentlyContinue | Out-Host
-      Remove-Job $hbJob -Force -ErrorAction SilentlyContinue | Out-Null
-    } catch {}
+    if ($statusProc) {
+      try { Stop-Process -Id $statusProc.Id -Force -ErrorAction SilentlyContinue } catch {}
+    }
+    Remove-Item $statusScript -Force -ErrorAction SilentlyContinue
     $aqfElapsed = (Get-Date) - $aqfStart
     Write-Host ("AndroidQF tiempo total: {0:D2}:{1:D2}" -f [int]$aqfElapsed.TotalMinutes, $aqfElapsed.Seconds) -ForegroundColor Cyan
   }

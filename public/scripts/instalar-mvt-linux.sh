@@ -1,10 +1,26 @@
 #!/usr/bin/env bash
 # Instalador automático de MVT (Mobile Verification Toolkit) para Linux (Debian/Ubuntu)
-# Uso: bash instalar-mvt-linux.sh
+# Uso directo:  curl -fsSL <url>/scripts/instalar-mvt-linux.sh | bash
+# Uso local:    bash instalar-mvt-linux.sh
 set -e
 
-echo "==> Instalador MVT para Linux (Debian/Ubuntu)"
+cat <<'BANNER'
+============================================================
+  Spyware Forensic Analyzer — Instalador MVT (Linux)
+  Se instalará (vía apt + pip): python3-pip, libusb-1.0-0,
+  adb, sqlite3, zip y mvt. Requerirá sudo.
+============================================================
+BANNER
+
+if [ -t 0 ]; then TTY=/dev/stdin; else TTY=/dev/tty; fi
+printf "¿Continuar? [s/N]: "
+read -r ANSWER < "$TTY" || ANSWER=""
+case "$ANSWER" in
+  s|S|si|SI|Si|y|Y|yes|YES) ;;
+  *) echo "Cancelado."; exit 0 ;;
+esac
 echo
+
 
 if ! command -v apt >/dev/null 2>&1; then
   echo "❌ Este script asume Debian/Ubuntu (apt). Para otras distros instala manualmente: python3-pip, libusb-1.0-0, adb."

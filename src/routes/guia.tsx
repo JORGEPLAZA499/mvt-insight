@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { CodeBlock } from "@/components/code-block";
-import { Apple, Smartphone, ShieldCheck, AlertTriangle, ExternalLink, Download, Zap } from "lucide-react";
+import { CopyCommand } from "@/components/copy-command";
+import { Apple, Smartphone, ShieldCheck, AlertTriangle, ExternalLink, Download, Zap, Monitor, HelpCircle } from "lucide-react";
+
 
 export const Route = createFileRoute("/guia")({
   head: () => ({ meta: [
@@ -71,81 +73,170 @@ function Guide() {
   );
 }
 
+type OS = "mac" | "linux" | "windows";
+type Device = "android" | "ios";
+
+function detectOS(): OS {
+  if (typeof navigator === "undefined") return "mac";
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes("mac")) return "mac";
+  if (ua.includes("win")) return "windows";
+  return "linux";
+}
+
 function QuickStart() {
-  const installers: { label: string; file: string }[] = [
-    { label: "macOS", file: "/scripts/instalar-mvt-macos.sh" },
-    { label: "Linux", file: "/scripts/instalar-mvt-linux.sh" },
-    { label: "Windows", file: "/scripts/instalar-mvt-windows.ps1" },
+  const [os, setOs] = useState<OS>("mac");
+  const [device, setDevice] = useState<Device>("android");
+  const [origin, setOrigin] = useState("");
+  const [showTerminalHelp, setShowTerminalHelp] = useState(false);
+
+  useEffect(() => {
+    setOs(detectOS());
+    setOrigin(window.location.origin);
+  }, []);
+
+  const base = origin || "https://tu-dominio.lovable.app";
+
+  const installCmd: Record<OS, string> = {
+    mac: `curl -fsSL ${base}/scripts/instalar-mvt-macos.sh | bash`,
+    linux: `curl -fsSL ${base}/scripts/instalar-mvt-linux.sh | bash`,
+    windows: `irm ${base}/scripts/instalar-mvt-windows.ps1 | iex`,
+  };
+
+  const analyzeCmd: Record<Device, Record<OS, string>> = {
+    android: {
+      mac: `curl -fsSL ${base}/scripts/analizar-android.sh | bash`,
+      linux: `curl -fsSL ${base}/scripts/analizar-android.sh | bash`,
+      windows: `irm ${base}/scripts/analizar-android.ps1 | iex`,
+    },
+    ios: {
+      mac: `curl -fsSL ${base}/scripts/analizar-ios.sh | bash`,
+      linux: `curl -fsSL ${base}/scripts/analizar-ios.sh | bash`,
+      windows: `# iOS no soportado en Windows. Usa un Mac con Finder.`,
+    },
+  };
+
+  const osOptions: { id: OS; label: string; icon: React.ReactNode }[] = [
+    { id: "mac", label: "Mac", icon: <Apple className="h-4 w-4" /> },
+    { id: "linux", label: "Linux", icon: <Monitor className="h-4 w-4" /> },
+    { id: "windows", label: "Windows", icon: <Monitor className="h-4 w-4" /> },
   ];
-  const analyzers: { label: string; file: string }[] = [
-    { label: "Android (macOS/Linux)", file: "/scripts/analizar-android.sh" },
-    { label: "Android (Windows)", file: "/scripts/analizar-android.ps1" },
-    { label: "iOS (macOS/Linux)", file: "/scripts/analizar-ios.sh" },
-  ];
+
+  const terminalHelp: Record<OS, string> = {
+    mac: "Pulsa Cmd (⌘) + Espacio, escribe «terminal» y pulsa Enter. Se abrirá una ventana con texto. Eso es la Terminal.",
+    linux: "Pulsa Ctrl + Alt + T. Si no funciona, busca «Terminal» en el menú de aplicaciones.",
+    windows: "Pulsa la tecla Windows, escribe «powershell», haz clic derecho sobre «Windows PowerShell» y elige «Ejecutar como administrador».",
+  };
 
   return (
     <div className="mt-6 rounded-xl border border-primary/40 bg-gradient-to-br from-primary/5 to-transparent p-5">
       <div className="flex items-center gap-2 text-sm font-semibold">
-        <Zap className="h-4 w-4 text-primary" /> Modo rápido — 2 pasos
+        <Zap className="h-4 w-4 text-primary" /> Modo rápido — 2 comandos
       </div>
       <p className="text-xs text-muted-foreground mt-1">
-        Descarga los scripts y ejecútalos en tu terminal. Automatizan toda la instalación y análisis.
+        Abre la Terminal, copia y pega los comandos. No necesitas descargar nada manualmente.
       </p>
 
-      <div className="mt-4 grid md:grid-cols-2 gap-4">
-        <div>
-          <div className="text-xs font-medium text-foreground mb-2">1. Instalador (una sola vez)</div>
-          <div className="flex flex-col gap-1.5">
-            {installers.map((s) => (
-              <a
-                key={s.file}
-                href={s.file}
-                download
-                className="inline-flex items-center justify-between gap-2 text-xs px-3 py-2 rounded-md border border-border bg-card hover:bg-secondary transition-colors"
-              >
-                <span className="flex items-center gap-2"><Download className="h-3.5 w-3.5" /> {s.label}</span>
-                <span className="font-mono text-muted-foreground">{s.file.split("/").pop()}</span>
-              </a>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="text-xs font-medium text-foreground mb-2">2. Analizador (cada vez)</div>
-          <div className="flex flex-col gap-1.5">
-            {analyzers.map((s) => (
-              <a
-                key={s.file}
-                href={s.file}
-                download
-                className="inline-flex items-center justify-between gap-2 text-xs px-3 py-2 rounded-md border border-border bg-card hover:bg-secondary transition-colors"
-              >
-                <span className="flex items-center gap-2"><Download className="h-3.5 w-3.5" /> {s.label}</span>
-                <span className="font-mono text-muted-foreground">{s.file.split("/").pop()}</span>
-              </a>
-            ))}
-          </div>
-        </div>
+      {/* Selector de sistema operativo */}
+      <div className="mt-4 inline-flex rounded-lg border border-border bg-card p-1">
+        {osOptions.map((o) => (
+          <button
+            key={o.id}
+            onClick={() => setOs(o.id)}
+            className={`px-3 py-1.5 text-xs rounded-md flex items-center gap-1.5 transition-colors ${
+              os === o.id ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {o.icon} {o.label}
+          </button>
+        ))}
       </div>
 
-      <div className="mt-4 text-xs text-muted-foreground">
-        <p className="font-medium text-foreground mb-1">Cómo ejecutarlos:</p>
-        <CodeBlock code={`# macOS / Linux
-bash instalar-mvt-macos.sh      # o instalar-mvt-linux.sh
-bash analizar-android.sh        # o analizar-ios.sh
+      {/* Ayuda terminal */}
+      <button
+        type="button"
+        onClick={() => setShowTerminalHelp(!showTerminalHelp)}
+        className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+      >
+        <HelpCircle className="h-3.5 w-3.5" />
+        ¿Cómo abro la Terminal?
+      </button>
+      {showTerminalHelp && (
+        <div className="mt-2 text-xs text-muted-foreground p-3 rounded-md bg-card border border-border">
+          {terminalHelp[os]}
+        </div>
+      )}
 
-# Windows (PowerShell como Administrador)
-Set-ExecutionPolicy -Scope Process Bypass -Force
-.\\instalar-mvt-windows.ps1
-.\\analizar-android.ps1`} />
-        <p className="mt-2">El script abrirá automáticamente la página de subida con tu ZIP listo.</p>
+      {/* Paso 1 */}
+      <div className="mt-5">
+        <div className="text-sm font-semibold text-foreground mb-1">
+          Paso 1 — Instalar MVT <span className="text-xs font-normal text-muted-foreground">(solo la primera vez, ~5 min)</span>
+        </div>
+        <p className="text-xs text-muted-foreground mb-2">
+          Pega esto en la Terminal y pulsa Enter. El script te pedirá confirmación antes de instalar nada.
+        </p>
+        <CopyCommand command={installCmd[os]} label={`Terminal · ${osOptions.find(o => o.id === os)?.label}`} />
       </div>
 
-      <p className="text-xs text-muted-foreground mt-3">
+      {/* Paso 2 */}
+      <div className="mt-5">
+        <div className="text-sm font-semibold text-foreground mb-1">
+          Paso 2 — Analizar el dispositivo
+        </div>
+        <div className="inline-flex rounded-lg border border-border bg-card p-1 mb-2">
+          <button
+            onClick={() => setDevice("android")}
+            className={`px-3 py-1 text-xs rounded-md flex items-center gap-1.5 transition-colors ${
+              device === "android" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Smartphone className="h-3.5 w-3.5" /> Android
+          </button>
+          <button
+            onClick={() => setDevice("ios")}
+            className={`px-3 py-1 text-xs rounded-md flex items-center gap-1.5 transition-colors ${
+              device === "ios" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Apple className="h-3.5 w-3.5" /> iOS
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mb-2">
+          {device === "android"
+            ? "Antes: activa Depuración USB en el móvil y conéctalo por cable."
+            : "Antes: crea un backup cifrado del iPhone con Finder/iTunes y guarda la contraseña."}
+        </p>
+        <CopyCommand command={analyzeCmd[device][os]} label={`Terminal · ${osOptions.find(o => o.id === os)?.label}`} />
+      </div>
+
+      {/* Paso 3 */}
+      <div className="mt-5 text-xs text-muted-foreground">
+        <span className="font-semibold text-foreground">Paso 3 — Subir resultados:</span>{" "}
+        cuando termine, el script abrirá automáticamente la página de subida con tu ZIP listo.
+      </div>
+
+      {/* Fallback descarga manual */}
+      <details className="mt-4 text-xs">
+        <summary className="cursor-pointer text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5">
+          <Download className="h-3.5 w-3.5" /> ¿El comando falla? Descargar el script manualmente
+        </summary>
+        <div className="mt-2 flex flex-col gap-1.5 pl-5">
+          <a href={`/scripts/instalar-mvt-${os === "mac" ? "macos.sh" : os === "linux" ? "linux.sh" : "windows.ps1"}`} download className="text-primary hover:underline">
+            Descargar instalador
+          </a>
+          <a href={`/scripts/analizar-${device}${os === "windows" ? ".ps1" : ".sh"}`} download className="text-primary hover:underline">
+            Descargar analizador
+          </a>
+        </div>
+      </details>
+
+      <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/60">
         ¿Prefieres entender cada paso manualmente? Sigue la guía detallada abajo.
       </p>
     </div>
   );
 }
+
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (

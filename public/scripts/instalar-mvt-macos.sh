@@ -1,10 +1,26 @@
 #!/usr/bin/env bash
 # Instalador automático de MVT (Mobile Verification Toolkit) para macOS
-# Uso: bash instalar-mvt-macos.sh
+# Uso directo:  curl -fsSL <url>/scripts/instalar-mvt-macos.sh | bash
+# Uso local:    bash instalar-mvt-macos.sh
 set -e
 
-echo "==> Instalador MVT para macOS"
+cat <<'BANNER'
+============================================================
+  Spyware Forensic Analyzer — Instalador MVT (macOS)
+  Se instalará: Homebrew, Python 3.11, libusb,
+  android-platform-tools y mvt (vía pip --user).
+============================================================
+BANNER
+
+if [ -t 0 ]; then TTY=/dev/stdin; else TTY=/dev/tty; fi
+printf "¿Continuar? [s/N]: "
+read -r ANSWER < "$TTY" || ANSWER=""
+case "$ANSWER" in
+  s|S|si|SI|Si|y|Y|yes|YES) ;;
+  *) echo "Cancelado."; exit 0 ;;
+esac
 echo
+
 
 # 1. Homebrew
 if ! command -v brew >/dev/null 2>&1; then

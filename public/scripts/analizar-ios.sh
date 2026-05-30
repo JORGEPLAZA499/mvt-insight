@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 # Analizador automático iOS con MVT (a partir de un backup ya creado en Finder/iTunes)
-# Uso: bash analizar-ios.sh
+# Uso directo:  curl -fsSL <url>/scripts/analizar-ios.sh | bash
+# Uso local:    bash analizar-ios.sh
 set -e
 
-echo "==> Análisis iOS con MVT"
+cat <<'BANNER'
+============================================================
+  Spyware Forensic Analyzer — Análisis iOS
+  Descifra un backup de Finder/iTunes y ejecuta
+  mvt-ios check-backup, empaquetando los resultados.
+============================================================
+BANNER
 echo
 
 for cmd in mvt-ios zip; do

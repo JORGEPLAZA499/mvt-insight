@@ -1,128 +1,93 @@
-
-# Plan: Conectar la plataforma con MVT (resultados reales)
+# Simplificación de la guía: instalación de 1 línea
 
 ## Objetivo
 
-Sustituir el flujo simulado por uno donde el usuario:
-1. Sigue una guía dentro de la plataforma para ejecutar MVT en su computador (iOS y Android).
-2. Sube la carpeta de resultados (ZIP) o archivos JSON sueltos generados por MVT.
-3. La plataforma parsea esos JSON, detecta indicadores de compromiso (IOCs) reales y muestra un informe.
+Reducir la experiencia del usuario a **abrir la Terminal y pegar 2 comandos**. Eliminar la descarga manual de archivos, `chmod`, navegación por carpetas, etc.
 
-No se ejecuta MVT en el servidor. MVT corre **siempre en la máquina del usuario** (única forma técnica y legalmente correcta).
+## Cambios
 
----
+### 1. Scripts (`public/scripts/`)
+Revisar los 6 scripts existentes para que sean seguros al ejecutarse vía `curl | bash` / `irm | iex`:
+- Añadir cabecera con banner identificativo ("Instalador MVT — Plataforma X")
+- Añadir confirmación interactiva (`read -p "¿Continuar? (s/n)"`) antes de instalar dependencias, por transparencia
+- Asegurar que el script falla limpiamente si falta algo (`set -e`)
+- Verificar que la descarga de `analizar-*.sh` no requiere permisos adicionales (el script de análisis también se puede ejecutar vía pipe)
 
-## 1. Guía integrada para generar resultados MVT
+### 2. Página `/guia` (`src/routes/guia.tsx`)
 
-Nueva ruta `/guia` con dos pestañas: **iOS** y **Android**. Cada una con pasos numerados, bloques de código copiables y avisos legales/seguridad.
+Reemplazar la sección actual de "Modo rápido — descargar scripts" por una nueva con esta estructura:
 
-### iOS (mvt-ios)
-1. Hacer backup cifrado del iPhone con Finder (macOS) o iTunes (Windows). Conectar por cable USB. Marcar "Cifrar copia de seguridad local" y guardar contraseña.
-2. Instalar dependencias:
-   ```
-   pip install mvt
-   ```
-3. Localizar el backup (rutas típicas en macOS/Windows).
-4. Descifrar:
-   ```
-   mvt-ios decrypt-backup -p <password> -d ./backup_descifrado <ruta_backup>
-   ```
-5. Analizar:
-   ```
-   mvt-ios check-backup -o ./resultados ./backup_descifrado
-   ```
-6. Comprimir `./resultados` en un ZIP y subirlo a la plataforma.
+**a) Selector de SO** (tabs en la parte superior):
+- 🍎 Mac
+- 🐧 Linux  
+- 🪟 Windows
 
-### Android (mvt-android)
-1. Activar Opciones de desarrollador y Depuración USB. Conectar por cable. Autorizar el equipo.
-2. Instalar dependencias (`adb`, `libusb`, `pip install mvt`).
-3. Análisis vía ADB:
-   ```
-   mvt-android check-adb -o ./resultados
-   ```
-   o sobre un backup:
-   ```
-   mvt-android check-backup -o ./resultados backup.ab
-   ```
-4. Comprimir y subir.
+Solo se muestra el contenido del SO seleccionado (detectar SO por defecto con `navigator.userAgent` / `navigator.platform`).
 
-Cada bloque tiene botón **Copiar**. Sección de troubleshooting (backup no detectado, contraseña incorrecta, adb no autorizado).
+**b) Bloque "¿Cómo abro la Terminal?"** (acordeón plegable):
+- Mac: Cmd+Espacio → escribir "terminal" → Enter
+- Linux: Ctrl+Alt+T
+- Windows: Tecla Windows → escribir "powershell" → click derecho → "Ejecutar como administrador"
 
----
+**c) Paso 1 — Instalar MVT** (una sola tarjeta con):
+- Título grande: "Paso 1: Instalar MVT (solo la primera vez, ~5 min)"
+- Bloque de código con **un solo comando** y botón "Copiar" muy visible:
+  - Mac: `curl -fsSL {ORIGIN}/scripts/instalar-mvt-macos.sh | bash`
+  - Linux: `curl -fsSL {ORIGIN}/scripts/instalar-mvt-linux.sh | bash`
+  - Windows: `irm {ORIGIN}/scripts/instalar-mvt-windows.ps1 | iex`
+- La URL `{ORIGIN}` se genera dinámicamente con `window.location.origin` para que funcione en preview y en producción
 
-## 2. Uploader real (reemplaza el mock)
+**d) Paso 2 — Analizar el dispositivo** (segunda tarjeta):
+- Título: "Paso 2: Conecta el móvil y analiza"
+- Sub-selector Android / iOS
+- Instrucciones cortas de preparación (activar depuración USB / hacer backup cifrado) con icono de móvil
+- Bloque de código con comando único:
+  - Android Mac/Linux: `curl -fsSL {ORIGIN}/scripts/analizar-android.sh | bash`
+  - Android Windows: `irm {ORIGIN}/scripts/analizar-android.ps1 | iex`
+  - iOS Mac: `curl -fsSL {ORIGIN}/scripts/analizar-ios.sh | bash`
+- Botón "Copiar" igual de visible
 
-Refactor de `/upload`:
-- Acepta **ZIP** (carpeta `resultados/` comprimida) o múltiples archivos `.json` sueltos.
-- Drag & drop + selector. Validación de tamaño (límite 50 MB).
-- Detecta tipo (iOS / Android) según los nombres de archivo presentes.
-- Muestra preview de los módulos detectados antes de procesar.
+**e) Paso 3 — Subir resultados** (tercera tarjeta):
+- Nota de que el script abre automáticamente la página de upload
+- Botón directo a `/upload` por si no se abrió solo
 
----
+**f) Sección "¿Algo falló?"** (acordeón al final):
+- "command not found" → no se ejecutó el instalador
+- "permission denied" → ejecutar con `sudo` (Mac/Linux) o como admin (Windows)
+- "device not found" → activar depuración USB
+- "execution policy" (Windows) → el comando `irm | iex` ya lo bypasea
 
-## 3. Parser de resultados MVT (cliente)
+### 3. Componente reutilizable
+- Crear `src/components/copy-command.tsx`: bloque grande con el comando, fondo oscuro, botón "Copiar" prominente con feedback ("¡Copiado!"), y opcionalmente etiqueta del SO. Reemplaza el uso de `CodeBlock` en estos pasos críticos para que el botón sea mucho más visible.
 
-Todo el parsing ocurre en el navegador — los JSON nunca salen del dispositivo del usuario salvo que se decida lo contrario. Más privado, más simple, sin backend.
-
-Módulo nuevo `src/lib/mvt-parser.ts`:
-- Descomprime ZIP con `jszip`.
-- Identifica módulos MVT conocidos por nombre de archivo (iOS: `sms.json`, `safari_history.json`, `webkit_resource_load_statistics.json`, `calls.json`, `contacts.json`, `idstatuscache.json`, `interactionc.json`, `locationd.json`, `manifest.json`, etc. Android: `dumpsys_*.json`, `packages.json`, `processes.json`, `sms.json`, `settings.json`, etc.).
-- Reconoce los archivos `*_detected.json` que MVT genera cuando hay match contra IOCs.
-- Extrae para cada módulo: número de entradas, timestamp rango, IOCs detectados.
-- Calcula un **riesgo agregado** basado en cantidad y tipo de detecciones (alto si hay `*_detected.json` con entradas; medio si hay anomalías; bajo si solo evidencia limpia).
-
----
-
-## 4. Dashboard de análisis real
-
-Refactor de `/analysis/$id`:
-- Resumen: dispositivo (iOS/Android), nº de módulos analizados, nº de IOCs detectados, nivel de riesgo.
-- Tarjetas por módulo con conteo y badge de detección.
-- Tabla detallada de cada `*_detected.json` (timestamp, indicador, fuente).
-- Gráfico de actividad temporal (eventos por día) si hay datos con timestamp.
-- Botón "Generar PDF" usando `src/lib/pdf-report.ts` ya existente, alimentado con datos reales.
-
----
-
-## 5. Almacenamiento
-
-Por defecto, **todo en memoria del navegador** (`src/lib/mock-store.ts` se renombra a `analysis-store.ts` y guarda objetos parseados en sessionStorage). Los JSON crudos no se persisten — solo el resumen.
-
-Esto evita necesidad de Lovable Cloud por ahora. Si más adelante el usuario quiere guardar histórico entre sesiones o compartir informes, añadimos Cloud (auth + tabla `analyses` + storage). Lo dejo fuera de este plan para mantenerlo enfocado.
-
----
-
-## 6. Aviso legal reforzado
-
-Banner persistente en `/upload` y `/guia`:
-- La plataforma no instala spyware, no accede a dispositivos, no realiza vigilancia.
-- El usuario debe ser propietario del dispositivo analizado o tener autorización.
-- Los archivos se procesan localmente en el navegador.
-
----
+### 4. Modo detallado
+- Mantener el toggle "¿Prefieres entender cada paso manualmente?" → muestra la guía técnica original sin cambios.
 
 ## Detalles técnicos
 
-- **Nuevas dependencias**: `jszip` (descompresión ZIP en navegador).
-- **Archivos nuevos**:
-  - `src/routes/guia.tsx` (con tabs iOS/Android)
-  - `src/lib/mvt-parser.ts`
-  - `src/lib/mvt-modules.ts` (catálogo de módulos conocidos)
-  - `src/components/code-block.tsx` (bloque copiable)
-- **Archivos modificados**:
-  - `src/routes/upload.tsx` (uploader real)
-  - `src/routes/analysis.$id.tsx` (dashboard con datos reales)
-  - `src/lib/mock-store.ts` → `analysis-store.ts`
-  - `src/lib/pdf-report.ts` (acepta datos reales)
-  - `src/components/app-shell.tsx` (añadir link a /guia)
+- Detección de SO inicial: 
+  ```ts
+  const ua = navigator.userAgent.toLowerCase();
+  const defaultOS = ua.includes('mac') ? 'mac' : ua.includes('win') ? 'windows' : 'linux';
+  ```
+- URL base: `const origin = typeof window !== 'undefined' ? window.location.origin : '';` (manejar SSR devolviendo placeholder y rellenando en cliente con `useEffect` o renderizado condicional).
+- `CopyCommand` usa `navigator.clipboard.writeText()` con fallback a `document.execCommand('copy')`.
+- Mantener los archivos descargables como fallback (por si el `curl|bash` falla en algún entorno corporativo con firewall): pequeño link "¿No funciona? Descarga el script manualmente".
 
----
+## Archivos afectados
 
-## Lo que NO hace este plan (intencionalmente)
+- `src/components/copy-command.tsx` (nuevo)
+- `src/routes/guia.tsx` (refactor del componente `QuickStart`)
+- `public/scripts/instalar-mvt-macos.sh` (banner + confirmación)
+- `public/scripts/instalar-mvt-linux.sh` (banner + confirmación)
+- `public/scripts/instalar-mvt-windows.ps1` (banner + confirmación)
+- `public/scripts/analizar-android.sh` (banner)
+- `public/scripts/analizar-android.ps1` (banner)
+- `public/scripts/analizar-ios.sh` (banner)
 
-- No ejecuta MVT en el servidor.
-- No accede al teléfono desde el navegador (WebUSB no sirve para esto).
-- No persiste informes entre sesiones (se puede añadir luego con Lovable Cloud).
-- No valida criptográficamente la autenticidad de los JSON (MVT no los firma).
+## Lo que NO se cambia
 
-Si apruebas el plan, lo implemento en este orden: parser → uploader → dashboard real → guía → aviso legal.
+- Lógica del parser MVT (`src/lib/mvt-parser.ts`, `src/lib/mvt-modules.ts`)
+- Flujo de subida en `/upload`
+- Página de resultados / dashboard
+- Modo detallado de la guía

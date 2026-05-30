@@ -1,12 +1,18 @@
 # Analizador automático Android con MVT (Windows)
-# Uso: .\analizar-android.ps1
+# Uso directo:  irm <url>/scripts/analizar-android.ps1 | iex
+# Uso local:    .\analizar-android.ps1
 $ErrorActionPreference = "Stop"
+
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "  Spyware Forensic Analyzer - Analisis Android"               -ForegroundColor Cyan
+Write-Host "  Ejecuta mvt-android check-adb y empaqueta resultados."     -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host ""
 
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $outDir = "mvt-resultados-android-$timestamp"
 $zipFile = "$outDir.zip"
-
-Write-Host "==> Análisis Android con MVT" -ForegroundColor Cyan
 
 foreach ($cmd in @("adb","mvt-android")) {
   if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {

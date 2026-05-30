@@ -75,27 +75,67 @@ export function generatePdfReport(a: Analysis) {
     y += 8;
   }
 
-  // Detections
+  // Detections — group consecutive duplicates and sort by severity
   if (r && r.detections.length) {
     ensure(40);
     doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.setTextColor(20, 28, 48);
     doc.text(`Indicadores detectados (${r.detections.length})`, 40, y); y += 16;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
 
-    r.detections.slice(0, 80).forEach((d, idx) => {
-      ensure(40);
+    const sevRank: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+    const sevLabel: Record<string, string> = { critical: "CRÍTICO", high: "ALTO", medium: "MEDIO", low: "BAJO" };
+    const sevColor: Record<string, [number, number, number]> = {
+      critical: [185, 28, 28],
+      high: [194, 87, 24],
+      medium: [161, 122, 0],
+      low: [90, 90, 90],
+    };
+
+    const sorted = [...r.detections].sort((a, b) => {
+      const ra = sevRank[a.level ?? "high"] ?? 4;
+      const rb = sevRank[b.level ?? "high"] ?? 4;
+      if (ra !== rb) return ra - rb;
+      if (a.module !== b.module) return a.module.localeCompare(b.module);
+      return a.summary.localeCompare(b.summary);
+    });
+
+    type Group = { module: string; summary: string; level: string; count: number; timestamp?: string };
+    const groups: Group[] = [];
+    for (const d of sorted) {
+      const last = groups[groups.length - 1];
+      const lvl = d.level ?? "high";
+      if (last && last.module === d.module && last.summary === d.summary && last.level === lvl) {
+        last.count += 1;
+      } else {
+        groups.push({ module: d.module, summary: d.summary, level: lvl, count: 1, timestamp: d.timestamp });
+      }
+    }
+
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    const MAX = 150;
+    groups.slice(0, MAX).forEach((g, idx) => {
+      ensure(36);
+      const [cr, cg, cb] = sevColor[g.level] ?? [60, 60, 60];
       doc.setFont("helvetica", "bold");
-      doc.text(`${idx + 1}. [${d.module}]${d.timestamp ? ` ${d.timestamp}` : ""}`, 40, y);
+      doc.setTextColor(cr, cg, cb);
+      const tag = `[${sevLabel[g.level] ?? g.level.toUpperCase()}]`;
+      doc.text(tag, 40, y);
+      const tagW = doc.getTextWidth(tag) + 6;
+      doc.setTextColor(20, 28, 48);
+      const head = `${idx + 1}. ${g.module}${g.count > 1 ? `  (${g.count}×)` : ""}${g.timestamp ? `  ${g.timestamp}` : ""}`;
+      doc.text(head, 40 + tagW, y);
       y += 12;
-      doc.setFont("courier", "normal");
-      const lines = doc.splitTextToSize(d.summary, W - 80);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(40, 40, 40);
+      const lines = doc.splitTextToSize(g.summary, W - 80);
       doc.text(lines, 40, y);
       y += lines.length * 11 + 6;
     });
-    if (r.detections.length > 80) {
+    doc.setTextColor(20, 28, 48);
+    if (groups.length > MAX) {
       ensure(16);
       doc.setFont("helvetica", "italic");
-      doc.text(`… y ${r.detections.length - 80} detecciones más (ver dashboard).`, 40, y);
+      doc.text(`… y ${groups.length - MAX} grupos de detecciones más (ver dashboard).`, 40, y);
       y += 14;
     }
   }

@@ -7,6 +7,7 @@ export interface MvtDetection {
   module: string;
   timestamp?: string;
   summary: string;
+  level?: RiskLevel;
   raw: any;
 }
 
@@ -60,13 +61,39 @@ function pickTimestamp(obj: any): string | undefined {
 }
 
 function summarize(obj: any): string {
-  if (!obj || typeof obj !== "object") return String(obj);
-  const cand = ["matched_indicator", "indicator", "value", "url", "domain", "process", "package_name", "name", "path", "service"];
+  if (obj == null) return "(sin datos)";
+  if (typeof obj !== "object") return String(obj);
+  // 1) Prefer human-readable message (MVT detections include rich context here).
+  if (typeof obj.message === "string" && obj.message.trim()) return obj.message.trim();
+  if (typeof obj.description === "string" && obj.description.trim()) return obj.description.trim();
+  // 2) Construct a short phrase from identifying fields.
+  const cand = ["matched_indicator", "indicator", "package_name", "name", "process", "service", "domain", "url", "path", "value"];
+  const parts: string[] = [];
   for (const k of cand) {
-    if (typeof obj[k] === "string") return obj[k];
-    if (obj[k] && typeof obj[k] === "object" && typeof obj[k].value === "string") return obj[k].value;
+    const v = obj[k];
+    if (typeof v === "string" && v.trim()) { parts.push(v.trim()); break; }
+    if (v && typeof v === "object" && typeof v.value === "string") { parts.push(v.value); break; }
   }
-  try { return JSON.stringify(obj).slice(0, 160); } catch { return "(evidencia)"; }
+  if (parts.length) return parts.join(" ");
+  // 3) Last resort: stringify, truncated at word boundary.
+  try {
+    const s = JSON.stringify(obj);
+    if (s.length <= 200) return s;
+    const cut = s.lastIndexOf(" ", 200);
+    return (cut > 80 ? s.slice(0, cut) : s.slice(0, 200)) + "…";
+  } catch { return "(evidencia)"; }
+}
+
+function pickLevel(obj: any, fallback: RiskLevel): RiskLevel {
+  const v = obj && typeof obj === "object" ? obj.level ?? obj.severity : undefined;
+  if (typeof v === "string") {
+    const l = v.toLowerCase();
+    if (l === "low" || l === "medium" || l === "high" || l === "critical") return l;
+    if (l === "info" || l === "informational") return "low";
+    if (l === "warn" || l === "warning") return "medium";
+    if (l === "error") return "high";
+  }
+  return fallback;
 }
 
 async function readFileEntries(files: File[]): Promise<{ name: string; text: string }[]> {
@@ -120,8 +147,9 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
       for (const it of items.slice(0, 200)) {
         const ts = pickTimestamp(it);
         const summary = summarize(it);
-        detections.push({ module: meta.key, timestamp: ts, summary, raw: it });
-        if (ts) timeline.push({ timestamp: ts, module: existing.label, summary, severity: "high" });
+        const level = pickLevel(it, "high");
+        detections.push({ module: meta.key, timestamp: ts, summary, level, raw: it });
+        if (ts) timeline.push({ timestamp: ts, module: existing.label, summary, severity: level });
       }
     } else {
       existing.entries += count;

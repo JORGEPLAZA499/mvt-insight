@@ -1,18 +1,24 @@
-## Cambios propuestos
+## Mejoras al informe PDF y al resumen de detecciones
 
-### Problema
-El usuario quiere subir un ZIP de resultados MVT que pesa más de 50 MB (generado por AndroidQF, típicamente 100–300 MB). Actualmente la web tiene un límite de 50 MB que lo bloquea.
+### 1) `src/lib/mvt-parser.ts`
+- Reescribir `summarize()` con esta prioridad:
+  1. Si `it.message` es string → usarlo completo (sin truncar a 160).
+  2. Si no, construir: `"<package_name|name|path|process>"` cuando exista.
+  3. Último recurso: `JSON.stringify(it)` truncado a ~200 caracteres por palabra completa.
+- Rellenar `level` en cada `MvtDetection` a partir de `it.level` (low/medium/high/critical) o, si no existe, `"high"` cuando venga del array `_detected`.
 
-### Solución
-Subir el límite de archivo de 50 MB a 500 MB. El procesado sigue siendo 100% local en el navegador (no se sube a ningún servidor), por lo que no hay implicaciones de seguridad ni de backend.
+### 2) `src/lib/pdf-report.ts`
+- Antes de pintar, **ordenar** detecciones por severidad desc (critical→high→medium→low→undef).
+- **Agrupar consecutivas** con el mismo `module + summary` en una sola línea con sufijo `(N×)`.
+- Cada entrada se pinta como:
+  `N. [SEVERIDAD] módulo — resumen (N×)` con color por severidad (rojo crítico, naranja alto, amarillo medio, gris bajo).
+- Texto del resumen en `helvetica` (no `courier`) para mejor lectura.
+- Subir el tope visible de 80 a 150 grupos.
 
-### Archivo a modificar
-- `src/routes/upload.tsx`
+### Sin cambios
+- Parser ZIP, cálculo de riesgo, conteo de módulos, dashboard, rutas ni estilos globales.
 
-### Cambios específicos
-1. **Constante `MAX_SIZE`** (línea 31): cambiar de `50 * 1024 * 1024` a `500 * 1024 * 1024`.
-2. **Mensaje de error** (línea 431): actualizar el texto de `"supera el límite de 50 MB"` a `"supera el límite de 500 MB"`.
-3. **Texto de la UI** (línea 494): actualizar `"máx. 50 MB"` a `"máx. 500 MB"`.
-
-### Resultado esperado
-La pantalla de upload aceptará archivos de hasta 500 MB, suficiente para acquisitions completas de AndroidQF.
+### Resultado
+- Ruido de Life360 se colapsa: `[ALTO] dumpsys_receivers — com.life360.android.safetymapd (23×)`.
+- Entradas con `message` salen completas y legibles.
+- Informe más corto, ordenado por gravedad y con severidad visible.

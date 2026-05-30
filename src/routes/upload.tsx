@@ -1,8 +1,22 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, FileArchive, ShieldCheck, X, BookOpen, AlertTriangle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { CopyCommand } from "@/components/copy-command";
+import {
+  UploadCloud,
+  FileArchive,
+  ShieldCheck,
+  X,
+  AlertTriangle,
+  ArrowLeft,
+  Smartphone,
+  Apple,
+  Monitor,
+  HelpCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 
@@ -11,9 +25,250 @@ export const Route = createFileRoute("/upload")({
   component: Upload,
 });
 
-const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_SIZE = 50 * 1024 * 1024;
+const SCRIPT_BASE_URL = "https://mvt-insight.lovable.app";
+const TOTAL_STEPS = 4;
+
+type Device = "android" | "ios";
+type OS = "mac" | "linux" | "windows";
+
+function detectOS(): OS {
+  if (typeof navigator === "undefined") return "mac";
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes("mac")) return "mac";
+  if (ua.includes("win")) return "windows";
+  return "linux";
+}
 
 function Upload() {
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [device, setDevice] = useState<Device | null>(null);
+  const [os, setOs] = useState<OS>("mac");
+
+  useEffect(() => {
+    setOs(detectOS());
+  }, []);
+
+  const next = () => setStep((s) => (Math.min(TOTAL_STEPS, s + 1) as 1 | 2 | 3 | 4));
+  const back = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4));
+
+  return (
+    <AppShell>
+      <div className="p-6 md:p-10 max-w-2xl mx-auto">
+        <header className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={back}
+              disabled={step === 1}
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground disabled:opacity-0 disabled:cursor-default transition-opacity"
+            >
+              <ArrowLeft className="h-4 w-4" /> Atrás
+            </button>
+            <span className="text-xs text-muted-foreground">
+              Paso {step} de {TOTAL_STEPS}
+            </span>
+          </div>
+          <Progress value={(step / TOTAL_STEPS) * 100} className="h-1" />
+        </header>
+
+        {step === 1 && (
+          <StepDevice
+            value={device}
+            onSelect={(d) => {
+              setDevice(d);
+              next();
+            }}
+          />
+        )}
+        {step === 2 && (
+          <StepOS
+            value={os}
+            onSelect={(o) => {
+              setOs(o);
+              next();
+            }}
+          />
+        )}
+        {step === 3 && device && (
+          <StepRun device={device} os={os} onDone={next} onChangeOS={back} />
+        )}
+        {step === 4 && <StepUpload />}
+      </div>
+    </AppShell>
+  );
+}
+
+/* -------------------------- Paso 1 -------------------------- */
+function StepDevice({
+  value,
+  onSelect,
+}: {
+  value: Device | null;
+  onSelect: (d: Device) => void;
+}) {
+  return (
+    <section>
+      <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+        ¿Qué dispositivo quieres analizar?
+      </h1>
+      <p className="text-sm text-muted-foreground mt-1">
+        Elige el sistema operativo del móvil.
+      </p>
+
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <ChoiceCard
+          active={value === "android"}
+          onClick={() => onSelect("android")}
+          icon={<Smartphone className="h-7 w-7" />}
+          title="Android"
+          subtitle="Samsung, Xiaomi, Pixel…"
+        />
+        <ChoiceCard
+          active={value === "ios"}
+          onClick={() => onSelect("ios")}
+          icon={<Apple className="h-7 w-7" />}
+          title="iPhone"
+          subtitle="iOS 14 o superior"
+        />
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------- Paso 2 -------------------------- */
+function StepOS({ value, onSelect }: { value: OS; onSelect: (o: OS) => void }) {
+  const options: { id: OS; title: string; icon: React.ReactNode }[] = [
+    { id: "mac", title: "Mac", icon: <Apple className="h-7 w-7" /> },
+    { id: "windows", title: "Windows", icon: <Monitor className="h-7 w-7" /> },
+    { id: "linux", title: "Linux", icon: <Monitor className="h-7 w-7" /> },
+  ];
+  return (
+    <section>
+      <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+        ¿Desde qué computador lo harás?
+      </h1>
+      <p className="text-sm text-muted-foreground mt-1">
+        Necesitas un computador con cable USB para conectar el móvil.
+      </p>
+
+      <div className="mt-6 grid grid-cols-3 gap-3">
+        {options.map((o) => (
+          <ChoiceCard
+            key={o.id}
+            active={value === o.id}
+            onClick={() => onSelect(o.id)}
+            icon={o.icon}
+            title={o.title}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------- Paso 3 -------------------------- */
+function StepRun({
+  device,
+  os,
+  onDone,
+  onChangeOS,
+}: {
+  device: Device;
+  os: OS;
+  onDone: () => void;
+  onChangeOS: () => void;
+}) {
+  const [showHelp, setShowHelp] = useState(false);
+
+  const blocked = device === "ios" && os === "windows";
+
+  const analyzerFile =
+    device === "ios"
+      ? "analizar-ios.sh"
+      : os === "windows"
+        ? "analizar-android.ps1"
+        : "analizar-android.sh";
+
+  const command =
+    os === "windows"
+      ? `irm ${SCRIPT_BASE_URL}/api/public/scripts/${analyzerFile} | iex`
+      : `curl -fsSL ${SCRIPT_BASE_URL}/api/public/scripts/${analyzerFile} | bash`;
+
+  const terminalHelp: Record<OS, string> = {
+    mac: "Pulsa Cmd (⌘) + Espacio, escribe «terminal» y pulsa Enter.",
+    linux: "Pulsa Ctrl + Alt + T, o busca «Terminal» en el menú.",
+    windows:
+      "Pulsa la tecla Windows, escribe «powershell» y abre «Windows PowerShell».",
+  };
+
+  const prep =
+    device === "android"
+      ? "Antes de continuar: en el móvil activa la Depuración USB y conéctalo por cable."
+      : "Antes de continuar: crea un backup cifrado del iPhone con Finder/iTunes y recuerda la contraseña.";
+
+  if (blocked) {
+    return (
+      <section>
+        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+          iPhone necesita un Mac
+        </h1>
+        <p className="text-sm text-muted-foreground mt-2">
+          Para analizar un iPhone necesitas hacer el backup desde un Mac (o
+          desde Windows con iTunes y procesarlo luego en Mac/Linux). Cambia el
+          computador para continuar.
+        </p>
+        <Button className="mt-6" onClick={onChangeOS}>
+          ← Elegir otro computador
+        </Button>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+        Copia este comando en la Terminal
+      </h1>
+      <p className="text-sm text-muted-foreground mt-1">{prep}</p>
+
+      <div className="mt-6">
+        <CopyCommand command={command} label="Terminal" />
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowHelp((v) => !v)}
+        className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+      >
+        <HelpCircle className="h-3.5 w-3.5" />
+        ¿Cómo abro la Terminal?
+      </button>
+      {showHelp && (
+        <div className="mt-2 text-xs text-muted-foreground p-3 rounded-md bg-card border border-border">
+          {terminalHelp[os]}
+        </div>
+      )}
+
+      <div className="mt-8 rounded-lg border border-border bg-card/40 p-4 text-sm text-muted-foreground">
+        El script instala MVT (si hace falta), realiza la adquisición y deja
+        un <code className="font-mono text-foreground">.zip</code> en tu
+        carpeta. Puede tardar varios minutos.
+      </div>
+
+      <div className="mt-8 flex items-center justify-between">
+        <Link to="/guia" className="text-xs text-muted-foreground hover:text-foreground underline">
+          Ver guía manual completa
+        </Link>
+        <Button onClick={onDone} className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
+          <CheckCircle2 className="h-4 w-4 mr-1.5" /> Ya tengo el ZIP
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------- Paso 4 -------------------------- */
+function StepUpload() {
   const [files, setFiles] = useState<File[]>([]);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,79 +331,113 @@ function Upload() {
   };
 
   return (
-    <AppShell>
-      <div className="p-6 md:p-10 max-w-4xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Nuevo análisis</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Sube los archivos JSON generados por MVT o un ZIP con la carpeta <code className="font-mono">resultados/</code>.
-        </p>
+    <section>
+      <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+        Sube el ZIP de resultados
+      </h1>
+      <p className="text-sm text-muted-foreground mt-1">
+        Arrastra el <code className="font-mono">.zip</code> que generó el script (o los <code className="font-mono">.json</code> sueltos).
+      </p>
 
-        <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
-          <BookOpen className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <div className="font-medium">¿No sabes cómo generar los archivos?</div>
-            <div className="text-muted-foreground mt-0.5">
-              Sigue la <Link to="/guia" className="text-primary underline">guía paso a paso para iOS y Android</Link>. MVT se ejecuta en tu computador, no en la web.
-            </div>
-          </div>
+      <div
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={onDrop}
+        onClick={() => inputRef.current?.click()}
+        className="mt-6 rounded-xl border-2 border-dashed border-border bg-card/40 hover:border-primary/50 hover:bg-card/60 transition-colors p-10 text-center cursor-pointer"
+      >
+        <div className="mx-auto h-12 w-12 rounded-lg bg-gradient-primary grid place-items-center shadow-glow mb-3">
+          <UploadCloud className="h-6 w-6 text-primary-foreground" />
         </div>
-
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={onDrop}
-          onClick={() => inputRef.current?.click()}
-          className="mt-6 rounded-xl border-2 border-dashed border-border bg-card/40 hover:border-primary/50 hover:bg-card/60 transition-colors p-12 text-center cursor-pointer"
-        >
-          <div className="mx-auto h-14 w-14 rounded-lg bg-gradient-primary grid place-items-center shadow-glow mb-4">
-            <UploadCloud className="h-7 w-7 text-primary-foreground" />
-          </div>
-          <h3 className="font-semibold">Arrastra los archivos aquí</h3>
-          <p className="text-sm text-muted-foreground mt-1">o haz clic para seleccionarlos · .json o .zip (máx. 50 MB)</p>
-          <input ref={inputRef} type="file" multiple className="hidden" accept=".json,.zip"
-            onChange={(e) => e.target.files && addFiles(Array.from(e.target.files))} />
-        </div>
-
-        {error && (
-          <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> {error}
-          </div>
-        )}
-
-        {files.length > 0 && (
-          <div className="mt-6 space-y-2">
-            {files.map((f, i) => (
-              <div key={i} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <FileArchive className="h-5 w-5 text-primary shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{f.name}</div>
-                    <div className="text-xs text-muted-foreground">{(f.size / 1024).toFixed(1)} KB</div>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => setFiles(files.filter((_, j) => j !== i))}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <label className="mt-8 flex gap-3 items-start rounded-lg border border-warning/40 bg-warning/5 p-4 cursor-pointer">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
-          <span className="text-sm text-muted-foreground">
-            Confirmo que soy propietario del dispositivo analizado o dispongo del <strong className="text-foreground">consentimiento explícito</strong> del propietario. Entiendo que esta plataforma ofrece indicios técnicos, no una certificación absoluta de infección. Los archivos se procesan localmente en mi navegador.
-          </span>
-        </label>
-
-        <div className="mt-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 text-success" /> Procesamiento 100% local · no se sube nada al servidor
-          </div>
-          <Button onClick={start} disabled={!files.length || !consent || busy} className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
-            {busy ? "Procesando…" : "Analizar archivos"}
-          </Button>
-        </div>
+        <p className="text-sm font-medium">Arrastra aquí o haz clic</p>
+        <p className="text-xs text-muted-foreground mt-1">.json o .zip · máx. 50 MB</p>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          className="hidden"
+          accept=".json,.zip"
+          onChange={(e) => e.target.files && addFiles(Array.from(e.target.files))}
+        />
       </div>
-    </AppShell>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> {error}
+        </div>
+      )}
+
+      {files.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {files.map((f, i) => (
+            <div key={i} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <FileArchive className="h-5 w-5 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{f.name}</div>
+                  <div className="text-xs text-muted-foreground">{(f.size / 1024).toFixed(1)} KB</div>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setFiles(files.filter((_, j) => j !== i))}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <label className="mt-6 flex gap-3 items-start rounded-lg border border-warning/40 bg-warning/5 p-3 cursor-pointer">
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
+        <span className="text-sm text-muted-foreground">
+          Soy propietario del dispositivo o tengo <strong className="text-foreground">consentimiento explícito</strong>. Los archivos se procesan localmente en mi navegador.
+        </span>
+      </label>
+
+      <div className="mt-6 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <ShieldCheck className="h-4 w-4 text-success" /> 100% local
+        </div>
+        <Button
+          onClick={start}
+          disabled={!files.length || !consent || busy}
+          className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+        >
+          {busy ? "Procesando…" : "Analizar"}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------- Helpers -------------------------- */
+function ChoiceCard({
+  active,
+  onClick,
+  icon,
+  title,
+  subtitle,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`group rounded-xl border bg-card p-6 text-left transition-all hover:border-primary/60 hover:bg-card/80 ${
+        active ? "border-primary shadow-glow" : "border-border"
+      }`}
+    >
+      <div
+        className={`h-12 w-12 rounded-lg grid place-items-center mb-3 transition-colors ${
+          active ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-muted text-foreground"
+        }`}
+      >
+        {icon}
+      </div>
+      <div className="font-semibold">{title}</div>
+      {subtitle && <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>}
+    </button>
   );
 }

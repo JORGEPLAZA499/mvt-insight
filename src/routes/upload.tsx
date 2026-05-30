@@ -428,6 +428,11 @@ function StepRun({
             <strong className="text-foreground">no la cierres</strong>, está trabajando.
             El proceso puede tardar entre <strong className="text-foreground">5 y 15 minutos</strong>;
             verás texto avanzando, es normal.
+            {device === "android" && (
+              <span className="block mt-2 text-warning">
+                ⚠ AndroidQF te hará varias preguntas en la ventana negra. En el siguiente paso te decimos qué pulsar en cada una.
+              </span>
+            )}
             {device === "ios" && (
               <span className="block mt-2">
                 Cuando te pida la <strong className="text-foreground">contraseña del backup</strong>, escríbela y pulsa Enter.
@@ -492,6 +497,72 @@ function StepRun({
       </>
     ),
   });
+
+  if (device === "android") {
+    subSteps.push({
+      title: "Responde a las preguntas de AndroidQF",
+      content: (
+        <>
+          <p className="mb-3">
+            En la ventana negra irán apareciendo varias preguntas. Usa las{" "}
+            <strong className="text-foreground">flechas ↑ ↓</strong> para moverte y{" "}
+            <strong className="text-foreground">Enter</strong> para confirmar. Esto es lo que debes
+            elegir en cada una:
+          </p>
+          <ul className="space-y-3">
+            {[
+              {
+                prompt: "Would you like to take a backup of the device?",
+                choose: "Everything",
+                why: "Backup completo del usuario. Necesario para detectar artefactos.",
+              },
+              {
+                prompt: "Download: (All / Only non-system / Do not download)",
+                choose: "All",
+                why: "Incluye los APKs del sistema, donde suele camuflarse el spyware.",
+              },
+              {
+                prompt: "Upload to VirusTotal? (si aparece)",
+                choose: "No",
+                why: "Subiría tus APKs a internet. No hace falta para el análisis local.",
+              },
+              {
+                prompt: "Remove? (después de descargar APKs)",
+                choose: "No",
+                why: "Conserva los APKs en la carpeta — MVT los necesita después.",
+              },
+              {
+                prompt: 'Aviso en el móvil: "Allow USB debugging?"',
+                choose: "Permitir siempre + Aceptar",
+                why: "Sin esto, adb no puede leer el dispositivo y el análisis falla.",
+              },
+            ].map((row) => (
+              <li
+                key={row.prompt}
+                className="rounded-lg border border-border bg-card/40 p-3"
+              >
+                <div className="font-mono text-xs text-muted-foreground">
+                  {row.prompt}
+                </div>
+                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">Pulsa:</span>
+                  <kbd className="inline-flex items-center rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-foreground">
+                    {row.choose}
+                  </kbd>
+                </div>
+                <div className="mt-1.5 text-xs text-muted-foreground">{row.why}</div>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Tras la última pregunta verás "<span className="font-mono">Collecting information on installed apps. This might take a while…</span>".
+            La ventana parecerá parada <strong className="text-foreground">5-15 minutos</strong>:
+            es normal. Mira la <strong className="text-foreground">ventana de estado</strong> para confirmar que sigue trabajando.
+          </p>
+        </>
+      ),
+    });
+  }
 
   subSteps.push({
     title: "Cuando termine, busca el archivo ZIP",

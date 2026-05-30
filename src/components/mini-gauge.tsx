@@ -56,8 +56,8 @@ export function MiniGauge({ value, max, label, icon: Icon, tone = "primary" }: M
   const needleY = cy + (r - 10) * Math.sin(rad);
 
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-card hover:shadow-glow transition-shadow">
-      <div className="relative" style={{ width: 120, height: 120 }}>
+    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-card hover:shadow-glow transition-shadow h-full">
+      <div className="relative flex-shrink-0" style={{ width: 120, height: 120 }}>
         <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--muted)" strokeWidth={8} opacity={0.5} />
           <circle
@@ -94,7 +94,7 @@ export function MiniGauge({ value, max, label, icon: Icon, tone = "primary" }: M
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-muted-foreground">
-          {Icon && <Icon className="h-3.5 w-3.5" style={{ color }} />}
+          {Icon && <Icon className="h-3.5 w-3.5 flex-shrink-0" style={{ color }} />}
           {label}
         </div>
         <div className="mt-1 text-sm text-muted-foreground">

@@ -85,7 +85,7 @@ function Dashboard() {
               tone={stats.tone}
             />
           </div>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 h-full">
             <MiniGauge
               value={stats.total}
               max={Math.max(stats.total, 10)}

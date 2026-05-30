@@ -284,127 +284,260 @@ function StepRun({
 
   const launcherPrimary = os === "windows" || os === "mac";
 
+  const launcherBlock = launcherPrimary ? (
+    <div className="rounded-xl border border-primary/40 bg-gradient-to-br from-primary/10 to-transparent p-5 shadow-glow">
+      <div className="flex items-start gap-4">
+        <div className="h-12 w-12 rounded-lg bg-gradient-primary grid place-items-center shadow-glow shrink-0">
+          <Download className="h-6 w-6 text-primary-foreground" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold">{launcher.filename}</div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {os === "windows"
+              ? "Descarga el archivo, haz doble clic y la Terminal se abrirá sola ejecutando el análisis."
+              : "Descarga el archivo y haz doble clic. La Terminal se abrirá automáticamente y ejecutará el análisis."}
+          </p>
+          <Button
+            onClick={downloadLauncher}
+            className="mt-3 bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+          >
+            <Download className="h-4 w-4 mr-1.5" />
+            Descargar lanzador
+          </Button>
+          {downloaded && (
+            <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-success">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Descargado. Búscalo en tu carpeta Descargas y haz doble clic.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {os === "mac" && (
+        <details className="mt-4 text-xs">
+          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+            ¿Sale "permiso denegado" al hacer doble clic?
+          </summary>
+          <div className="mt-2 p-3 rounded-md bg-card border border-border text-muted-foreground">
+            Es una protección de macOS. Abre la Terminal una vez y pega:
+            <pre className="mt-2 font-mono text-foreground bg-muted/40 p-2 rounded text-[11px] overflow-x-auto">
+              chmod +x ~/Downloads/{launcher.filename}
+            </pre>
+            Luego vuelve a hacer doble clic en el archivo.
+          </div>
+        </details>
+      )}
+    </div>
+  ) : (
+    <CopyCommand command={command} label="Terminal" />
+  );
+
   return (
     <section>
       <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-        {launcherPrimary
-          ? "Descarga el lanzador y haz doble clic"
-          : "Copia este comando en la Terminal"}
+        Sigue estos pasos en orden
       </h1>
-      <p className="text-sm text-muted-foreground mt-1">{prep}</p>
+      <p className="text-sm text-muted-foreground mt-1">
+        No te saltes ninguno. Si fallas uno, el análisis no funcionará.
+      </p>
 
-      {/* --------- Acción principal --------- */}
-      {launcherPrimary ? (
-        <div className="mt-6 rounded-xl border border-primary/40 bg-gradient-to-br from-primary/10 to-transparent p-5 shadow-glow">
-          <div className="flex items-start gap-4">
-            <div className="h-12 w-12 rounded-lg bg-gradient-primary grid place-items-center shadow-glow shrink-0">
-              <Download className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold">{launcher.filename}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {os === "windows"
-                  ? "Descarga el archivo, doble clic en él y la Terminal se abrirá sola ejecutando el análisis."
-                  : "Descarga el archivo y haz doble clic. La Terminal se abrirá automáticamente y ejecutará el análisis."}
+      <div className="mt-4 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 p-3 text-xs text-muted-foreground">
+        <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+        <span>
+          Ten a mano un <strong className="text-foreground">cable USB</strong> y mantén el móvil
+          <strong className="text-foreground"> desbloqueado y con la pantalla encendida</strong> durante todo el proceso.
+        </span>
+      </div>
+
+      <ol className="mt-6 space-y-4">
+        {device === "android" ? (
+          <>
+            <NumberedStep n={1} title="Activa el modo desarrollador en el móvil">
+              <p>
+                Abre <strong className="text-foreground">Ajustes</strong> →{" "}
+                <strong className="text-foreground">Información del teléfono</strong> y toca{" "}
+                <strong className="text-foreground">7 veces</strong> sobre "Número de compilación".
+                Verás un mensaje: "Ya eres desarrollador".
               </p>
-              <Button
-                onClick={downloadLauncher}
-                className="mt-3 bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-              >
-                <Download className="h-4 w-4 mr-1.5" />
-                Descargar lanzador
-              </Button>
-              {downloaded && (
-                <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-success">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Descargado. Búscalo en tu carpeta Descargas y haz doble clic.
+              <details className="mt-2">
+                <summary className="cursor-pointer text-primary hover:underline">
+                  Ruta exacta por marca
+                </summary>
+                <ul className="mt-2 space-y-1 pl-4 list-disc">
+                  <li><strong className="text-foreground">Samsung:</strong> Ajustes → Acerca del teléfono → Información del software → tocar "Número de compilación" 7 veces.</li>
+                  <li><strong className="text-foreground">Xiaomi/Redmi:</strong> Ajustes → Sobre el teléfono → tocar "Versión MIUI" 7 veces.</li>
+                  <li><strong className="text-foreground">Pixel/Android puro:</strong> Ajustes → Acerca del teléfono → tocar "Número de compilación" 7 veces.</li>
+                  <li><strong className="text-foreground">Huawei/Honor:</strong> Ajustes → Sistema → Acerca del teléfono → tocar "Número de compilación" 7 veces.</li>
+                </ul>
+              </details>
+            </NumberedStep>
+
+            <NumberedStep n={2} title="Activa la Depuración USB">
+              <p>
+                Vuelve a <strong className="text-foreground">Ajustes</strong> →{" "}
+                <strong className="text-foreground">Sistema</strong> →{" "}
+                <strong className="text-foreground">Opciones de desarrollador</strong> y activa{" "}
+                <strong className="text-foreground">"Depuración USB"</strong>. Confirma cuando te lo pida.
+              </p>
+            </NumberedStep>
+
+            <NumberedStep n={3} title="Conecta el móvil al ordenador con un cable USB">
+              <p>
+                Usa el <strong className="text-foreground">cable original</strong> si puedes (algunos cables solo cargan, no transmiten datos).
+                En el móvil aparecerá un aviso: <strong className="text-foreground">"¿Permitir depuración USB?"</strong>.
+                Marca <strong className="text-foreground">"Permitir siempre desde este ordenador"</strong> y pulsa Aceptar.
+              </p>
+            </NumberedStep>
+          </>
+        ) : (
+          <>
+            <NumberedStep n={1} title="Confía en el ordenador desde el iPhone">
+              <p>
+                Conecta el iPhone por USB, <strong className="text-foreground">desbloquéalo</strong> y, cuando aparezca el aviso{" "}
+                <strong className="text-foreground">"¿Confiar en este ordenador?"</strong>, pulsa{" "}
+                <strong className="text-foreground">Confiar</strong> e introduce el código del iPhone.
+              </p>
+            </NumberedStep>
+
+            <NumberedStep n={2} title="Crea un backup cifrado del iPhone">
+              <p>
+                Abre <strong className="text-foreground">Finder</strong> (macOS Catalina o superior) o{" "}
+                <strong className="text-foreground">iTunes</strong>, selecciona el iPhone, marca{" "}
+                <strong className="text-foreground">"Cifrar copia de seguridad local"</strong> y define una contraseña.
+                <span className="block mt-1 text-warning">⚠ Apunta la contraseña: la necesitarás en el paso 4.</span>
+              </p>
+            </NumberedStep>
+
+            <NumberedStep n={3} title="Mantén el iPhone conectado y desbloqueado">
+              <p>
+                Durante todo el análisis el iPhone debe estar <strong className="text-foreground">conectado por USB</strong> y{" "}
+                <strong className="text-foreground">desbloqueado</strong>. Si se bloquea, vuelve a desbloquearlo.
+              </p>
+            </NumberedStep>
+          </>
+        )}
+
+        <NumberedStep
+          n={4}
+          title={launcherPrimary ? "Descarga el lanzador y haz doble clic" : "Ejecuta el comando en la Terminal"}
+        >
+          {launcherPrimary ? (
+            <p className="mb-3">
+              Descarga el archivo de abajo. Búscalo en tu carpeta{" "}
+              <strong className="text-foreground">Descargas</strong> y haz{" "}
+              <strong className="text-foreground">doble clic</strong> sobre él.
+              Se abrirá una <strong className="text-foreground">ventana negra</strong> (Terminal/PowerShell):{" "}
+              <strong className="text-foreground">no la cierres</strong>, está trabajando.
+              El proceso puede tardar entre <strong className="text-foreground">5 y 15 minutos</strong>;
+              verás texto avanzando, es normal.
+              {device === "ios" && (
+                <span className="block mt-2">
+                  Cuando te pida la <strong className="text-foreground">contraseña del backup</strong>, escríbela y pulsa Enter.
+                </span>
+              )}
+            </p>
+          ) : (
+            <p className="mb-3">
+              Abre la Terminal, pega el comando y pulsa Enter. No cierres la ventana hasta que termine
+              (puede tardar entre 5 y 15 minutos).
+            </p>
+          )}
+          {launcherBlock}
+
+          <button
+            type="button"
+            onClick={() => setShowAlt((v) => !v)}
+            className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+          >
+            <Terminal className="h-3.5 w-3.5" />
+            {launcherPrimary
+              ? "Prefiero copiar el comando manualmente"
+              : "Prefiero descargar un script"}
+          </button>
+
+          {showAlt && (
+            <div className="mt-3">
+              {launcherPrimary ? (
+                <CopyCommand command={command} label="Terminal" />
+              ) : (
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium">{launcher.filename}</div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Descárgalo y ejecuta:{" "}
+                        <code className="font-mono text-foreground">bash ~/Downloads/{launcher.filename}</code>
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={downloadLauncher}>
+                      <Download className="h-4 w-4 mr-1.5" /> Descargar
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-
-          {os === "mac" && (
-            <details className="mt-4 text-xs">
-              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                ¿Sale "permiso denegado" al hacer doble clic?
-              </summary>
-              <div className="mt-2 p-3 rounded-md bg-card border border-border text-muted-foreground">
-                Es una protección de macOS. Abre la Terminal una vez y pega:
-                <pre className="mt-2 font-mono text-foreground bg-muted/40 p-2 rounded text-[11px] overflow-x-auto">
-                  chmod +x ~/Downloads/{launcher.filename}
-                </pre>
-                Luego vuelve a hacer doble clic en el archivo.
-              </div>
-            </details>
           )}
-        </div>
-      ) : (
-        <div className="mt-6">
-          <CopyCommand command={command} label="Terminal" />
-        </div>
-      )}
 
-      {/* --------- Acción alternativa --------- */}
-      <button
-        type="button"
-        onClick={() => setShowAlt((v) => !v)}
-        className="mt-4 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-      >
-        <Terminal className="h-3.5 w-3.5" />
-        {launcherPrimary
-          ? "Prefiero copiar el comando manualmente"
-          : "Prefiero descargar un script (.sh)"}
-      </button>
-
-      {showAlt && (
-        <div className="mt-3">
-          {launcherPrimary ? (
-            <CopyCommand command={command} label="Terminal" />
-          ) : (
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium">{launcher.filename}</div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Descárgalo y ejecuta:{" "}
-                    <code className="font-mono text-foreground">bash ~/Downloads/{launcher.filename}</code>
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={downloadLauncher}>
-                  <Download className="h-4 w-4 mr-1.5" /> Descargar
-                </Button>
-              </div>
+          <button
+            type="button"
+            onClick={() => setShowHelp((v) => !v)}
+            className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+            ¿Cómo abro la Terminal?
+          </button>
+          {showHelp && (
+            <div className="mt-2 text-xs text-muted-foreground p-3 rounded-md bg-card border border-border">
+              {terminalHelp[os]}
             </div>
           )}
-        </div>
-      )}
+        </NumberedStep>
 
-      <button
-        type="button"
-        onClick={() => setShowHelp((v) => !v)}
-        className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <HelpCircle className="h-3.5 w-3.5" />
-        ¿Cómo abro la Terminal?
-      </button>
-      {showHelp && (
-        <div className="mt-2 text-xs text-muted-foreground p-3 rounded-md bg-card border border-border">
-          {terminalHelp[os]}
-        </div>
-      )}
+        <NumberedStep n={5} title="Cuando termine, busca el archivo ZIP">
+          <p>
+            Al acabar, el script deja un archivo{" "}
+            <code className="font-mono text-foreground">mvt-resultados-AAAAMMDD.zip</code> en la misma carpeta
+            donde ejecutaste el lanzador (normalmente <strong className="text-foreground">Descargas</strong>).
+            Cuando lo tengas, pulsa el botón de abajo para subirlo.
+          </p>
+        </NumberedStep>
+      </ol>
 
-      <div className="mt-8 rounded-lg border border-border bg-card/40 p-4 text-sm text-muted-foreground">
-        El script instala MVT (si hace falta), realiza la adquisición y deja
-        un <code className="font-mono text-foreground">.zip</code> en tu
-        carpeta. Puede tardar varios minutos.
+      <div className="mt-6 rounded-lg border border-border bg-card/40 p-4 text-xs text-muted-foreground">
+        {prep} El script instala MVT si hace falta, realiza la adquisición y deja un{" "}
+        <code className="font-mono text-foreground">.zip</code> en tu carpeta.
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-6 flex justify-end">
         <Button onClick={onDone} className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
           <CheckCircle2 className="h-4 w-4 mr-1.5" /> Ya tengo el ZIP
         </Button>
       </div>
     </section>
+  );
+}
+
+function NumberedStep({
+  n,
+  title,
+  children,
+}: {
+  n: number;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <li className="rounded-xl border border-border bg-card/40 p-4">
+      <div className="flex items-start gap-3">
+        <div className="h-8 w-8 shrink-0 rounded-full bg-gradient-primary text-primary-foreground grid place-items-center text-sm font-semibold shadow-glow">
+          {n}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-foreground">{title}</div>
+          <div className="mt-1 text-sm text-muted-foreground">{children}</div>
+        </div>
+      </div>
+    </li>
   );
 }
 

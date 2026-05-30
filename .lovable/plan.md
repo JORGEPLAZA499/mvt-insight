@@ -1,50 +1,68 @@
-# Pestaña "Para ti" = mismo contenido y orden que el PDF, con detalles y sin duplicados
+## Objetivo
 
-El usuario quiere que la vista web y el PDF cuenten la misma historia, en el mismo orden, con el mismo nivel de detalle. Además hay dos bugs concretos: los módulos muestran sólo "1117 entradas / 16 indicios" sin decir *qué* permisos / *qué* apps; y Life360 sale dos veces en la sección de Spyware (una vez con package y otra con hash de certificado).
+El Paso 3 actual ("Descarga el lanzador y haz doble clic") asume que el usuario ya tiene el móvil en modo desarrollador, la depuración USB activada, el cable conectado y autorizado. Hay que descomponerlo en una checklist visual numerada, con sub-pasos concretos por marca/SO, para que cualquier persona sin conocimientos técnicos pueda repetir el análisis.
 
-## 1. Reordenar la pestaña "Para ti" (`src/routes/analysis.$id.tsx`)
+## Cambios
 
-Reorganizar `TabsContent value="user"` para reflejar la estructura numerada del PDF, con los mismos títulos:
+### 1. Rediseñar Paso 3 (`StepRun` en `src/routes/upload.tsx`)
 
-1. **Veredicto** — tarjeta con `buildVerdict(r)` (headline + detail), con color por nivel (mercenary/stalkerware/suspicious/clean). Hoy no se muestra en el front.
-2. **Resumen ejecutivo** — frase narrativa con archivo, plataforma, módulos, entradas, indicios y riesgo (igual que `baseSummary` del PDF).
-3. **KPIs** — 4 stats: Indicios · Módulos con indicios · Entradas analizadas · Riesgo (mismo conjunto que el PDF, no los actuales "Módulos / Entradas / Detecciones / Plataforma").
-4. **Cómo leer este informe** — texto explicativo + leyenda de severidades CRÍTICO/ALTO/MEDIO/BAJO con sus chips.
-5. **Áreas del dispositivo analizadas** — tabla (Área · Entradas · Indicios · Estado) con `humanizeModule`. **Ampliada**: cada fila expandible que lista las entidades concretas detectadas en ese módulo (ver §2).
-6. **Indicios detectados** — agrupados por categoría (Spyware mercenario / Stalkerware comercial / Comportamiento sospechoso) con `UserDetections` actual.
-7. **Próximos pasos recomendados** — `nextSteps(r)` numerado.
-8. **Cómo verificar este resultado** — `CROSS_CHECK_STEPS` (MVT oficial, Access Now, Amnesty, Citizen Lab).
-9. **Aviso legal y metodología** — los tres párrafos del PDF.
+Reemplazar el bloque actual por una lista numerada de **5 pasos visuales** (cada uno en una tarjeta con número, título, descripción y, si aplica, sub-pasos plegables). Solo afecta a la presentación; el lanzador y el comando alternativo siguen igual.
 
-La pestaña "Modo desarrollador" se mantiene como está (módulos crudos + detecciones crudas + timeline).
+**Android:**
 
-## 2. Detalle por módulo — "qué permisos / qué apps" (`src/lib/mvt-translate.ts` + `analysis.$id.tsx` + `pdf-report.ts`)
+1. **Activa el modo desarrollador en tu móvil**
+   - Ajustes → Información del teléfono → Toca 7 veces "Número de compilación".
+   - Sub-bloque desplegable con la ruta exacta para Samsung / Xiaomi / Pixel / Huawei.
 
-Hoy la tabla "Áreas analizadas" sólo da números agregados ("Permisos sensibles concedidos a · 1117 · 16 · ALTO"). El usuario quiere ver *cuáles*. Añadir, debajo de cada fila con `detected > 0`, un sub-bloque con las top entidades concretas:
+2. **Activa la Depuración USB**
+   - Ajustes → Opciones de desarrollador → Activa "Depuración USB".
 
-- **dumpsys_appops** (Permisos sensibles) → listar las top 8 combinaciones `<app> · <permiso humanizado>` (p.ej. `com.android.shell · leer media seleccionada por el usuario · 7×`). Usar `PERMISSION_LABELS` ya existente y extender con: `READ_MEDIA_VISUAL_USER_SELECTED`, `READ_MEDIA_IMAGES`, `READ_MEDIA_AUDIO`, `READ_MEDIA_VIDEO`, `POST_NOTIFICATIONS`, `MANAGE_EXTERNAL_STORAGE`, `READ_PHONE_STATE`, `ACCESS_COARSE_LOCATION`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `GET_ACCOUNTS`, `READ_CALENDAR`, `WRITE_CALENDAR`.
-- **dumpsys_receivers** / **dumpsys_activities** → listar top apps/paquetes detectados y contador.
-- **aqf_packages / dumpsys_packages** → listar apps instaladas marcadas y cómo (ADB / navegador / downgrade / uninstall).
-- **dumpsys_battery_daily** → listar paquetes con downgrade/uninstall detectados.
-- **tombstones** → listar procesos con crash y timestamp.
+3. **Conecta el móvil al ordenador con un cable USB**
+   - Usa el cable original si es posible (algunos cables solo cargan).
+   - En el móvil aparecerá un aviso "¿Permitir depuración USB?" → marca "Permitir siempre" y pulsa Aceptar.
 
-Implementación: nueva función `buildModuleHighlights(detections, moduleKey)` en `mvt-translate.ts` que devuelve un array `{label, count, sub?}` con las top entidades del módulo, reutilizando `detectionKey` + `humanizeDetection` + parsing de permisos. Renderizar tanto en el front (expandible por módulo en la sección "Áreas analizadas") como en el PDF (debajo de cada fila con `detected > 0`).
+4. **Descarga el lanzador y haz doble clic** ← (lo que ya existe hoy, intacto)
+   - Se abrirá una ventana negra (Terminal/PowerShell). **No la cierres.**
+   - Puede tardar entre 5 y 15 minutos. Verás texto avanzando: es normal.
 
-## 3. Arreglar duplicado Life360 (`src/lib/mvt-translate.ts`)
+5. **Cuando termine, busca el ZIP**
+   - El script deja un archivo `mvt-resultados-AAAAMMDD.zip` en tu carpeta de Descargas (o donde ejecutaste el lanzador).
+   - Pulsa "Ya tengo el ZIP" para subirlo.
 
-**Causa**: en `detectionKey`, cuando el summary contiene la familia conocida ("Life360"), se concatena el package al key si aparece en el mismo summary. La primera detección incluye `com.life360.android.safetymapd` → key `fam:life360|com.life360.android.safetymapd`. La segunda (certificado por hash) no incluye package → key `fam:life360`. Resultado: dos grupos distintos para la misma familia.
+**iOS** (variante equivalente):
 
-**Fix**: Para familias conocidas, deduplicar siempre por familia sola, ignorando el package. El label puede seguir mostrando el package cuando esté disponible, pero la `key` será `fam:<familia>` para que todas las evidencias de Life360 (receivers, certificados, packages, actividades) se sumen al mismo grupo. Los módulos y la evidencia representativa siguen apareciendo en el detalle del grupo.
+1. **Confía en el ordenador desde el iPhone**
+   - Conéctalo por USB → desbloquéalo → pulsa "Confiar" y mete el código.
+2. **Crea un backup cifrado**
+   - Finder (macOS Catalina+) o iTunes → selecciona iPhone → "Cifrar copia de seguridad local" → define contraseña y recuérdala.
+3. **Descarga el lanzador y haz doble clic** (igual que hoy).
+4. **Introduce la contraseña del backup** cuando la Terminal lo pida.
+5. **Cuando termine, busca el ZIP** en la misma carpeta.
 
-## Resultado
+### 2. Mensaje de aviso superior
 
-- Web y PDF muestran las 8 mismas secciones en el mismo orden y con el mismo nivel de detalle.
-- Tabla de áreas analizadas muestra qué permisos/apps/procesos concretos hay debajo de cada cifra agregada.
-- Life360 aparece como una sola entidad con `count` total y todos los módulos donde fue visto.
+Añadir, justo bajo el título, un banner pequeño con icono:
+> "Sigue los pasos en orden. Si te saltas uno, el análisis fallará."
+
+### 3. Aviso de tiempo y pantalla encendida
+
+Dentro del paso 4 (lanzador), añadir nota:
+> "Mantén el móvil desbloqueado y con la pantalla encendida durante todo el proceso."
+
+### 4. Sin cambios funcionales
+
+- No se toca la generación del `.bat`/`.sh`/`.command`, ni el endpoint `/api/public/scripts/*`, ni `StepUpload`.
+- El botón "Ya tengo el ZIP" sigue llevando al paso 4.
+- "Prefiero copiar el comando manualmente" y "¿Cómo abro la Terminal?" se mantienen al final como hoy.
 
 ## Detalles técnicos
 
-- `mvt-translate.ts`: ampliar `PERMISSION_LABELS`; añadir `buildModuleHighlights(detections, moduleKey, limit?)`; cambiar la rama "familia conocida" de `detectionKey` para usar siempre `key = fam:<lower>` (sin sufijo de package).
-- `analysis.$id.tsx`: reestructurar `TabsContent value="user"` con las 9 sub-secciones, renderizar veredicto, leyenda de severidades, próximos pasos, verificación cruzada, aviso legal y highlights por módulo. Importar `buildVerdict`, `explainSeverity`, `nextSteps`, `CROSS_CHECK_STEPS`, `buildModuleHighlights`.
-- `pdf-report.ts`: en la sección 04 (Áreas analizadas) imprimir los highlights debajo de cada fila con `detected > 0` (texto envuelto, fuente 8pt).
-- No se tocan parser ni almacén; sólo presentación y dedup.
+- Un único componente nuevo `NumberedStep` dentro de `upload.tsx` (número en círculo con `bg-gradient-primary`, título, children con instrucciones y sub-detalles en `<details>` para Samsung/Xiaomi/Pixel).
+- Tokens del design system (`text-foreground`, `text-muted-foreground`, `border-border`, `bg-card`, `shadow-glow`) — sin colores hardcoded.
+- Renderizado condicional por `device` (android vs ios). El switch por `os` (mac/win/linux) solo afecta al paso del lanzador, que ya estaba ramificado.
+- Sin nuevas dependencias.
+
+## Fuera de alcance
+
+- No se toca el flujo de subida (Paso 4), el parser, ni el informe.
+- No se añaden vídeos ni GIFs (se podrían añadir después si el usuario los aporta).

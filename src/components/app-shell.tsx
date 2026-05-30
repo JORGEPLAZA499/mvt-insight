@@ -7,12 +7,11 @@ import {
   History,
   LogOut,
   Sparkles,
-  Languages,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getSession, setSession, getAnalyses } from "@/lib/mock-store";
-import { SUPPORTED_LANGUAGES } from "@/i18n";
+import { LanguageSelector } from "@/components/language-selector";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
@@ -236,22 +235,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          {/* Language selector */}
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <Languages className="h-3.5 w-3.5 text-muted-foreground" />
-            <select
-              value={i18n.language?.split("-")[0] ?? "es"}
-              onChange={(e) => i18n.changeLanguage(e.target.value)}
-              aria-label={t("common.language")}
-              className="flex-1 bg-transparent border border-sidebar-border rounded-md px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              {SUPPORTED_LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code} className="bg-background text-foreground">
-                  {l.label}
-                </option>
-              ))}
-            </select>
-          </div>
 
           <button
             onClick={() => {
@@ -270,6 +253,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="md:hidden border-b border-border px-4 py-3 flex items-center gap-2">
           <Shield className="h-5 w-5 text-primary" />
           <span className="text-sm font-semibold">Spyware Forensic Analyzer</span>
+        </div>
+        <div className="hidden md:flex items-center justify-end border-b border-border/60 px-6 py-3 gap-4">
+          <LanguageSelector />
         </div>
         {children}
       </main>

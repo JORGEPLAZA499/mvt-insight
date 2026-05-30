@@ -7,22 +7,26 @@ import {
   History,
   LogOut,
   Sparkles,
+  Languages,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getSession, setSession, getAnalyses } from "@/lib/mock-store";
-
-const nav = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, hint: "Resumen" },
-  { to: "/upload", label: "Nuevo análisis", icon: UploadCloud, hint: "Subir artefactos", highlight: true },
-  { to: "/reports", label: "Informes", icon: FileSearch, hint: "Resultados" },
-  { to: "/history", label: "Historial", icon: History, hint: "Análisis previos" },
-];
+import { SUPPORTED_LANGUAGES } from "@/i18n";
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { t, i18n } = useTranslation();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [session, setSessionState] = useState<{ email: string } | null>(null);
   const [historyCount, setHistoryCount] = useState(0);
+
+  const nav = [
+    { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },
+    { to: "/upload", label: t("shell.nav.newAnalysis"), icon: UploadCloud, hint: t("shell.nav.uploadHint"), highlight: true },
+    { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
+    { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
+  ];
 
   useEffect(() => {
     const s = getSession();

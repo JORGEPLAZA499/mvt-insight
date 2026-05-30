@@ -1,10 +1,13 @@
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getAnalysis, deleteAnalysis, riskColor, riskLabel, platformLabel, Analysis } from "@/lib/mock-store";
-import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Trash2, Activity } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Trash2, Activity, User, Code2 } from "lucide-react";
 import { generatePdfReport } from "@/lib/pdf-report";
+import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, CATEGORY_LABEL, CATEGORY_DESC, type Category } from "@/lib/mvt-translate";
+import type { MvtDetection, RiskLevel } from "@/lib/mvt-parser";
 
 export const Route = createFileRoute("/analysis/$id")({
   head: () => ({ meta: [{ title: "Resultado de análisis — Spyware Forensic Analyzer" }] }),

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -255,10 +255,7 @@ function StepRun({
         carpeta. Puede tardar varios minutos.
       </div>
 
-      <div className="mt-8 flex items-center justify-between">
-        <Link to="/guia" className="text-xs text-muted-foreground hover:text-foreground underline">
-          Ver guía manual completa
-        </Link>
+      <div className="mt-8 flex justify-end">
         <Button onClick={onDone} className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
           <CheckCircle2 className="h-4 w-4 mr-1.5" /> Ya tengo el ZIP
         </Button>

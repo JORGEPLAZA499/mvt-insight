@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Shield, Lock, Activity, FileSearch, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LanguageSelector } from "@/components/language-selector";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,6 +33,7 @@ function Landing() {
             <a href="#legal" className="hover:text-foreground">Aviso legal</a>
           </nav>
           <div className="flex items-center gap-2">
+            <LanguageSelector />
             <Button asChild variant="ghost" size="sm"><Link to="/login">Iniciar sesión</Link></Button>
             <Button asChild size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"><Link to="/login">Empezar</Link></Button>
           </div>

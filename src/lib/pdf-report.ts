@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import { Analysis, riskLabel, platformLabel } from "./mock-store";
+import type { MvtDetection, MvtParsedResult, RiskLevel } from "./mvt-parser";
 import {
   humanizeModule,
   humanizeDetection,
@@ -9,120 +10,336 @@ import {
   nextSteps,
 } from "./mvt-translate";
 
+// ---------- Paleta ----------
+const NAVY: [number, number, number] = [15, 23, 42];
+const NAVY_SOFT: [number, number, number] = [30, 41, 59];
+const INK: [number, number, number] = [17, 24, 39];
+const MUTED: [number, number, number] = [107, 114, 128];
+const LINE: [number, number, number] = [226, 232, 240];
+const SOFT_BG: [number, number, number] = [248, 250, 252];
+const WHITE: [number, number, number] = [255, 255, 255];
+const ACCENT: [number, number, number] = [37, 99, 235];
+
+const SEV_COLOR: Record<string, [number, number, number]> = {
+  critical: [185, 28, 28],
+  high: [194, 87, 24],
+  medium: [161, 122, 0],
+  low: [71, 85, 105],
+};
+const SEV_BG: Record<string, [number, number, number]> = {
+  critical: [254, 226, 226],
+  high: [255, 237, 213],
+  medium: [254, 243, 199],
+  low: [241, 245, 249],
+};
+
+const M = { left: 48, right: 48, top: 56, bottom: 64 };
+
 export function generatePdfReport(a: Analysis) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
-  let y = 56;
+  const CW = W - M.left - M.right;
 
-  const ensure = (need: number) => {
-    if (y + need > H - 56) { doc.addPage(); y = 56; }
+  const ctx = {
+    doc, W, H, CW,
+    y: M.top,
+    page: 1,
+    reportId: a.id.slice(0, 8).toUpperCase(),
+    fileName: a.fileName,
   };
 
-  // Header
-  doc.setFillColor(20, 28, 48);
-  doc.rect(0, 0, W, 90, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("Spyware Forensic Analyzer", 40, 48);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text("Informe forense en lenguaje claro — basado en resultados MVT", 40, 66);
+  // ---------- helpers ----------
+  const setFill = (c: [number, number, number]) => doc.setFillColor(c[0], c[1], c[2]);
+  const setStroke = (c: [number, number, number]) => doc.setDrawColor(c[0], c[1], c[2]);
+  const setText = (c: [number, number, number]) => doc.setTextColor(c[0], c[1], c[2]);
 
-  y = 130;
-  doc.setTextColor(20, 28, 48);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("Resumen ejecutivo", 40, y);
-  y += 18;
-
-  const r = a.result;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  const baseSummary = r
-    ? `Análisis de "${a.fileName}". Plataforma detectada: ${platformLabel(r.platform)}. Módulos MVT analizados: ${r.modules.length}. Entradas totales: ${r.totalEntries}. Indicios detectados: ${r.totalDetections}. Nivel de riesgo estimado: ${riskLabel(r.risk)}.`
-    : `Análisis de "${a.fileName}". Estado: ${a.status}.`;
-  const narrative = r ? " " + riskNarrative(r) : "";
-  const summaryLines = doc.splitTextToSize(baseSummary + narrative, W - 80);
-  doc.text(summaryLines, 40, y);
-  y += summaryLines.length * 12 + 16;
-
-  // ¿Qué significa este informe?
-  ensure(120);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-  doc.text("¿Qué significa este informe?", 40, y); y += 16;
-  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-  const intro = "MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo. Un indicio no equivale a infección: puede ser una app legítima que tú instalaste. Lee cada hallazgo y comprueba si reconoces la app o el comportamiento. Las severidades significan:";
-  const introLines = doc.splitTextToSize(intro, W - 80);
-  doc.text(introLines, 40, y);
-  y += introLines.length * 12 + 6;
-  (["critical", "high", "medium", "low"] as const).forEach((lvl) => {
-    ensure(14);
-    doc.text(`• ${explainSeverity(lvl)}`, 50, y);
-    y += 13;
-  });
-  y += 8;
-
-  // Meta
-  ensure(140);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-  doc.text("Detalles del análisis", 40, y); y += 16;
-  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-  const meta: [string, string][] = [
-    ["Fecha", new Date(a.uploadedAt).toLocaleString()],
-    ["Origen", a.fileName],
-    ["Tamaño", `${(a.fileSize / 1024).toFixed(1)} KB`],
-    ["Plataforma", r ? platformLabel(r.platform) : "—"],
-    ["Módulos", String(r?.modules.length ?? 0)],
-    ["Indicios", String(r?.totalDetections ?? 0)],
-    ["Riesgo", riskLabel(r?.risk)],
-  ];
-  meta.forEach(([k, v]) => {
-    ensure(14);
-    doc.setFont("helvetica", "bold"); doc.text(`${k}:`, 40, y);
-    doc.setFont("helvetica", "normal"); doc.text(String(v), 130, y);
-    y += 14;
-  });
-  y += 8;
-
-  // Modules
-  if (r && r.modules.length) {
-    ensure(40);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-    doc.text("Áreas del dispositivo analizadas", 40, y); y += 16;
-    const visibleMods = r.modules.filter((m) => m.entries > 0 || m.detected > 0);
-    visibleMods.forEach((m) => {
-      ensure(16);
-      const human = humanizeModule(m.key, m.label);
-      const flag = m.detected > 0 ? "  [con indicios]" : "";
-      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-      doc.setTextColor(20, 28, 48);
-      doc.text(`• ${human}`, 40, y);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-      doc.setTextColor(120, 120, 120);
-      doc.text(`(${m.key}) — entradas: ${m.entries}, indicios: ${m.detected}${flag}`, 280, y);
-      y += 13;
-    });
-    doc.setTextColor(20, 28, 48);
-    y += 8;
+  function drawHeader() {
+    setFill(NAVY);
+    doc.rect(0, 0, W, 36, "F");
+    setText(WHITE);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+    doc.text("SPYWARE FORENSIC ANALYZER", M.left, 22);
+    doc.setFont("helvetica", "normal");
+    setText([203, 213, 225]);
+    doc.text(`Informe ${ctx.reportId}`, W - M.right, 22, { align: "right" });
   }
 
-  // Detections — group consecutive duplicates and sort by severity
+  function drawFooter(pageNum: number) {
+    setStroke(LINE);
+    doc.setLineWidth(0.5);
+    doc.line(M.left, H - 38, W - M.right, H - 38);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+    setText(MUTED);
+    doc.text("Documento confidencial · uso forense", M.left, H - 22);
+    doc.text(`Página ${pageNum}`, W - M.right, H - 22, { align: "right" });
+  }
+
+  function newPage() {
+    drawFooter(ctx.page);
+    doc.addPage();
+    ctx.page += 1;
+    drawHeader();
+    ctx.y = M.top + 8;
+  }
+
+  function ensure(need: number) {
+    if (ctx.y + need > H - M.bottom) newPage();
+  }
+
+  function sectionTitle(num: string, title: string) {
+    ensure(48);
+    setText(MUTED);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+    doc.text(num, M.left, ctx.y);
+    setText(INK);
+    doc.setFontSize(15);
+    doc.text(title, M.left + 24, ctx.y);
+    ctx.y += 8;
+    setStroke(LINE); doc.setLineWidth(0.8);
+    doc.line(M.left, ctx.y, W - M.right, ctx.y);
+    ctx.y += 16;
+  }
+
+  function paragraph(text: string, opts: { size?: number; color?: [number, number, number]; italic?: boolean } = {}) {
+    const size = opts.size ?? 10;
+    doc.setFont("helvetica", opts.italic ? "italic" : "normal");
+    doc.setFontSize(size);
+    setText(opts.color ?? INK);
+    const lines = doc.splitTextToSize(text, CW);
+    const lh = size * 1.35;
+    ensure(lines.length * lh);
+    doc.text(lines, M.left, ctx.y);
+    ctx.y += lines.length * lh;
+  }
+
+  function severityChip(level: RiskLevel | string, x: number, y: number): number {
+    const lvl = (level as string) ?? "low";
+    const label = severityLabel(lvl as RiskLevel);
+    const [r, g, b] = SEV_COLOR[lvl] ?? MUTED;
+    const [br, bg, bb] = SEV_BG[lvl] ?? LINE;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+    const w = doc.getTextWidth(label) + 14;
+    setFill([br, bg, bb]);
+    doc.roundedRect(x, y - 9, w, 13, 3, 3, "F");
+    setText([r, g, b]);
+    doc.text(label, x + 7, y);
+    return w;
+  }
+
+  // ============================================================
+  // PORTADA
+  // ============================================================
+  setFill(NAVY);
+  doc.rect(0, 0, W, H, "F");
+
+  // Brand mark
+  setFill(ACCENT);
+  doc.rect(M.left, 90, 36, 4, "F");
+  setText(WHITE);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+  doc.text("SPYWARE FORENSIC ANALYZER", M.left, 118);
+
+  // Título principal
+  doc.setFont("helvetica", "bold"); doc.setFontSize(34);
+  doc.text("Informe forense", M.left, 240);
+  doc.text("de dispositivo móvil", M.left, 278);
+
+  setText([148, 163, 184]);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(12);
+  doc.text("Análisis basado en resultados de Mobile Verification Toolkit (MVT)", M.left, 304);
+
+  // Tarjeta de metadatos en portada
+  const r = a.result;
+  const cardY = 360;
+  const cardH = 200;
+  setFill([22, 32, 52]);
+  doc.roundedRect(M.left, cardY, CW, cardH, 6, 6, "F");
+
+  const metaCover: [string, string][] = [
+    ["Archivo analizado", a.fileName],
+    ["Identificador del informe", ctx.reportId],
+    ["Fecha del análisis", new Date(a.uploadedAt).toLocaleString()],
+    ["Plataforma detectada", r ? platformLabel(r.platform) : "—"],
+    ["Tamaño del origen", `${(a.fileSize / 1024).toFixed(1)} KB`],
+    ["Estado", a.status],
+  ];
+  let cy = cardY + 28;
+  metaCover.forEach(([k, v]) => {
+    setText([148, 163, 184]);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+    doc.text(k.toUpperCase(), M.left + 20, cy);
+    setText(WHITE);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+    const val = doc.splitTextToSize(String(v), CW - 40)[0];
+    doc.text(val, M.left + 20, cy + 14);
+    cy += 28;
+  });
+
+  // Banda de riesgo en portada
+  if (r) {
+    const sevKey = r.risk;
+    const [sr, sg, sb] = SEV_COLOR[sevKey] ?? MUTED;
+    const bandY = cardY + cardH + 28;
+    setFill([sr, sg, sb]);
+    doc.roundedRect(M.left, bandY, CW, 70, 6, 6, "F");
+    setText(WHITE);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.text("NIVEL DE RIESGO ESTIMADO", M.left + 20, bandY + 22);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(22);
+    doc.text(riskLabel(r.risk).toUpperCase(), M.left + 20, bandY + 50);
+    // Stats a la derecha
+    doc.setFont("helvetica", "bold"); doc.setFontSize(22);
+    doc.text(String(r.totalDetections), W - M.right - 20, bandY + 32, { align: "right" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.text("indicios detectados", W - M.right - 20, bandY + 48, { align: "right" });
+  }
+
+  // Pie de portada
+  setText([148, 163, 184]);
+  doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+  doc.text("Documento confidencial · generado localmente · no constituye certificación de infección", M.left, H - 40);
+
+  // ============================================================
+  // CONTENIDO
+  // ============================================================
+  newPage();
+
+  // 01 · Resumen ejecutivo
+  sectionTitle("01", "Resumen ejecutivo");
+  const baseSummary = r
+    ? `Se ha analizado el archivo "${a.fileName}". La plataforma detectada es ${platformLabel(r.platform)}. Se procesaron ${r.modules.length} módulos MVT con un total de ${r.totalEntries.toLocaleString()} entradas y se identificaron ${r.totalDetections} indicios técnicos. El nivel de riesgo estimado es ${riskLabel(r.risk)}.`
+    : `Análisis de "${a.fileName}". Estado actual: ${a.status}.`;
+  paragraph(baseSummary);
+  ctx.y += 4;
+  if (r) paragraph(riskNarrative(r), { color: NAVY_SOFT });
+  ctx.y += 8;
+
+  // Panel KPIs
+  if (r) {
+    const kpis: [string, string, [number, number, number]][] = [
+      ["Indicios", String(r.totalDetections), SEV_COLOR[r.risk] ?? INK],
+      ["Módulos con indicios", String(r.modules.filter((m) => m.detected > 0).length), ACCENT],
+      ["Entradas analizadas", r.totalEntries.toLocaleString(), NAVY_SOFT],
+      ["Riesgo", riskLabel(r.risk), SEV_COLOR[r.risk] ?? INK],
+    ];
+    const gap = 10;
+    const kw = (CW - gap * 3) / 4;
+    ensure(70);
+    kpis.forEach(([label, value, color], i) => {
+      const x = M.left + i * (kw + gap);
+      setFill(SOFT_BG);
+      doc.roundedRect(x, ctx.y, kw, 60, 4, 4, "F");
+      setStroke(LINE); doc.setLineWidth(0.5);
+      doc.roundedRect(x, ctx.y, kw, 60, 4, 4, "S");
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.text(label.toUpperCase(), x + 10, ctx.y + 16);
+      setText(color);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+      doc.text(value, x + 10, ctx.y + 42);
+    });
+    ctx.y += 72;
+  }
+
+  // 02 · ¿Qué significa este informe?
+  sectionTitle("02", "Cómo leer este informe");
+  paragraph("MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo. Un indicio no equivale a una infección confirmada: puede tratarse de una app legítima instalada por el propio usuario. Revisa cada hallazgo y comprueba si reconoces la app o el comportamiento descrito.");
+  ctx.y += 4;
+  paragraph("Las severidades empleadas en este informe:", { color: NAVY_SOFT });
+  ctx.y += 2;
+  (["critical", "high", "medium", "low"] as const).forEach((lvl) => {
+    ensure(20);
+    severityChip(lvl, M.left, ctx.y + 6);
+    setText(INK);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    const text = explainSeverity(lvl).replace(/^[^—]+—\s*/, "");
+    const lines = doc.splitTextToSize(text, CW - 70);
+    doc.text(lines, M.left + 64, ctx.y + 6);
+    ctx.y += Math.max(18, lines.length * 13);
+  });
+  ctx.y += 6;
+
+  // 03 · Detalles del análisis
+  sectionTitle("03", "Detalles del análisis");
+  const meta: [string, string][] = [
+    ["Fecha", new Date(a.uploadedAt).toLocaleString()],
+    ["Archivo de origen", a.fileName],
+    ["Tamaño", `${(a.fileSize / 1024).toFixed(1)} KB`],
+    ["Plataforma", r ? platformLabel(r.platform) : "—"],
+    ["Módulos analizados", String(r?.modules.length ?? 0)],
+    ["Entradas totales", String(r?.totalEntries ?? 0)],
+    ["Indicios detectados", String(r?.totalDetections ?? 0)],
+    ["Riesgo estimado", riskLabel(r?.risk)],
+    ["Identificador", ctx.reportId],
+  ];
+  // Tabla 2 columnas
+  const rowH = 18;
+  meta.forEach(([k, v], i) => {
+    ensure(rowH);
+    if (i % 2 === 0) {
+      setFill(SOFT_BG);
+      doc.rect(M.left, ctx.y - 12, CW, rowH, "F");
+    }
+    setText(MUTED);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.text(k, M.left + 10, ctx.y);
+    setText(INK);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    const val = doc.splitTextToSize(String(v), CW - 200)[0];
+    doc.text(val, M.left + 200, ctx.y);
+    ctx.y += rowH;
+  });
+  ctx.y += 8;
+
+  // 04 · Áreas analizadas (módulos)
+  if (r && r.modules.length) {
+    sectionTitle("04", "Áreas del dispositivo analizadas");
+    const visible = r.modules.filter((m) => m.entries > 0 || m.detected > 0);
+    // Cabecera
+    ensure(22);
+    setFill(NAVY); doc.rect(M.left, ctx.y - 12, CW, 20, "F");
+    setText(WHITE);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+    doc.text("ÁREA", M.left + 10, ctx.y);
+    doc.text("ENTRADAS", M.left + CW - 180, ctx.y, { align: "right" });
+    doc.text("INDICIOS", M.left + CW - 90, ctx.y, { align: "right" });
+    doc.text("ESTADO", M.left + CW - 10, ctx.y, { align: "right" });
+    ctx.y += 14;
+
+    visible.forEach((m, i) => {
+      ensure(rowH);
+      if (i % 2 === 0) { setFill(SOFT_BG); doc.rect(M.left, ctx.y - 12, CW, rowH, "F"); }
+      setText(INK);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      const human = humanizeModule(m.key, m.label);
+      doc.text(doc.splitTextToSize(human, CW - 320)[0], M.left + 10, ctx.y);
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.text(`(${m.key})`, M.left + 10, ctx.y + 10);
+      setText(INK);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      doc.text(String(m.entries), M.left + CW - 180, ctx.y, { align: "right" });
+      if (m.detected > 0) setText(SEV_COLOR.critical); else setText(MUTED);
+      doc.setFont("helvetica", "bold");
+      doc.text(String(m.detected), M.left + CW - 90, ctx.y, { align: "right" });
+      if (m.detected > 0) {
+        severityChip("high", M.left + CW - 50, ctx.y);
+      } else {
+        setText(MUTED);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+        doc.text("limpio", M.left + CW - 10, ctx.y, { align: "right" });
+      }
+      ctx.y += rowH + 4;
+    });
+    ctx.y += 8;
+  }
+
+  // 05 · Indicios detectados
   if (r && r.detections.length) {
-    ensure(40);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-    doc.setTextColor(20, 28, 48);
-    doc.text(`Indicios detectados (${r.detections.length})`, 40, y); y += 16;
+    sectionTitle("05", `Indicios detectados (${r.detections.length})`);
 
     const sevRank: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-    const sevColor: Record<string, [number, number, number]> = {
-      critical: [185, 28, 28],
-      high: [194, 87, 24],
-      medium: [161, 122, 0],
-      low: [90, 90, 90],
-    };
-
     const sorted = [...r.detections].sort((a, b) => {
       const ra = sevRank[a.level ?? "high"] ?? 4;
       const rb = sevRank[b.level ?? "high"] ?? 4;
@@ -143,69 +360,113 @@ export function generatePdfReport(a: Analysis) {
       }
     }
 
-    const MAX = 150;
+    // Contadores por severidad
+    const counters: Record<string, number> = {};
+    for (const d of sorted) counters[d.level ?? "high"] = (counters[d.level ?? "high"] ?? 0) + 1;
+    const summaryLine = (["critical", "high", "medium", "low"] as const)
+      .filter((l) => counters[l]).map((l) => `${counters[l]} ${severityLabel(l).toLowerCase()}`).join(" · ");
+    if (summaryLine) {
+      paragraph(`Distribución: ${summaryLine}.`, { size: 9, color: MUTED, italic: true });
+      ctx.y += 4;
+    }
+
+    const MAX = 200;
+    let lastLevel: string | null = null;
+
     groups.slice(0, MAX).forEach((g, idx) => {
-      ensure(48);
-      const [cr, cg, cb] = sevColor[g.level] ?? [60, 60, 60];
-      // Header line: [SEV] N. Módulo humanizado (N×)
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-      doc.setTextColor(cr, cg, cb);
-      const tag = `[${severityLabel(g.level as any)}]`;
-      doc.text(tag, 40, y);
-      const tagW = doc.getTextWidth(tag) + 6;
-      doc.setTextColor(20, 28, 48);
-      const head = `${idx + 1}. ${humanizeModule(g.module)}${g.count > 1 ? `  (${g.count}×)` : ""}`;
-      doc.text(head, 40 + tagW, y);
-      y += 13;
+      // Subtítulo por severidad
+      if (g.level !== lastLevel) {
+        ensure(28);
+        ctx.y += 6;
+        setText(SEV_COLOR[g.level] ?? INK);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+        doc.text(`Severidad ${severityLabel(g.level as RiskLevel)}`.toUpperCase(), M.left, ctx.y);
+        setStroke(SEV_COLOR[g.level] ?? LINE); doc.setLineWidth(1);
+        doc.line(M.left, ctx.y + 4, W - M.right, ctx.y + 4);
+        ctx.y += 14;
+        lastLevel = g.level;
+      }
 
-      // Plain-language explanation
-      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-      doc.setTextColor(40, 40, 40);
+      // Card por indicio
       const human = humanizeDetection(g.summary);
-      const humanLines = doc.splitTextToSize(human, W - 80);
-      doc.text(humanLines, 40, y);
-      y += humanLines.length * 12 + 2;
-
-      // Technical detail in gray
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      const humanLines = doc.splitTextToSize(human, CW - 24);
       doc.setFont("helvetica", "italic"); doc.setFontSize(8);
-      doc.setTextColor(140, 140, 140);
-      const tech = doc.splitTextToSize(`Detalle técnico: ${g.summary}`, W - 80);
-      doc.text(tech, 40, y);
-      y += tech.length * 10 + 8;
+      const techLines = doc.splitTextToSize(`Evidencia original: ${g.summary}`, CW - 24);
+      const cardH2 = 28 + humanLines.length * 12 + techLines.length * 10 + 10;
+      ensure(cardH2 + 6);
+
+      // Fondo card
+      setFill(SOFT_BG);
+      doc.roundedRect(M.left, ctx.y - 4, CW, cardH2, 4, 4, "F");
+      // Barra lateral con color de severidad
+      const [sr, sg, sb] = SEV_COLOR[g.level] ?? MUTED;
+      setFill([sr, sg, sb]);
+      doc.rect(M.left, ctx.y - 4, 3, cardH2, "F");
+
+      // Cabecera card
+      let yy = ctx.y + 12;
+      const chipW = severityChip(g.level, M.left + 12, yy);
+      setText(INK);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      const head = `${idx + 1}. ${humanizeModule(g.module)}${g.count > 1 ? `  ·  ${g.count}×` : ""}`;
+      doc.text(head, M.left + 12 + chipW + 6, yy);
+      yy += 14;
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.text(`Módulo MVT: ${g.module}`, M.left + 12, yy);
+      yy += 10;
+
+      // Explicación humana
+      setText(INK);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      doc.text(humanLines, M.left + 12, yy);
+      yy += humanLines.length * 12 + 2;
+
+      // Evidencia técnica
+      setText(MUTED);
+      doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+      doc.text(techLines, M.left + 12, yy);
+
+      ctx.y += cardH2 + 6;
     });
-    doc.setTextColor(20, 28, 48);
+
     if (groups.length > MAX) {
-      ensure(16);
-      doc.setFont("helvetica", "italic"); doc.setFontSize(10);
-      doc.text(`… y ${groups.length - MAX} grupos de indicios más (ver dashboard).`, 40, y);
-      y += 14;
+      ensure(20);
+      paragraph(`… y ${groups.length - MAX} grupos de indicios más (consultar dashboard).`, { italic: true, color: MUTED, size: 9 });
     }
   }
 
-  // Próximos pasos recomendados
-  ensure(120);
-  y += 6;
-  doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-  doc.setTextColor(20, 28, 48);
-  doc.text("Próximos pasos recomendados", 40, y); y += 16;
-  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  // 06 · Próximos pasos
+  sectionTitle("06", "Próximos pasos recomendados");
   const recs = r ? nextSteps(r) : [
     "Aislar el dispositivo de redes sensibles hasta completar la verificación.",
     "Actualizar el sistema operativo y revocar credenciales potencialmente expuestas.",
   ];
-  recs.forEach((rec) => {
+  recs.forEach((rec, i) => {
     ensure(28);
-    const lines = doc.splitTextToSize(`• ${rec}`, W - 80);
-    doc.text(lines, 40, y);
-    y += lines.length * 12 + 2;
+    setFill(ACCENT);
+    doc.circle(M.left + 8, ctx.y - 3, 8, "F");
+    setText(WHITE);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+    doc.text(String(i + 1), M.left + 8, ctx.y, { align: "center" });
+    setText(INK);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    const lines = doc.splitTextToSize(rec, CW - 32);
+    doc.text(lines, M.left + 24, ctx.y);
+    ctx.y += Math.max(20, lines.length * 13 + 4);
   });
 
-  ensure(40);
-  y += 10;
-  doc.setFont("helvetica", "italic"); doc.setFontSize(9);
-  doc.setTextColor(120, 120, 120);
-  const disclaimer = doc.splitTextToSize("Aviso: este informe ofrece indicios técnicos basados en resultados de MVT. No constituye una certificación absoluta de infección. El análisis se realiza con el consentimiento del propietario del dispositivo y los archivos se procesan localmente.", W - 80);
-  doc.text(disclaimer, 40, y);
+  // 07 · Aviso legal
+  sectionTitle("07", "Aviso legal y metodología");
+  paragraph("Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.", { size: 9 });
+  ctx.y += 2;
+  paragraph("Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La interpretación final corresponde a un analista cualificado.", { size: 9 });
+  ctx.y += 2;
+  paragraph("Los archivos se procesan localmente en el navegador. No se transmite información del dispositivo analizado a terceros. El análisis se realiza con el consentimiento del propietario del dispositivo.", { size: 9, italic: true, color: MUTED });
 
-  doc.save(`informe-${a.id.slice(0, 8)}.pdf`);
+  // ---------- Footer última página ----------
+  drawFooter(ctx.page);
+
+  doc.save(`informe-${ctx.reportId}.pdf`);
 }

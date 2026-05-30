@@ -1,0 +1,31 @@
+{
+  "common": {
+    "goHome": "Go home",
+    "tryAgain": "Try again",
+    "language": "Language",
+    "online": "Online",
+    "logout": "Log out",
+    "new": "new"
+  },
+  "errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundDesc": "The page you're looking for doesn't exist or has been moved.",
+    "boundaryTitle": "This page didn't load",
+    "boundaryDesc": "Something went wrong on our end. You can try refreshing or head back home."
+  },
+  "shell": {
+    "brand": "Spyware Forensic",
+    "subBrand": "Analyzer",
+    "sectionPrimary": "Main",
+    "nav": {
+      "dashboard": "Dashboard",
+      "newAnalysis": "New analysis",
+      "reports": "Reports",
+      "history": "History",
+      "dashboardHint": "Overview",
+      "uploadHint": "Upload artifacts",
+      "reportsHint": "Results",
+      "historyHint": "Previous analyses"
+    }
+  }
+}

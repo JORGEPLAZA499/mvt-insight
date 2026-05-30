@@ -7,22 +7,26 @@ import {
   History,
   LogOut,
   Sparkles,
+  Languages,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getSession, setSession, getAnalyses } from "@/lib/mock-store";
-
-const nav = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, hint: "Resumen" },
-  { to: "/upload", label: "Nuevo análisis", icon: UploadCloud, hint: "Subir artefactos", highlight: true },
-  { to: "/reports", label: "Informes", icon: FileSearch, hint: "Resultados" },
-  { to: "/history", label: "Historial", icon: History, hint: "Análisis previos" },
-];
+import { SUPPORTED_LANGUAGES } from "@/i18n";
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { t, i18n } = useTranslation();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [session, setSessionState] = useState<{ email: string } | null>(null);
   const [historyCount, setHistoryCount] = useState(0);
+
+  const nav = [
+    { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },
+    { to: "/upload", label: t("shell.nav.newAnalysis"), icon: UploadCloud, hint: t("shell.nav.uploadHint"), highlight: true },
+    { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
+    { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
+  ];
 
   useEffect(() => {
     const s = getSession();
@@ -90,10 +94,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold tracking-tight truncate">
-              Spyware Forensic
+              {t("shell.brand")}
             </div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">
-              Analyzer
+              {t("shell.subBrand")}
             </div>
           </div>
         </Link>
@@ -109,7 +113,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Nav */}
         <div className="relative flex-1 px-3 py-4 overflow-y-auto">
           <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
-            Principal
+            {t("shell.sectionPrimary")}
           </div>
           <nav className="space-y-1">
             {nav.map((n) => {
@@ -185,7 +189,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       {badge === "new" ? (
                         <span className="inline-flex items-center gap-0.5">
                           <Sparkles className="h-2.5 w-2.5" />
-                          new
+                          {t("common.new")}
                         </span>
                       ) : (
                         badge
@@ -226,11 +230,29 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <div className="text-sm font-medium truncate">{emailShort}</div>
                 <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <span className="h-1 w-1 rounded-full bg-success" />
-                  En línea
+                  {t("common.online")}
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Language selector */}
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <Languages className="h-3.5 w-3.5 text-muted-foreground" />
+            <select
+              value={i18n.language?.split("-")[0] ?? "es"}
+              onChange={(e) => i18n.changeLanguage(e.target.value)}
+              aria-label={t("common.language")}
+              className="flex-1 bg-transparent border border-sidebar-border rounded-md px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              {SUPPORTED_LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code} className="bg-background text-foreground">
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
             onClick={() => {
               setSession(null);
@@ -239,7 +261,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground border border-transparent hover:border-destructive/30 hover:text-destructive hover:bg-destructive/5 transition-all duration-200 group"
           >
             <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-            <span>Cerrar sesión</span>
+            <span>{t("common.logout")}</span>
           </button>
         </div>
       </aside>

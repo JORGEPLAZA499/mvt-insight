@@ -1,10 +1,18 @@
 # Instalador automático de MVT (Mobile Verification Toolkit) para Windows
-# Uso (PowerShell como Administrador):
-#   Set-ExecutionPolicy -Scope Process Bypass -Force
-#   .\instalar-mvt-windows.ps1
+# Uso directo (PowerShell):  irm <url>/scripts/instalar-mvt-windows.ps1 | iex
+# Uso local:                .\instalar-mvt-windows.ps1
 
 $ErrorActionPreference = "Stop"
-Write-Host "==> Instalador MVT para Windows" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "  Spyware Forensic Analyzer - Instalador MVT (Windows)"      -ForegroundColor Cyan
+Write-Host "  Se instalara (via winget + pip): Python 3.11,"               -ForegroundColor Cyan
+Write-Host "  Google Platform Tools (adb) y mvt."                          -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+$answer = Read-Host "Continuar? [s/N]"
+if ($answer -notmatch '^(s|si|y|yes)$') { Write-Host "Cancelado."; exit 0 }
+Write-Host ""
+
 
 # 1. winget
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {

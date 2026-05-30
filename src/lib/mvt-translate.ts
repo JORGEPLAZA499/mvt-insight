@@ -155,14 +155,37 @@ export function explainSeverity(level: RiskLevel): string {
   }
 }
 
-// ---------- Narrativa global ----------
+// ---------- Clasificación por categoría ----------
 
-const KNOWN_FAMILIES = ["Pegasus", "Predator", "FinFisher", "Hermit", "Reign", "Life360"];
+export type Category = "mercenary" | "stalkerware" | "suspicious";
+
+export const CATEGORY_LABEL: Record<Category, string> = {
+  mercenary: "Spyware mercenario",
+  stalkerware: "Stalkerware comercial",
+  suspicious: "Comportamiento sospechoso",
+};
+
+export const CATEGORY_DESC: Record<Category, string> = {
+  mercenary: "Malware avanzado de uso dirigido (Pegasus, Predator, FinFisher…). Si aparece aquí, trátalo como una emergencia.",
+  stalkerware: "Apps comerciales legales que permiten vigilancia continua (Life360, control parental…). No son malware en sentido estricto, pero pueden usarse para espiar.",
+  suspicious: "Comportamiento inusual o permisos sensibles concedidos a apps. Puede ser legítimo; conviene verificar.",
+};
+
+const MERCENARY_FAMILIES = ["Pegasus", "Predator", "FinFisher", "FinSpy", "Hermit", "Reign", "Chrysaor", "NSO", "Intellexa", "Cytrox", "QuaDream", "RCS Lab"];
+const STALKERWARE_FAMILIES = ["Life360", "mSpy", "FlexiSpy", "Cocospy", "Hoverwatch", "Spyzie", "Spyic", "XNSPY", "Cerberus"];
+const ALL_FAMILIES = [...MERCENARY_FAMILIES, ...STALKERWARE_FAMILIES];
+
+export function classifyDetection(d: MvtDetection): Category {
+  const s = d.summary || "";
+  for (const f of MERCENARY_FAMILIES) if (s.includes(`"${f}"`)) return "mercenary";
+  for (const f of STALKERWARE_FAMILIES) if (s.includes(`"${f}"`)) return "stalkerware";
+  return "suspicious";
+}
 
 function detectFamilies(detections: MvtDetection[]): Map<string, number> {
   const counts = new Map<string, number>();
   for (const d of detections) {
-    for (const fam of KNOWN_FAMILIES) {
+    for (const fam of ALL_FAMILIES) {
       if (d.summary && d.summary.includes(`"${fam}"`)) {
         counts.set(fam, (counts.get(fam) ?? 0) + 1);
       }
@@ -171,26 +194,69 @@ function detectFamilies(detections: MvtDetection[]): Map<string, number> {
   return counts;
 }
 
-export function riskNarrative(result: MvtParsedResult): string {
-  const fams = detectFamilies(result.detections);
-  const top = [...fams.entries()].sort((a, b) => b[1] - a[1]);
-  const total = result.totalDetections;
-
-  if (total === 0) {
-    return "No se han encontrado indicios conocidos de spyware en este informe. Conserva el respaldo como evidencia y repite el análisis periódicamente.";
-  }
-
-  const mercenary = top.find(([f]) => f !== "Life360");
-  if (mercenary) {
-    return `Se han encontrado ${total} indicios. La mayoría coinciden con ${familyDesc(mercenary[0])}. Esto es serio: aísla el dispositivo de redes sensibles y contacta con un especialista en respuesta a incidentes.`;
-  }
-
-  if (top.length === 1 && top[0][0] === "Life360") {
-    return `Se han encontrado ${total} indicios. La mayoría corresponden a la app Life360 (${familyDesc("Life360")}). No es malware en sentido estricto, pero permite saber dónde estás en todo momento. Si no la instalaste tú o no recuerdas haberla autorizado, considérala sospechosa y desinstálala.`;
-  }
-
-  return `Se han encontrado ${total} indicios técnicos. Revisa la lista detallada: cada entrada incluye una explicación en lenguaje claro y la evidencia original.`;
+export interface Verdict {
+  level: "clean" | "suspicious" | "stalkerware" | "mercenary";
+  headline: string;
+  detail: string;
 }
+
+export function buildVerdict(result: MvtParsedResult): Verdict {
+  const total = result.totalDetections;
+  if (total === 0) {
+    return {
+      level: "clean",
+      headline: "Sin indicios de spyware conocido",
+      detail: "MVT no ha encontrado coincidencias con sus indicadores públicos en este informe. Esto no garantiza que el dispositivo esté limpio: MVT solo detecta amenazas con firma conocida.",
+    };
+  }
+  const fams = detectFamilies(result.detections);
+  const mercenary = [...fams.entries()].find(([f]) => MERCENARY_FAMILIES.includes(f));
+  if (mercenary) {
+    return {
+      level: "mercenary",
+      headline: `Posible spyware mercenario detectado: ${mercenary[0]}`,
+      detail: `Se han encontrado ${mercenary[1]} coincidencia(s) con indicadores de ${familyDesc(mercenary[0])}. Trátalo como una emergencia: no reinicies el dispositivo, aíslalo de la red y contacta con Access Now, Amnesty Tech o Citizen Lab.`,
+    };
+  }
+  const stalker = [...fams.entries()].find(([f]) => STALKERWARE_FAMILIES.includes(f));
+  if (stalker) {
+    return {
+      level: "stalkerware",
+      headline: `Stalkerware detectado: ${stalker[0]}`,
+      detail: `Se han encontrado coincidencias con ${familyDesc(stalker[0])}. No es malware mercenario, pero permite vigilar el dispositivo de forma continua. Verifica si la instalaste tú o alguien con acceso físico.`,
+    };
+  }
+  return {
+    level: "suspicious",
+    headline: "Comportamiento sospechoso sin firma conocida",
+    detail: `Se han encontrado ${total} indicios técnicos sin coincidencia directa con familias conocidas. Revisa el detalle y considera repetir el análisis con la herramienta oficial MVT.`,
+  };
+}
+
+export function riskNarrative(result: MvtParsedResult): string {
+  return buildVerdict(result).detail;
+}
+
+// ---------- Verificación cruzada ----------
+
+export const CROSS_CHECK_STEPS: { title: string; detail: string }[] = [
+  {
+    title: "Vuelve a ejecutar MVT oficial en línea de comandos",
+    detail: "Instala mvt-android o mvt-ios desde docs.mvt.re y analiza el mismo backup con los IOCs más recientes de Amnesty Tech (mvt-android check-backup / mvt-ios check-backup). Compara el resultado con este informe.",
+  },
+  {
+    title: "Access Now Digital Security Helpline",
+    detail: "Ayuda gratuita 24/7 para activistas, periodistas y sociedad civil. Correo: help@accessnow.org · accessnow.org/help",
+  },
+  {
+    title: "Amnesty International Security Lab",
+    detail: "Equipo que mantiene MVT y los indicadores de Pegasus/Predator. Contacto a través de securitylab.amnesty.org cuando hay sospecha de spyware mercenario.",
+  },
+  {
+    title: "Citizen Lab (Universidad de Toronto)",
+    detail: "Centro de investigación sobre spyware mercenario. Acepta casos a través de citizenlab.ca cuando se sospecha de un ataque dirigido.",
+  },
+];
 
 // ---------- Próximos pasos ----------
 

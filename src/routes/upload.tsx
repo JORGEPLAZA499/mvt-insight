@@ -598,15 +598,6 @@ function StepRun({
       </div>
       <Progress value={(current / total) * 100} className="h-1 mt-2" />
 
-      {current === 1 && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 p-3 text-xs text-muted-foreground">
-          <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-          <span>
-            Ten a mano un <strong className="text-foreground">cable USB</strong> y mantén el móvil{" "}
-            <strong className="text-foreground">desbloqueado y con la pantalla encendida</strong> durante todo el proceso.
-          </span>
-        </div>
-      )}
 
       <div className="mt-6">
         <NumberedStep n={current} title={active.title}>

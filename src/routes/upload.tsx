@@ -334,9 +334,30 @@ function StepRun({
     <CopyCommand command={command} label="Terminal" />
   );
 
+  const preambleStep = {
+    title: "Prepara el cable y el móvil",
+    content: (
+      <>
+        <p>
+          Ten a mano un <strong className="text-foreground">cable USB</strong> (mejor el original,
+          que transmita datos, no solo carga). Mantén el móvil{" "}
+          <strong className="text-foreground">desbloqueado y con la pantalla encendida</strong> durante
+          todo el proceso.
+        </p>
+        <p className="mt-2 text-xs">
+          Cuando estés listo, conecta el móvil al ordenador con el cable, así:
+        </p>
+        <div className="mt-4 rounded-xl border border-border bg-card/40 p-4">
+          <UsbConnect />
+        </div>
+      </>
+    ),
+  };
+
   const subSteps: { title: string; content: React.ReactNode }[] =
     device === "android"
       ? [
+          preambleStep,
           {
             title: "Activa el modo desarrollador en el móvil",
             content: (

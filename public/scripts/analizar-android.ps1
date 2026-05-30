@@ -109,6 +109,9 @@ try {
     Write-Host "Saltando mvt-android check-androidqf porque no hay adquisicion." -ForegroundColor Yellow
   }
 
+  # Cerrar el log para liberar run.log antes de comprimir
+  try { Stop-Transcript | Out-Null } catch {}
+
   # Empaquetar (siempre, aunque solo contenga el log)
   Write-Host "==> Comprimiendo resultados..."
   if (Test-Path $zipFile) { Remove-Item $zipFile -Force }

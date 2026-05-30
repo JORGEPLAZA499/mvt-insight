@@ -213,12 +213,41 @@ export function generatePdfReport(a: Analysis) {
 
   // 01 · Resumen ejecutivo
   sectionTitle("01", "Resumen ejecutivo");
+
+  // Bloque de VEREDICTO en una frase
+  if (r) {
+    const v = buildVerdict(r);
+    const verdictColor: [number, number, number] =
+      v.level === "mercenary" ? SEV_COLOR.critical
+      : v.level === "stalkerware" ? SEV_COLOR.high
+      : v.level === "suspicious" ? SEV_COLOR.medium
+      : [22, 163, 74];
+    ensure(110);
+    setFill(verdictColor);
+    doc.roundedRect(M.left, ctx.y, CW, 8, 2, 2, "F");
+    ctx.y += 14;
+    setFill(SOFT_BG);
+    doc.roundedRect(M.left, ctx.y, CW, 86, 4, 4, "F");
+    setStroke(LINE); doc.setLineWidth(0.5);
+    doc.roundedRect(M.left, ctx.y, CW, 86, 4, 4, "S");
+    setText(MUTED);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+    doc.text("VEREDICTO", M.left + 16, ctx.y + 18);
+    setText(verdictColor);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    const hLines = doc.splitTextToSize(v.headline, CW - 32);
+    doc.text(hLines, M.left + 16, ctx.y + 36);
+    setText(INK);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    const dLines = doc.splitTextToSize(v.detail, CW - 32);
+    doc.text(dLines, M.left + 16, ctx.y + 36 + hLines.length * 15);
+    ctx.y += 86 + 14;
+  }
+
   const baseSummary = r
     ? `Se ha analizado el archivo "${a.fileName}". La plataforma detectada es ${platformLabel(r.platform)}. Se procesaron ${r.modules.length} módulos MVT con un total de ${r.totalEntries.toLocaleString()} entradas y se identificaron ${r.totalDetections} indicios técnicos. El nivel de riesgo estimado es ${riskLabel(r.risk)}.`
     : `Análisis de "${a.fileName}". Estado actual: ${a.status}.`;
   paragraph(baseSummary);
-  ctx.y += 4;
-  if (r) paragraph(riskNarrative(r), { color: NAVY_SOFT });
   ctx.y += 8;
 
   // Panel KPIs

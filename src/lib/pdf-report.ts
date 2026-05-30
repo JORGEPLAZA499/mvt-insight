@@ -12,6 +12,7 @@ import {
   CATEGORY_LABEL,
   CATEGORY_DESC,
   CROSS_CHECK_STEPS,
+  detectionKey,
   type Category,
 } from "./mvt-translate";
 

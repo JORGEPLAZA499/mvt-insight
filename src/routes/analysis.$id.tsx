@@ -182,6 +182,215 @@ function SmallStat({ icon: Icon, label, value }: { icon: any; label: string; val
   );
 }
 
+// ---------- Pestaña usuario: mismo orden y contenido que el PDF ----------
+
+const SEV_BADGE: Record<string, string> = {
+  critical: "bg-destructive/15 text-destructive border-destructive/30",
+  high: "bg-destructive/10 text-destructive border-destructive/20",
+  medium: "bg-warning/15 text-warning border-warning/30",
+  low: "bg-muted text-muted-foreground border-border",
+};
+
+function UserReport({ analysis }: { analysis: Analysis }) {
+  const r = analysis.result!;
+  const verdict = useMemo(() => buildVerdict(r), [r]);
+  const recs = useMemo(() => nextSteps(r), [r]);
+  const verdictBorder =
+    verdict.level === "mercenary" ? "border-destructive/40 bg-destructive/5"
+    : verdict.level === "stalkerware" ? "border-destructive/30 bg-destructive/5"
+    : verdict.level === "suspicious" ? "border-warning/40 bg-warning/5"
+    : "border-success/40 bg-success/5";
+  const verdictTitle =
+    verdict.level === "clean" ? "text-success" :
+    verdict.level === "suspicious" ? "text-warning" : "text-destructive";
+
+  return (
+    <div className="space-y-10">
+      {/* 01 · Veredicto */}
+      <section>
+        <SectionTitle num="01" title="Veredicto" />
+        <div className={`rounded-xl border p-6 ${verdictBorder}`}>
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Veredicto</div>
+          <div className={`text-xl font-semibold mt-1 ${verdictTitle}`}>{verdict.headline}</div>
+          <p className="text-sm text-foreground/80 mt-2">{verdict.detail}</p>
+        </div>
+      </section>
+
+      {/* 02 · Resumen ejecutivo */}
+      <section>
+        <SectionTitle num="02" title="Resumen ejecutivo" />
+        <p className="text-sm text-foreground/90">
+          Se ha analizado el archivo <strong>"{analysis.fileName}"</strong>. La plataforma detectada es{" "}
+          <strong>{platformLabel(r.platform)}</strong>. Se procesaron{" "}
+          <strong>{r.modules.length}</strong> módulos MVT con un total de{" "}
+          <strong>{r.totalEntries.toLocaleString()}</strong> entradas y se identificaron{" "}
+          <strong>{r.totalDetections}</strong> indicios técnicos. El nivel de riesgo estimado es{" "}
+          <strong className={riskColor(r.risk)}>{riskLabel(r.risk)}</strong>.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
+          <SmallStat icon={AlertOctagon} label="Indicios" value={r.totalDetections} />
+          <SmallStat icon={Layers} label="Módulos con indicios" value={r.modules.filter((m) => m.detected > 0).length} />
+          <SmallStat icon={Database} label="Entradas analizadas" value={r.totalEntries.toLocaleString()} />
+          <SmallStat icon={ShieldAlert} label="Riesgo" value={riskLabel(r.risk)} />
+        </div>
+      </section>
+
+      {/* 03 · Cómo leer este informe */}
+      <section>
+        <SectionTitle num="03" title="Cómo leer este informe" />
+        <p className="text-sm text-foreground/80">
+          MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo.
+          Un indicio no equivale a una infección confirmada: puede tratarse de una app legítima instalada por el propio usuario.
+          Revisa cada hallazgo y comprueba si reconoces la app o el comportamiento descrito.
+        </p>
+        <div className="mt-4 rounded-xl border border-border bg-card divide-y divide-border">
+          {(["critical", "high", "medium", "low"] as const).map((lvl) => (
+            <div key={lvl} className="flex items-start gap-3 p-3">
+              <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0 ${SEV_BADGE[lvl]}`}>
+                {severityLabel(lvl)}
+              </span>
+              <span className="text-sm text-foreground/80">
+                {explainSeverity(lvl).replace(/^[^—]+—\s*/, "")}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 04 · Áreas del dispositivo analizadas */}
+      <section>
+        <SectionTitle num="04" title="Áreas del dispositivo analizadas" />
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
+            <div className="col-span-6">Área</div>
+            <div className="col-span-2 text-right">Entradas</div>
+            <div className="col-span-2 text-right">Indicios</div>
+            <div className="col-span-2 text-right">Estado</div>
+          </div>
+          {r.modules.filter((m) => m.entries > 0 || m.detected > 0).map((m) => (
+            <ModuleRow key={m.key} module={m} detections={r.detections} />
+          ))}
+          {r.modules.length === 0 && (
+            <div className="p-6 text-sm text-muted-foreground text-center">No se reconocieron módulos MVT.</div>
+          )}
+        </div>
+      </section>
+
+      {/* 05 · Indicios detectados */}
+      <section>
+        <SectionTitle num="05" title="Indicios detectados" />
+        {r.detections.length === 0 ? (
+          <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm">
+            <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
+            MVT no encontró coincidencias con indicadores conocidos en los archivos subidos.
+          </div>
+        ) : (
+          <UserDetections detections={r.detections} />
+        )}
+      </section>
+
+      {/* 06 · Próximos pasos recomendados */}
+      <section>
+        <SectionTitle num="06" title="Próximos pasos recomendados" />
+        <ol className="space-y-3">
+          {recs.map((rec, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="h-6 w-6 shrink-0 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-semibold">{i + 1}</span>
+              <span className="text-sm text-foreground/90 pt-0.5">{rec}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* 07 · Cómo verificar este resultado */}
+      <section>
+        <SectionTitle num="07" title="Cómo verificar este resultado" />
+        <p className="text-sm text-foreground/80 mb-4">
+          MVT solo detecta amenazas con firma conocida. Si tienes una sospecha real, no te quedes solo con este informe:
+          contrasta el resultado con la herramienta oficial y, si es necesario, con un equipo especializado.
+        </p>
+        <div className="space-y-3">
+          {CROSS_CHECK_STEPS.map((step) => (
+            <div key={step.title} className="rounded-lg border border-border bg-card p-4 border-l-4 border-l-primary">
+              <div className="text-sm font-semibold">{step.title}</div>
+              <div className="text-sm text-muted-foreground mt-1">{step.detail}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 08 · Aviso legal */}
+      <section>
+        <SectionTitle num="08" title="Aviso legal y metodología" />
+        <div className="space-y-3 text-xs text-muted-foreground">
+          <p>Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.</p>
+          <p>Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.</p>
+          <p>La ausencia de indicios no garantiza que el dispositivo esté limpio: MVT solo cubre amenazas con firma pública conocida. Spyware nuevo o muestras privadas pueden no detectarse.</p>
+          <p className="italic">Los archivos se procesan localmente en el navegador. No se transmite información del dispositivo analizado a terceros. El análisis se realiza con el consentimiento del propietario del dispositivo.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SectionTitle({ num, title }: { num: string; title: string }) {
+  return (
+    <div className="flex items-baseline gap-3 mb-4 pb-2 border-b border-border">
+      <span className="text-xs font-semibold text-muted-foreground tabular-nums">{num}</span>
+      <h2 className="text-lg font-semibold">{title}</h2>
+    </div>
+  );
+}
+
+function ModuleRow({ module: m, detections }: { module: { key: string; label: string; entries: number; detected: number }; detections: MvtDetection[] }) {
+  const [open, setOpen] = useState(m.detected > 0);
+  const highlights = useMemo(
+    () => (m.detected > 0 ? buildModuleHighlights(detections, m.key, 8) : []),
+    [detections, m.key, m.detected],
+  );
+  const hasHighlights = highlights.length > 0;
+  return (
+    <div className="border-b border-border last:border-0">
+      <button
+        type="button"
+        onClick={() => hasHighlights && setOpen((v) => !v)}
+        className={`w-full grid grid-cols-12 px-4 py-3 text-sm items-center text-left ${hasHighlights ? "hover:bg-muted/40 cursor-pointer" : "cursor-default"}`}
+      >
+        <div className="col-span-6 min-w-0 flex items-center gap-2">
+          {hasHighlights ? (open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />) : <span className="w-3.5 shrink-0" />}
+          <div className="min-w-0">
+            <div className="font-medium truncate">{humanizeModule(m.key, m.label)}</div>
+            <div className="text-xs text-muted-foreground font-mono truncate">{m.key}</div>
+          </div>
+        </div>
+        <div className="col-span-2 text-right tabular-nums">{m.entries.toLocaleString()}</div>
+        <div className={`col-span-2 text-right tabular-nums font-semibold ${m.detected > 0 ? "text-destructive" : "text-muted-foreground"}`}>{m.detected}</div>
+        <div className="col-span-2 text-right">
+          {m.detected > 0
+            ? <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${SEV_BADGE.high}`}>ALTO</span>
+            : <span className="text-xs text-muted-foreground">limpio</span>}
+        </div>
+      </button>
+      {open && hasHighlights && (
+        <div className="px-4 pb-4 pl-10">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Detalle</div>
+          <ul className="space-y-1.5">
+            {highlights.map((h, i) => (
+              <li key={i} className="text-sm flex items-start gap-2">
+                <span className="text-xs tabular-nums text-muted-foreground shrink-0 mt-0.5">{h.count}×</span>
+                <span className="min-w-0">
+                  <span className="font-mono text-xs">{h.label}</span>
+                  {h.detail && <span className="text-foreground/80"> · {h.detail}</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- Agrupado por entidad (deduplicación) ----------
 
 const LEVEL_RANK: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };

@@ -370,20 +370,66 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += 8;
   }
 
-  // 05 · Indicios detectados — agrupados por CATEGORÍA y luego severidad
+  // 05 · Indicios detectados — agrupados por CATEGORÍA y luego por ENTIDAD
   if (r && r.detections.length) {
-    sectionTitle("05", `Indicios detectados (${r.detections.length})`);
-
-    // Clasificar por categoría
+    // Pre-clasificar
     const byCat: Record<Category, typeof r.detections> = {
       mercenary: [], stalkerware: [], suspicious: [],
     };
     for (const d of r.detections) byCat[classifyDetection(d)].push(d);
 
-    // Resumen de distribución por categoría
+    // Agrupar dentro de cada categoría por detectionKey
+    type Group = {
+      key: string;
+      label: string;
+      level: string;
+      count: number;
+      modules: Map<string, number>;
+      sampleSummary: string;
+      firstSeen?: string;
+      lastSeen?: string;
+    };
+    const sevRank: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+    const groupsByCat: Record<Category, Group[]> = { mercenary: [], stalkerware: [], suspicious: [] };
+    let uniqueTotal = 0;
+
+    (["mercenary", "stalkerware", "suspicious"] as Category[]).forEach((cat) => {
+      const map = new Map<string, Group>();
+      for (const d of byCat[cat]) {
+        const { key, label } = detectionKey(d);
+        const lvl = d.level ?? "high";
+        let g = map.get(key);
+        if (!g) {
+          g = { key, label, level: lvl, count: 0, modules: new Map(), sampleSummary: d.summary };
+          map.set(key, g);
+        }
+        g.count += 1;
+        g.modules.set(d.module, (g.modules.get(d.module) ?? 0) + 1);
+        // severidad máxima
+        if ((sevRank[lvl] ?? 9) < (sevRank[g.level] ?? 9)) g.level = lvl;
+        // evidencia más informativa (la más larga)
+        if (d.summary && d.summary.length > g.sampleSummary.length) g.sampleSummary = d.summary;
+        // rango temporal
+        if (d.timestamp) {
+          if (!g.firstSeen || d.timestamp < g.firstSeen) g.firstSeen = d.timestamp;
+          if (!g.lastSeen || d.timestamp > g.lastSeen) g.lastSeen = d.timestamp;
+        }
+      }
+      const arr = [...map.values()].sort((a, b) => {
+        const ra = sevRank[a.level] ?? 9, rb = sevRank[b.level] ?? 9;
+        if (ra !== rb) return ra - rb;
+        return b.count - a.count;
+      });
+      groupsByCat[cat] = arr;
+      uniqueTotal += arr.length;
+    });
+
+    sectionTitle("05", `Indicios detectados · ${uniqueTotal} entidad${uniqueTotal === 1 ? "" : "es"} (${r.detections.length} ocurrencias)`);
+
+    // Distribución
     const distLine = (["mercenary", "stalkerware", "suspicious"] as Category[])
-      .filter((c) => byCat[c].length)
-      .map((c) => `${byCat[c].length} ${CATEGORY_LABEL[c].toLowerCase()}`)
+      .filter((c) => groupsByCat[c].length)
+      .map((c) => `${groupsByCat[c].length} ${CATEGORY_LABEL[c].toLowerCase()} (${byCat[c].length} ocurr.)`)
       .join(" · ");
     if (distLine) {
       paragraph(`Distribución: ${distLine}.`, { size: 9, color: MUTED, italic: true });
@@ -395,13 +441,11 @@ export function generatePdfReport(a: Analysis) {
       stalkerware: SEV_COLOR.high,
       suspicious: SEV_COLOR.medium,
     };
-
-    const sevRank: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-    const MAX_PER_CAT = 80;
+    const MAX_PER_CAT = 60;
 
     (["mercenary", "stalkerware", "suspicious"] as Category[]).forEach((cat) => {
-      const list = byCat[cat];
-      if (!list.length) return;
+      const groups = groupsByCat[cat];
+      if (!groups.length) return;
 
       // Cabecera de categoría
       ensure(60);
@@ -412,7 +456,8 @@ export function generatePdfReport(a: Analysis) {
       ctx.y += 12;
       setText([cr, cg, cb]);
       doc.setFont("helvetica", "bold"); doc.setFontSize(12);
-      doc.text(`${CATEGORY_LABEL[cat]}  ·  ${list.length}`, M.left, ctx.y);
+      const occ = groups.reduce((s, g) => s + g.count, 0);
+      doc.text(`${CATEGORY_LABEL[cat]}  ·  ${groups.length} entidad${groups.length === 1 ? "" : "es"}  ·  ${occ} ocurr.`, M.left, ctx.y);
       ctx.y += 14;
       setText(MUTED);
       doc.setFont("helvetica", "normal"); doc.setFontSize(9);
@@ -420,34 +465,25 @@ export function generatePdfReport(a: Analysis) {
       doc.text(descLines, M.left, ctx.y);
       ctx.y += descLines.length * 12 + 6;
 
-      // Ordenar y agrupar consecutivos
-      const sorted = [...list].sort((a, b) => {
-        const ra = sevRank[a.level ?? "high"] ?? 4;
-        const rb = sevRank[b.level ?? "high"] ?? 4;
-        if (ra !== rb) return ra - rb;
-        if (a.module !== b.module) return a.module.localeCompare(b.module);
-        return a.summary.localeCompare(b.summary);
-      });
-
-      type Group = { module: string; summary: string; level: string; count: number };
-      const groups: Group[] = [];
-      for (const d of sorted) {
-        const last = groups[groups.length - 1];
-        const lvl = d.level ?? "high";
-        if (last && last.module === d.module && last.summary === d.summary && last.level === lvl) {
-          last.count += 1;
-        } else {
-          groups.push({ module: d.module, summary: d.summary, level: lvl, count: 1 });
-        }
-      }
-
       groups.slice(0, MAX_PER_CAT).forEach((g, idx) => {
-        const human = humanizeDetection(g.summary);
+        const human = humanizeDetection(g.sampleSummary);
+        const modList = [...g.modules.entries()].sort((a, b) => b[1] - a[1]);
+        const modShown = modList.slice(0, 4).map(([m, n]) => `${humanizeModule(m)} (${n})`).join(", ");
+        const modExtra = modList.length > 4 ? ` (+${modList.length - 4} más)` : "";
+        const modulesLine = `Detectado en: ${modShown}${modExtra}`;
+
         doc.setFont("helvetica", "normal"); doc.setFontSize(10);
         const humanLines = doc.splitTextToSize(human, CW - 24);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+        const modulesLines = doc.splitTextToSize(modulesLine, CW - 24);
         doc.setFont("helvetica", "italic"); doc.setFontSize(8);
-        const techLines = doc.splitTextToSize(`Evidencia original: ${g.summary}`, CW - 24);
-        const cardH2 = 28 + humanLines.length * 12 + techLines.length * 10 + 10;
+        const techLines = doc.splitTextToSize(`Evidencia representativa: ${g.sampleSummary}`, CW - 24);
+        const hasRange = g.firstSeen && g.lastSeen && g.firstSeen !== g.lastSeen;
+        const rangeLines = hasRange
+          ? [`Visto entre ${g.firstSeen} y ${g.lastSeen}`]
+          : g.firstSeen ? [`Visto el ${g.firstSeen}`] : [];
+
+        const cardH2 = 22 + humanLines.length * 12 + modulesLines.length * 10 + techLines.length * 10 + rangeLines.length * 10 + 16;
         ensure(cardH2 + 6);
 
         setFill(SOFT_BG);
@@ -460,18 +496,26 @@ export function generatePdfReport(a: Analysis) {
         const chipW = severityChip(g.level, M.left + 12, yy);
         setText(INK);
         doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-        const head = `${idx + 1}. ${humanizeModule(g.module)}${g.count > 1 ? `  ·  ${g.count}×` : ""}`;
+        const head = `${idx + 1}. ${g.label}${g.count > 1 ? `  ·  ${g.count}×` : ""}`;
         doc.text(head, M.left + 12 + chipW + 6, yy);
         yy += 14;
+
         setText(MUTED);
         doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-        doc.text(`Módulo MVT: ${g.module}`, M.left + 12, yy);
-        yy += 10;
+        doc.text(modulesLines, M.left + 12, yy);
+        yy += modulesLines.length * 10 + 2;
 
         setText(INK);
         doc.setFont("helvetica", "normal"); doc.setFontSize(10);
         doc.text(humanLines, M.left + 12, yy);
         yy += humanLines.length * 12 + 2;
+
+        if (rangeLines.length) {
+          setText(MUTED);
+          doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+          doc.text(rangeLines, M.left + 12, yy);
+          yy += rangeLines.length * 10;
+        }
 
         setText(MUTED);
         doc.setFont("helvetica", "italic"); doc.setFontSize(8);
@@ -482,10 +526,11 @@ export function generatePdfReport(a: Analysis) {
 
       if (groups.length > MAX_PER_CAT) {
         ensure(20);
-        paragraph(`… y ${groups.length - MAX_PER_CAT} grupos más en esta categoría.`, { italic: true, color: MUTED, size: 9 });
+        paragraph(`… y ${groups.length - MAX_PER_CAT} entidades más en esta categoría.`, { italic: true, color: MUTED, size: 9 });
       }
     });
   }
+
 
   // 06 · Próximos pasos
   sectionTitle("06", "Próximos pasos recomendados");

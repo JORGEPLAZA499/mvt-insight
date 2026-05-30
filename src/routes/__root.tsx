@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "scan" },
+      { name: "description", content: "Sentinel Scan is a web platform for analyzing mobile device forensic data for potential spyware indicators." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "scan" },
+      { property: "og:description", content: "Sentinel Scan is a web platform for analyzing mobile device forensic data for potential spyware indicators." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "scan" },
+      { name: "twitter:description", content: "Sentinel Scan is a web platform for analyzing mobile device forensic data for potential spyware indicators." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/92779c35-a2f2-4c0d-8ce9-60b5141ac48e/id-preview-839d2e31--9a02aa66-84b2-4251-8832-d9d10e4c30cb.lovable.app-1780104988561.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/92779c35-a2f2-4c0d-8ce9-60b5141ac48e/id-preview-839d2e31--9a02aa66-84b2-4251-8832-d9d10e4c30cb.lovable.app-1780104988561.png" },
     ],
     links: [
       {

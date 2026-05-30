@@ -18,7 +18,9 @@ import {
   CheckCircle2,
   Download,
   Terminal,
+  Info,
 } from "lucide-react";
+
 
 import { upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
@@ -577,11 +579,23 @@ function StepRun({
               </li>
             ))}
           </ul>
+          <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 flex gap-2">
+            <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-foreground/90">
+              Verás muchas líneas en rojo tipo{" "}
+              <code className="font-mono">Failed to pull log file</code>.{" "}
+              <strong>Esto es normal:</strong> cada fabricante (Samsung, Xiaomi, Pixel…) guarda los
+              logs en lugares distintos y AndroidQF intenta leerlos todos. Algunos no existen en tu
+              modelo o requieren acceso root. Mientras el proceso siga avanzando a la siguiente
+              sección, todo va bien.
+            </p>
+          </div>
           <p className="mt-4 text-xs text-muted-foreground">
             Tras la última pregunta verás "<span className="font-mono">Collecting information on installed apps. This might take a while…</span>".
             La ventana parecerá parada <strong className="text-foreground">5-15 minutos</strong>:
             es normal. Mira la <strong className="text-foreground">ventana de estado</strong> para confirmar que sigue trabajando.
           </p>
+
         </>
       ),
     });

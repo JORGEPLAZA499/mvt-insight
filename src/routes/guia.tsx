@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { CodeBlock } from "@/components/code-block";
 import { CopyCommand } from "@/components/copy-command";
@@ -122,9 +122,9 @@ function QuickStart() {
     windows: "Pulsa la tecla Windows, escribe «powershell», haz clic derecho sobre «Windows PowerShell» y elige «Ejecutar como administrador».",
   };
 
-  useState(() => {
+  useEffect(() => {
     setOs(detectOS());
-  });
+  }, []);
 
   const installFile = os === "mac" ? "instalar-mvt-macos.sh" : os === "linux" ? "instalar-mvt-linux.sh" : "instalar-mvt-windows.ps1";
   const analyzerFile = device === "ios" ? "analizar-ios.sh" : os === "windows" ? "analizar-android.ps1" : "analizar-android.sh";

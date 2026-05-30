@@ -1,43 +1,54 @@
-## Problema
+## Objetivo
 
-AndroidQF falla con `Impossible to find ADB: failed to find a usable adb executable`. Solo genera 3 ficheros básicos en `acquisition/` y MVT acaba reportando 0 alertas sin haber analizado realmente nada. Causa: AndroidQF busca `adb.exe` en su propia carpeta de trabajo, no en el `PATH` del sistema.
+Que la próxima ejecución de `analizar-android.ps1` muestre señales de vida mientras AndroidQF trabaja, sin romper su modo interactivo (sigue pidiendo respuestas al usuario por consola).
 
-## Fix
+> Nota: esta mejora **no afecta la sesión actual** que ya está corriendo. Aplica a la próxima vez que el usuario ejecute el comando `irm ... | iex`.
 
-En `public/scripts/analizar-android.ps1`, justo después de descargar `androidqf.exe` y antes del `Push-Location $acqDir` (alrededor de la línea 70), añadir un bloque que copie `adb.exe` y sus DLLs al lado del binario de AndroidQF:
+## Qué se añade
 
-```powershell
-# AndroidQF busca adb.exe en su carpeta de trabajo, no en el PATH.
-# Copiamos adb.exe y sus DLLs junto al ejecutable para que lo encuentre.
-Write-Host "==> Copiando adb.exe junto a AndroidQF..."
-try {
-  $adbPath = (Get-Command adb).Source
-  $adbDir  = Split-Path $adbPath
-  Copy-Item $adbPath -Destination $acqDir -Force
-  foreach ($dll in @("AdbWinApi.dll","AdbWinUsbApi.dll")) {
-    $dllPath = Join-Path $adbDir $dll
-    if (Test-Path $dllPath) { Copy-Item $dllPath -Destination $acqDir -Force }
-  }
-  Write-Host "    adb.exe copiado desde $adbDir"
-} catch {
-  Write-Host "AVISO: no se pudo copiar adb.exe ($_). AndroidQF puede fallar." -ForegroundColor Yellow
-}
-```
+1. **Heartbeat en background cada 15 segundos** mientras corre AndroidQF, imprimiendo en la misma consola:
+   - Tiempo transcurrido desde que arrancó AndroidQF (`mm:ss`).
+   - Nº de ficheros generados hasta ahora en `acquisition/`.
+   - Tamaño acumulado de `acquisition/` en MB.
+   - Último fichero modificado (pista de "en qué está trabajando").
+   
+   Ejemplo de línea:
+   ```
+   [heartbeat 04:30] acquisition: 312 ficheros, 18.4 MB - ultimo: packages/com.whatsapp.json
+   ```
 
-Tambien mover el `androidqf.exe` descargado a `$acqDir` (en vez de `$outDir`) para que conviva con `adb.exe` en el mismo directorio de trabajo, y actualizar la invocacion para usar la nueva ruta:
+2. **Detección de fase por nombre de fichero/carpeta** (best-effort). Cuando aparezcan carpetas conocidas (`packages/`, `processes`, `services`, `settings`, `dumpsys`, `bugreport`, `logs`), el heartbeat añade una etiqueta:
+   ```
+   [heartbeat 06:10] fase: bugreport | 540 ficheros, 42.1 MB
+   ```
 
-```powershell
-$aqfExe = Join-Path $acqDir "androidqf.exe"
-```
+3. **Resumen al terminar AndroidQF**: tiempo total, ficheros, tamaño. Ya existe parcialmente; se amplía con el tiempo.
 
-## Alcance
+4. **Limpieza garantizada**: el job de heartbeat se detiene con `Stop-Job`/`Remove-Job` en un `finally`, incluso si AndroidQF falla o el usuario lo cancela.
 
-- Solo `public/scripts/analizar-android.ps1`.
-- Sin cambios en el `.sh`, en la guia ni en la UI.
+## Por qué no usar `Write-Progress`
 
-## Como probar
+`Write-Progress` ocupa una línea superior reservada y se mezcla mal con la salida interactiva de AndroidQF (menús, prompts), pudiendo tapar las preguntas. Un heartbeat por `Write-Host` cada 15s es menos intrusivo y mantiene el log legible.
 
-1. Volver a lanzar en PowerShell: `irm https://mvt-insight.lovable.app/scripts/analizar-android.ps1 | iex`.
-2. AndroidQF debe arrancar sin el error "Impossible to find ADB" y presentar el menu interactivo de modulos.
-3. Seleccionar todos los modulos ofrecidos y aceptar los prompts del movil (incluido el de backup).
-4. El `.zip` final debe contener una carpeta `acquisition/` con muchos mas ficheros (sms, packages, processes, settings, dumpsys, backup.ab, bugreport.zip, etc.) y MVT producir un analisis real.
+## Detalle técnico
+
+- Implementar como `Start-Job -ScriptBlock { ... }` que recibe `$acqDir` y `$startTime` por `-ArgumentList`.
+- Bucle `while ($true) { Start-Sleep 15; <print> }` dentro del job.
+- En el bloque principal: arrancar el job **justo antes** de `& $aqfExe`, guardarlo en `$hbJob`.
+- En el `finally` del `Push-Location`: `Stop-Job $hbJob; Receive-Job $hbJob | Out-Host; Remove-Job $hbJob`.
+- Las líneas del heartbeat se imprimen vía `Receive-Job` periódicamente — alternativa más simple: el job escribe a un fichero temporal y un `Register-ObjectEvent` no es necesario; basta con `Receive-Job` cada vez que se recoja, pero como AndroidQF bloquea el hilo principal, **mejor opción**: el job usa `[Console]::WriteLine(...)` directamente, que sí aparece en tiempo real en la misma consola.
+
+## Archivos a modificar
+
+- `public/scripts/analizar-android.ps1` — único fichero a tocar. Cambios localizados en la sección "Ejecutar AndroidQF" (líneas ~93-105 aprox.).
+
+## Lo que **no** cambia
+
+- La interactividad de AndroidQF (sigue pidiendo input al usuario).
+- El flujo posterior (download-iocs, check-androidqf, compresión, apertura del navegador).
+- La estructura de carpetas ni el nombre del zip de salida.
+
+## Verificación
+
+Como el script corre en Windows del usuario, no se puede ejecutar aquí. Verificación al desplegar:
+- Revisar sintaxis PowerShell con `pwsh -NoProfile -Command "& { . ./public/scripts/analizar-android.ps1 -WhatIf }"` no aplica (script no parametrizado), así que se valida visualmente que el bloque `Start-Job` / `Stop-Job` esté bien cerrado y que el `finally` libere el job.

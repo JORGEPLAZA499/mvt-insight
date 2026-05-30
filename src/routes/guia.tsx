@@ -335,12 +335,29 @@ pip3 install mvt`} />
         <p>Debes ver tu dispositivo listado como <code className="font-mono text-foreground">device</code>. Si aparece <code className="font-mono text-foreground">unauthorized</code>, acepta el diálogo en el teléfono.</p>
       </Step>
 
-      <Step n={4} title="Ejecuta el análisis vía ADB">
-        <CodeBlock code={`mvt-android check-adb -o ./resultados`} />
-        <p>O si prefieres analizar un backup Android (<code className="font-mono text-foreground">.ab</code>):</p>
+      <Step n={4} title="Adquiere con AndroidQF y analiza con MVT">
+        <p>Desde finales de 2025 <code className="font-mono text-foreground">mvt-android check-adb</code> está eliminado. El flujo oficial actual es: AndroidQF realiza la adquisición forense del dispositivo (es interactivo y pedirá confirmación en el móvil) y luego MVT analiza la carpeta resultante.</p>
+        <CodeBlock code={`# 1) Descargar AndroidQF (elige el binario de tu SO desde la última release)
+#    https://github.com/mvt-project/androidqf/releases/latest
+
+# 2) Adquisición (genera una carpeta con timestamp dentro del CWD)
+mkdir acquisition && cd acquisition
+./androidqf            # Linux/macOS
+.\\androidqf.exe       # Windows
+
+# 3) Analizar la adquisición con MVT
+cd ..
+mvt-android download-iocs
+mvt-android check-androidqf -o ./report ./acquisition`} />
+        <p>Como alternativa puedes analizar un backup Android (<code className="font-mono text-foreground">.ab</code>) o un bug report:</p>
         <CodeBlock code={`adb backup -all -f backup.ab
-mvt-android check-backup -o ./resultados backup.ab`} />
+mvt-android check-backup -o ./report backup.ab
+
+# o
+adb bugreport bugreport.zip
+mvt-android check-bugreport -o ./report bugreport.zip`} />
       </Step>
+
 
       <Step n={5} title="Comprime y sube">
         <CodeBlock code={`cd ./resultados && zip -r ../resultados-mvt.zip .`} />

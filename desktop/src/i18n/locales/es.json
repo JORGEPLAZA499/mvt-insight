@@ -1,0 +1,58 @@
+{
+  "app": {
+    "title": "MVT Insight Desktop",
+    "subtitle": "Análisis forense de indicios de spyware"
+  },
+  "language": {
+    "label": "Idioma",
+    "spanish": "Español",
+    "english": "English"
+  },
+  "welcome": {
+    "android": {
+      "title": "Android",
+      "sub": "Samsung, Xiaomi, Pixel…"
+    },
+    "ios": {
+      "title": "iPhone",
+      "sub": "Próximamente (solo macOS)"
+    },
+    "before": {
+      "title": "Antes de empezar:",
+      "usb": "Activa la Depuración USB en tu Android.",
+      "cable": "Conecta el móvil con un cable USB (mejor el original).",
+      "unlocked": "Mantén la pantalla del móvil desbloqueada durante todo el proceso."
+    }
+  },
+  "running": {
+    "title": {
+      "android": "Analizando Android…",
+      "ios": "Analizando iPhone…"
+    },
+    "subtitle": "No cierres esta ventana. Tarda entre 5 y 15 minutos.",
+    "starting": "Iniciando…"
+  },
+  "phases": {
+    "download": "Descargando AndroidQF",
+    "connect": "Conectando con el dispositivo",
+    "collect": "Recolectando datos"
+  },
+  "details": {
+    "toggle": "Ver detalles técnicos",
+    "waiting": "Esperando salida del proceso…"
+  },
+  "error": {
+    "title": "Algo salió mal:",
+    "back": "Volver al inicio",
+    "unknown": "Error desconocido",
+    "browserOnly": "Esta función solo está disponible en la app de escritorio."
+  },
+  "done": {
+    "title": "✓ Análisis completado",
+    "subtitle": "Los datos se han guardado en tu carpeta de Descargas.",
+    "filename": "Archivo generado:",
+    "upload": "Subir al informe →",
+    "openFolder": "Abrir carpeta",
+    "new": "Nuevo análisis"
+  }
+}

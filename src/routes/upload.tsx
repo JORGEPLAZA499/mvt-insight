@@ -441,177 +441,121 @@ function StepRun({
         ];
 
   subSteps.push({
-    title: launcherPrimary ? "Descarga el lanzador y haz doble clic" : "Ejecuta el comando en la Terminal",
+    title: "Descarga la app de escritorio",
     content: (
       <>
-        {launcherPrimary ? (
-          <p className="mb-3">
-            Descarga el archivo de abajo. Búscalo en tu carpeta{" "}
-            <strong className="text-foreground">Descargas</strong> y haz{" "}
-            <strong className="text-foreground">doble clic</strong> sobre él.
-            Se abrirá una <strong className="text-foreground">ventana negra</strong> (Terminal/PowerShell):{" "}
-            <strong className="text-foreground">no la cierres</strong>, está trabajando.
-            El proceso puede tardar entre <strong className="text-foreground">5 y 15 minutos</strong>;
-            verás texto avanzando, es normal.
-            {device === "android" && (
-              <span className="block mt-2 text-warning">
-                ⚠ AndroidQF te hará varias preguntas en la ventana negra. En el siguiente paso te decimos qué pulsar en cada una.
-              </span>
-            )}
-            {device === "ios" && (
-              <span className="block mt-2">
-                Cuando te pida la <strong className="text-foreground">contraseña del backup</strong>, escríbela y pulsa Enter.
-              </span>
-            )}
-          </p>
-        ) : (
-          <p className="mb-3">
-            Abre la Terminal, pega el comando y pulsa Enter. No cierres la ventana hasta que termine
-            (puede tardar entre 5 y 15 minutos).
-          </p>
-        )}
-        {launcherBlock}
+        <p className="mb-4">
+          Descarga la app <strong className="text-foreground">MVT Insight Desktop</strong> para tu
+          sistema. La app hace todo el análisis con un solo botón: descarga las herramientas,
+          conecta con el móvil y guarda el ZIP listo para subir aquí. <strong className="text-foreground">Sin ventana negra ni comandos.</strong>
+        </p>
 
-        <button
-          type="button"
-          onClick={() => setShowAlt((v) => !v)}
-          className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-        >
-          <Terminal className="h-3.5 w-3.5" />
-          {launcherPrimary
-            ? "Prefiero copiar el comando manualmente"
-            : "Prefiero descargar un script"}
-        </button>
-
-        {showAlt && (
-          <div className="mt-3">
-            {launcherPrimary ? (
-              <CopyCommand command={command} label="Terminal" />
-            ) : (
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium">{launcher.filename}</div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Descárgalo y ejecuta:{" "}
-                      <code className="font-mono text-foreground">bash ~/Downloads/{launcher.filename}</code>
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={downloadLauncher}>
-                    <Download className="h-4 w-4 mr-1.5" /> Descargar
-                  </Button>
-                </div>
-              </div>
-            )}
+        <div className="rounded-xl border border-primary/40 bg-gradient-to-br from-primary/10 to-transparent p-5 shadow-glow">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="h-12 w-12 rounded-lg bg-gradient-primary grid place-items-center shadow-glow shrink-0">
+              <Download className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <div className="font-semibold">MVT Insight Desktop</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Versión 1.0 · Análisis con interfaz visual y barras de progreso
+              </p>
+            </div>
           </div>
-        )}
 
-        <button
-          type="button"
-          onClick={() => setShowHelp((v) => !v)}
-          className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-          ¿Cómo abro la Terminal?
-        </button>
-        {showHelp && (
-          <div className="mt-2 text-xs text-muted-foreground p-3 rounded-md bg-card border border-border">
-            {terminalHelp[os]}
+          <div className="grid sm:grid-cols-3 gap-2">
+            <a
+              href={`${SCRIPT_BASE_URL}/downloads/MvtInsight-windows-x64.zip`}
+              className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
+                os === "windows"
+                  ? "border-primary bg-primary text-primary-foreground shadow-glow"
+                  : "border-border bg-card hover:border-primary/40"
+              }`}
+            >
+              <Monitor className="h-4 w-4" />
+              Windows
+            </a>
+            <a
+              href={`${SCRIPT_BASE_URL}/downloads/MvtInsight-macos-x64.zip`}
+              className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
+                os === "mac"
+                  ? "border-primary bg-primary text-primary-foreground shadow-glow"
+                  : "border-border bg-card hover:border-primary/40"
+              }`}
+            >
+              <Apple className="h-4 w-4" />
+              macOS
+            </a>
+            <a
+              href={`${SCRIPT_BASE_URL}/downloads/MvtInsight-linux-x64.tar.gz`}
+              className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
+                os === "linux"
+                  ? "border-primary bg-primary text-primary-foreground shadow-glow"
+                  : "border-border bg-card hover:border-primary/40"
+              }`}
+            >
+              <Monitor className="h-4 w-4" />
+              Linux
+            </a>
           </div>
-        )}
+
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Recomendado para ti: <strong className="text-foreground">
+              {os === "windows" ? "Windows" : os === "mac" ? "macOS" : "Linux"}
+            </strong> (detectado automáticamente)
+          </p>
+        </div>
+
+        <ol className="mt-5 space-y-2 text-sm text-muted-foreground list-decimal pl-5">
+          <li>
+            Descomprime el archivo descargado y haz <strong className="text-foreground">doble clic</strong> en{" "}
+            <code className="font-mono text-foreground">MvtInsight</code>.
+          </li>
+          <li>
+            Pulsa <strong className="text-foreground">"Iniciar análisis"</strong> dentro de la app.
+            Verás barras de progreso para cada fase (descarga, conexión, recolección).
+          </li>
+          <li>
+            Al terminar, la app te dirá dónde está el ZIP y te traerá de vuelta aquí para subirlo.
+          </li>
+        </ol>
+
+        <details className="mt-4 text-xs">
+          <summary className="cursor-pointer text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            ¿Sale un aviso de "editor desconocido" al abrirla?
+          </summary>
+          <div className="mt-2 p-3 rounded-md bg-card border border-border text-muted-foreground space-y-1.5">
+            <p>
+              Es normal: la app aún no tiene firma comercial (cuesta varios cientos al año).
+              No es un virus, su código es abierto.
+            </p>
+            <p>
+              <strong className="text-foreground">Windows:</strong> pulsa "Más información" → "Ejecutar de todos modos".
+            </p>
+            <p>
+              <strong className="text-foreground">macOS:</strong> clic derecho sobre la app → "Abrir" → confirma.
+            </p>
+          </div>
+        </details>
       </>
     ),
   });
 
-  if (device === "android") {
-    subSteps.push({
-      title: "Responde a las preguntas de AndroidQF",
-      content: (
-        <>
-          <p className="mb-3">
-            En la ventana negra irán apareciendo varias preguntas. Usa las{" "}
-            <strong className="text-foreground">flechas ↑ ↓</strong> para moverte y{" "}
-            <strong className="text-foreground">Enter</strong> para confirmar. Esto es lo que debes
-            elegir en cada una:
-          </p>
-          <ul className="space-y-3">
-            {[
-              {
-                prompt: "Would you like to take a backup of the device?",
-                choose: "Everything",
-                why: "Backup completo del usuario. Necesario para detectar artefactos.",
-              },
-              {
-                prompt: "Download: (All / Only non-system / Do not download)",
-                choose: "All",
-                why: "Incluye los APKs del sistema, donde suele camuflarse el spyware.",
-              },
-              {
-                prompt: "Upload to VirusTotal? (si aparece)",
-                choose: "No",
-                why: "Subiría tus APKs a internet. No hace falta para el análisis local.",
-              },
-              {
-                prompt: "Remove? (después de descargar APKs)",
-                choose: "No",
-                why: "Conserva los APKs en la carpeta — MVT los necesita después.",
-              },
-              {
-                prompt: 'Aviso en el móvil: "Allow USB debugging?"',
-                choose: "Permitir siempre + Aceptar",
-                why: "Sin esto, adb no puede leer el dispositivo y el análisis falla.",
-              },
-            ].map((row) => (
-              <li
-                key={row.prompt}
-                className="rounded-lg border border-border bg-card/40 p-3"
-              >
-                <div className="font-mono text-xs text-muted-foreground">
-                  {row.prompt}
-                </div>
-                <div className="mt-2 flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-muted-foreground">Pulsa:</span>
-                  <kbd className="inline-flex items-center rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-foreground">
-                    {row.choose}
-                  </kbd>
-                </div>
-                <div className="mt-1.5 text-xs text-muted-foreground">{row.why}</div>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 flex gap-2">
-            <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-foreground/90">
-              Verás muchas líneas en rojo tipo{" "}
-              <code className="font-mono">Failed to pull log file</code>.{" "}
-              <strong>Esto es normal:</strong> cada fabricante (Samsung, Xiaomi, Pixel…) guarda los
-              logs en lugares distintos y AndroidQF intenta leerlos todos. Algunos no existen en tu
-              modelo o requieren acceso root. Mientras el proceso siga avanzando a la siguiente
-              sección, todo va bien.
-            </p>
-          </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Tras la última pregunta verás "<span className="font-mono">Collecting information on installed apps. This might take a while…</span>".
-            La ventana parecerá parada <strong className="text-foreground">5-15 minutos</strong>:
-            es normal. Mira la <strong className="text-foreground">ventana de estado</strong> para confirmar que sigue trabajando.
-          </p>
-
-        </>
-      ),
-    });
-  }
-
   subSteps.push({
-    title: "Cuando termine, busca el archivo ZIP",
+    title: "Sube el ZIP generado por la app",
     content: (
       <p>
-        Al acabar, el script deja un archivo{" "}
-        <code className="font-mono text-foreground">mvt-resultados-AAAAMMDD.zip</code> en la misma carpeta
-        donde ejecutaste el lanzador (normalmente <strong className="text-foreground">Descargas</strong>).
-        Cuando lo tengas, pulsa el botón de abajo para subirlo.
+        Cuando la app termine, te mostrará un botón{" "}
+        <strong className="text-foreground">"Subir al informe"</strong> y la ruta del archivo{" "}
+        <code className="font-mono text-foreground">mvt-resultados-AAAAMMDD.zip</code>{" "}
+        (normalmente en <strong className="text-foreground">Descargas</strong>).
+        Pulsa el botón de abajo para subirlo y ver el informe.
       </p>
     ),
   });
+
+
 
   const total = subSteps.length;
   const current = Math.min(subStep, total);

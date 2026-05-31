@@ -105,8 +105,8 @@ export function App() {
       <div className="app">
         {TopBar}
         <div className="header">
-          <h1>{device === "android" ? t("running.title.android") : t("running.title.ios")}</h1>
-          <p>{t("running.subtitle")}</p>
+          <h1>{device === "android" ? t("running.title.android", "Analizando Android…") : t("running.title.ios", "Analizando iPhone…")}</h1>
+          <p>{t("running.subtitle", "No cierres esta ventana. Tarda entre 5 y 15 minutos.")}</p>
         </div>
 
         <div className="card">

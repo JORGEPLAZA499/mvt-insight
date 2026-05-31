@@ -1,76 +1,94 @@
-## Objetivo
-Reemplazar la descarga del lanzador `.ps1`/`.sh` por una **app de escritorio Electron** (Windows, macOS, Linux) con ventana, botones y barras de progreso, que hace exactamente lo mismo por debajo: descarga AndroidQF/MVT, ejecuta el flujo, y deja el ZIP listo para subir a la web.
+# Compilar el .exe en tu PC vía GitHub
 
-La web sigue siendo responsable del informe — el usuario subirá el ZIP generado por la app igual que hoy.
+## Resumen
 
-## Arquitectura
+No hay cambios de código que hacer. El proyecto ya tiene la carpeta `desktop/` con todo listo (Electron + Vite + scripts de packaging). Solo falta sacarlo de Lovable, ponerlo en tu PC y correr 3 comandos.
 
-```text
-mvt-insight-desktop/   (repo nuevo, fuera de /dev-server)
-├── package.json
-├── electron/
-│   ├── main.cjs            ventana, IPC, lanzar procesos
-│   └── preload.cjs         puente seguro renderer↔main
-├── src/                    React + Tailwind (mismo design system)
-│   ├── App.tsx             pantalla principal
-│   ├── screens/
-│   │   ├── Welcome.tsx     elegir Android/iOS
-│   │   ├── Prereqs.tsx     comprobar adb / iOS deps
-│   │   ├── Connect.tsx     misma ilustración USB animada de la web
-│   │   ├── Collect.tsx     progreso en vivo (logs + barra)
-│   │   └── Done.tsx        muestra ruta del ZIP + botón "Subir al informe"
-│   └── styles.css          tokens copiados de la web
-└── vite.config.ts          base: './'
+## Paso 1 — Requisitos en tu Windows
+
+Instala antes de seguir (si no los tienes):
+
+- **Node.js LTS** (incluye npm): https://nodejs.org/
+- **Git**: https://git-scm.com/download/win
+
+Verifica en PowerShell:
+
+```
+node --version
+npm --version
+git --version
 ```
 
-### Pantalla "Collect" — el corazón de la app
-- Botón grande **Iniciar análisis**.
-- Tres pasos con barra de progreso individual:
-  1. Descargando AndroidQF / instalando MVT
-  2. Conectando con el dispositivo (espera autorización USB)
-  3. Recolectando datos (con sub-barra para "backup", "apks", "logs")
-- Panel colapsable **Ver detalles técnicos** con el stdout en vivo (los `Failed to pull log file` se muestran aquí, en gris, no en rojo).
-- Al terminar: ZIP guardado en `~/Downloads/mvt-resultados-AAAAMMDD.zip` + botón **Abrir carpeta** y **Subir a mvt-insight.lovable.app**.
+## Paso 2 — Conectar el proyecto Lovable a GitHub
 
-### Cómo se ejecuta el flujo de AndroidQF/MVT
-El proceso principal (`electron/main.cjs`) usa `child_process.spawn` para:
-- **Windows / Linux**: descargar el binario AndroidQF de GitHub releases y ejecutarlo.
-- **macOS**: ejecutar el flujo iOS (libimobiledevice + MVT).
-- Las preguntas interactivas de AndroidQF (`Would you like to take a backup?`, `Download: All`, `Upload to VirusTotal?`, `Remove?`) se responden **automáticamente** escribiendo en `stdin` del proceso — el usuario nunca las ve. Esto resuelve el problema actual de tener que explicarle al usuario qué pulsar en la ventana negra.
-- El stdout se parsea con regex para alimentar las barras de progreso.
+En la barra superior de Lovable, arriba a la derecha:
 
-### IPC seguro
-- `contextIsolation: true`, `nodeIntegration: false`.
-- `preload.cjs` expone solo `window.mvt.start(device)`, `window.mvt.onProgress(cb)`, `window.mvt.openFolder(path)`.
+1. Clic en el botón **GitHub** → **Connect to GitHub**.
+2. Autoriza la app de Lovable en tu cuenta GitHub.
+3. Elige crear un repo nuevo (ej: `mvt-insight`) en tu usuario u organización.
+4. Lovable hace push automático del código actual.
 
-## Empaquetado
+Cuando termine, tendrás una URL tipo `https://github.com/TU-USUARIO/mvt-insight`.
 
-Usaremos `@electron/packager` (electron-builder no funciona en este sandbox):
-- Windows: `.zip` con `MvtInsight.exe` dentro (el usuario descomprime y ejecuta).
-- macOS: `.zip` con `MvtInsight.app` (sin firmar — el usuario hará clic derecho > Abrir la primera vez).
-- Linux: `.tar.gz` con el binario.
+## Paso 3 — Clonar en tu PC
 
-Los tres archivos se publicarán como assets descargables — no caben en el bundle de la web, así que se subirán a un release público (GitHub releases o similar) y la web enlazará a esas URLs.
+Abre PowerShell en una carpeta donde quieras el código (ej: `C:\Users\GAMING F15\Documents`):
 
-## Cambios en la web (`mvt-insight`)
-En `src/routes/upload.tsx`, reemplazar el bloque actual "Descargar lanzador / Copiar comando" por **tres botones de descarga** (Windows / macOS / Linux) que apuntan a los binarios publicados. Los sub-pasos "Abre la terminal", "Responde a las preguntas de AndroidQF" y el aviso de `Failed to pull log file` se eliminan porque ya no aplican — la app lo hace todo.
+```
+cd C:\Users\GAMING F15\Documents
+git clone https://github.com/TU-USUARIO/mvt-insight.git
+cd mvt-insight\desktop
+```
 
-Se mantiene intacto:
-- `StepUpload` (subida del ZIP).
-- Endpoint `/api/...` que parsea el ZIP.
-- Pantalla del informe.
-- Ilustración USB animada (se mueve también a la app).
+Nota: usa **backslash** `\` en Windows, no `/`. Y fíjate que ahora estás dentro de `mvt-insight\desktop`, no en el Escritorio.
 
-Los scripts `.ps1`/`.sh` actuales se conservan en `public/scripts/` por compatibilidad, pero ya no se enlazan desde la UI.
+## Paso 4 — Instalar y empaquetar
 
-## Trabajo en dos fases
+```
+npm install
+npm run package:win
+```
 
-**Fase 1 — esta tanda:** Andamiaje del repo Electron + pantalla "Collect" funcional para Android en Windows + reemplazar UI de `/upload` con los tres botones de descarga (apuntando a URLs placeholder hasta tener el primer release).
+Si tu PowerShell es viejo (5.1) y quieres encadenar, usa `;` no `&&`:
 
-**Fase 2 — siguiente tanda:** Flujo iOS en macOS, parsing fino de progreso, instalador firmado, telemetría opcional de errores.
+```
+npm install; if ($?) { npm run package:win }
+```
 
-## Limitaciones honestas
-- **SmartScreen / Gatekeeper:** sin certificado de firma de código (~300 €/año en Windows, cuenta de Apple Developer ~99 €/año en macOS), la primera ejecución mostrará un aviso de "editor desconocido". Se documentará en la web cómo aceptarlo.
-- **Tamaño:** cada binario pesa ~120 MB (Electron embebe Chromium).
-- **macOS sin firmar:** el usuario tendrá que hacer clic derecho > Abrir la primera vez, o ejecutar `xattr -d com.apple.quarantine MvtInsight.app`.
-- **Este sandbox** no puede generar `.exe` instaladores ni `.dmg` — solo `.zip`/`.tar.gz`. Para instaladores nativos se necesitaría un pipeline CI externo (GitHub Actions con runners de cada SO).
+El proceso descarga Electron (~150 MB la primera vez, paciencia).
+
+## Paso 5 — Recoger el binario
+
+Al terminar, el .exe está en:
+
+```
+mvt-insight\desktop\release\MvtInsight-win32-x64\MvtInsight.exe
+```
+
+Doble clic para abrir. La primera vez Windows SmartScreen avisará ("Windows protegió tu PC") porque no está firmado — clic en **Más información → Ejecutar de todas formas**.
+
+## Para distribuir a otros usuarios
+
+Comprime toda la carpeta `MvtInsight-win32-x64\` en un .zip y súbela donde quieras (Google Drive, GitHub Releases, tu servidor). El usuario final descomprime y ejecuta el `.exe` directamente — no necesita instalar Node ni nada.
+
+## Actualizaciones futuras
+
+Cuando yo cambie código en Lovable, GitHub se sincroniza automáticamente. Tú en tu PC solo haces:
+
+```
+cd mvt-insight
+git pull
+cd desktop
+npm install
+npm run package:win
+```
+
+## Notas técnicas
+
+- El sandbox de Lovable no puede firmar binarios con certificado de código (eso requiere certificado de pago + máquina Windows real). Por eso compilas tú.
+- Para `.dmg` de macOS necesitarás una Mac (cross-compile desde Windows no firma para Apple).
+- Para Linux, mismo flujo pero `npm run package:linux`.
+
+## Próximo paso del plan
+
+Cuando confirmes este plan y termines el Paso 2 (GitHub conectado), avísame con la URL del repo. Si algo falla en el `npm install` o el `package:win`, pega el error y lo arreglamos juntos.

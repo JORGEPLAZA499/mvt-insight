@@ -743,7 +743,7 @@ function ChoiceCard({
   return (
     <button
       onClick={onClick}
-      className={`group rounded-xl border bg-card p-6 text-left transition-all hover:border-primary/60 hover:bg-card/80 ${
+      className={`group rounded-xl border bg-card text-card-foreground p-6 text-left transition-all hover:border-primary/60 hover:bg-card/80 ${
         active ? "border-primary shadow-glow" : "border-border"
       }`}
     >

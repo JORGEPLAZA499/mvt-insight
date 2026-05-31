@@ -79,21 +79,21 @@ export function App() {
         <div className="choice-grid">
           <button className="choice" onClick={() => start("android")}>
             <div className="icon">📱</div>
-            <div className="title">{t("welcome.android.title")}</div>
-            <div className="sub">{t("welcome.android.sub")}</div>
+            <div className="title">{t("welcome.android.title", "Android")}</div>
+            <div className="sub">{t("welcome.android.sub", "Samsung, Xiaomi, Pixel…")}</div>
           </button>
           <button className="choice" onClick={() => start("ios")} disabled>
             <div className="icon">📲</div>
-            <div className="title">{t("welcome.ios.title")}</div>
-            <div className="sub">{t("welcome.ios.sub")}</div>
+            <div className="title">{t("welcome.ios.title", "iPhone")}</div>
+            <div className="sub">{t("welcome.ios.sub", "Próximamente (solo macOS)")}</div>
           </button>
         </div>
         <div className="card" style={{ marginTop: 24 }}>
-          <strong>{t("welcome.before.title")}</strong>
+          <strong>{t("welcome.before.title", "Antes de empezar:")}</strong>
           <ul style={{ margin: "8px 0 0", paddingLeft: 18, color: "var(--muted)", fontSize: 13 }}>
-            <li>{t("welcome.before.usb")}</li>
-            <li>{t("welcome.before.cable")}</li>
-            <li>{t("welcome.before.unlocked")}</li>
+            <li>{t("welcome.before.usb", "Activa la Depuración USB en tu Android.")}</li>
+            <li>{t("welcome.before.cable", "Conecta el móvil con un cable USB (mejor el original).")}</li>
+            <li>{t("welcome.before.unlocked", "Mantén la pantalla del móvil desbloqueada durante todo el proceso.")}</li>
           </ul>
         </div>
       </div>

@@ -26,6 +26,19 @@ npm install
 npm run electron:dev    # compila la UI con Vite y abre Electron
 ```
 
+> **Windows PowerShell 5.1** (el que trae Windows por defecto) NO soporta `&&`.
+> Ejecuta los comandos en líneas separadas, o usa `;`, o instala PowerShell 7
+> (`https://aka.ms/PSWindows`) que sí acepta `&&` y `||` como bash.
+>
+> ```powershell
+> # ❌ No funciona en PowerShell 5.1
+> npm install && npm run package:win
+>
+> # ✅ Alternativas válidas
+> npm install; npm run package:win
+> npm install; if ($?) { npm run package:win }   # equivalente a &&
+> ```
+
 ## Empaquetado
 
 ```bash

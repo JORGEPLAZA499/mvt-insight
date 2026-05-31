@@ -31,6 +31,8 @@ export const Route = createFileRoute("/upload")({
 
 const MAX_SIZE = 500 * 1024 * 1024;
 const SCRIPT_BASE_URL = "https://mvt-insight.lovable.app";
+const RELEASES_BASE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest/download";
+const RELEASES_PAGE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest";
 const TOTAL_STEPS = 4;
 
 type Device = "android" | "ios";

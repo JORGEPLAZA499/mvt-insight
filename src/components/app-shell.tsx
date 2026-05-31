@@ -7,11 +7,16 @@ import {
   History,
   LogOut,
   Sparkles,
+  Zap,
+  Loader2,
 } from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getSession, setSession, getAnalyses } from "@/lib/mock-store";
+import { getSession, setSession, getAnalyses, upsertAnalysis, Analysis } from "@/lib/mock-store";
+import { parseMvtFiles } from "@/lib/mvt-parser";
 import { LanguageSelector } from "@/components/language-selector";
+
+const QUICK_MAX_SIZE = 500 * 1024 * 1024;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
@@ -19,6 +24,54 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [session, setSessionState] = useState<{ email: string } | null>(null);
   const [historyCount, setHistoryCount] = useState(0);
+  const quickInputRef = useRef<HTMLInputElement>(null);
+  const [quickBusy, setQuickBusy] = useState(false);
+  const [quickError, setQuickError] = useState<string | null>(null);
+
+  const handleQuickUpload = async (filesList: FileList | null) => {
+    if (!filesList || filesList.length === 0) return;
+    setQuickError(null);
+    const incoming = Array.from(filesList);
+    const ok: File[] = [];
+    for (const f of incoming) {
+      const lower = f.name.toLowerCase();
+      if (!lower.endsWith(".json") && !lower.endsWith(".zip")) {
+        setQuickError(`No soportado: ${f.name}`);
+        continue;
+      }
+      if (f.size > QUICK_MAX_SIZE) {
+        setQuickError(`${f.name} supera 500 MB`);
+        continue;
+      }
+      ok.push(f);
+    }
+    if (!ok.length) return;
+
+    setQuickBusy(true);
+    const id = crypto.randomUUID();
+    const sourceName = ok.length === 1 ? ok[0].name : `${ok.length} archivos MVT`;
+    const totalSize = ok.reduce((s, f) => s + f.size, 0);
+    const base: Analysis = {
+      id,
+      fileName: sourceName,
+      fileSize: totalSize,
+      uploadedAt: new Date().toISOString(),
+      status: "processing",
+      progress: 10,
+    };
+    upsertAnalysis(base);
+    try {
+      const result = await parseMvtFiles(ok, sourceName);
+      upsertAnalysis({ ...base, status: "completed", progress: 100, result });
+      navigate({ to: "/analysis/$id", params: { id } });
+    } catch (e: any) {
+      upsertAnalysis({ ...base, status: "error", progress: 0, error: e?.message || "Error" });
+      setQuickError(e?.message || "No se pudo procesar.");
+    } finally {
+      setQuickBusy(false);
+      if (quickInputRef.current) quickInputRef.current.value = "";
+    }
+  };
 
   const nav = [
     { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },

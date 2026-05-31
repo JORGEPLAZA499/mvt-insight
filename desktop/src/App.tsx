@@ -22,9 +22,9 @@ export function App() {
   const logRef = useRef<HTMLDivElement>(null);
 
   const PHASES = [
-    t("phases.download"),
-    t("phases.connect"),
-    t("phases.collect"),
+    t("phases.download", "Descargando AndroidQF"),
+    t("phases.connect", "Conectando con el dispositivo"),
+    t("phases.collect", "Recolectando datos"),
   ];
 
   useEffect(() => {

@@ -22,9 +22,9 @@ export function App() {
   const logRef = useRef<HTMLDivElement>(null);
 
   const PHASES = [
-    t("phases.download"),
-    t("phases.connect"),
-    t("phases.collect"),
+    t("phases.download", "Descargando AndroidQF"),
+    t("phases.connect", "Conectando con el dispositivo"),
+    t("phases.collect", "Recolectando datos"),
   ];
 
   useEffect(() => {
@@ -47,10 +47,10 @@ export function App() {
     setScreen("running");
     setLogs([]);
     setError(null);
-    setPhase({ num: 1, label: t("running.starting"), progress: 0 });
+    setPhase({ num: 1, label: t("running.starting", "Iniciando…"), progress: 0 });
 
     if (!window.mvt) {
-      setError(t("error.browserOnly"));
+      setError(t("error.browserOnly", "Esta función solo está disponible en la app de escritorio."));
       return;
     }
     const result = await window.mvt.start(d);
@@ -58,7 +58,7 @@ export function App() {
       setZipPath(result.zipPath);
       setScreen("done");
     } else {
-      setError(result.error ?? t("error.unknown"));
+      setError(result.error ?? t("error.unknown", "Error desconocido"));
     }
   };
 
@@ -73,8 +73,8 @@ export function App() {
       <div className="app">
         {TopBar}
         <div className="header">
-          <h1>{t("app.title")}</h1>
-          <p>{t("app.subtitle")}</p>
+          <h1>{t("app.title", "MVT Insight Desktop")}</h1>
+          <p>{t("app.subtitle", "Análisis forense de indicios de spyware")}</p>
         </div>
         <div className="choice-grid">
           <button className="choice" onClick={() => start("android")}>
@@ -105,8 +105,8 @@ export function App() {
       <div className="app">
         {TopBar}
         <div className="header">
-          <h1>{device === "android" ? t("running.title.android") : t("running.title.ios")}</h1>
-          <p>{t("running.subtitle")}</p>
+          <h1>{device === "android" ? t("running.title.android", "Analizando Android…") : t("running.title.ios", "Analizando iPhone…")}</h1>
+          <p>{t("running.subtitle", "No cierres esta ventana. Tarda entre 5 y 15 minutos.")}</p>
         </div>
 
         <div className="card">
@@ -137,19 +137,19 @@ export function App() {
         </div>
 
         <details style={{ marginTop: 16 }}>
-          <summary>{t("details.toggle")}</summary>
+          <summary>{t("details.toggle", "Ver detalles técnicos")}</summary>
           <div className="log" ref={logRef}>
-            {logs.length === 0 ? t("details.waiting") : logs.join("")}
+            {logs.length === 0 ? t("details.waiting", "Esperando salida del proceso…") : logs.join("")}
           </div>
         </details>
 
         {error && (
           <div className="card" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
-            <strong>{t("error.title")}</strong>
+            <strong>{t("error.title", "Algo salió mal:")}</strong>
             <div style={{ marginTop: 6, fontSize: 13 }}>{error}</div>
             <div className="row">
               <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-                {t("error.back")}
+                {t("error.back", "Volver al inicio")}
               </button>
             </div>
           </div>
@@ -163,11 +163,11 @@ export function App() {
     <div className="app">
       {TopBar}
       <div className="header">
-        <h1>{t("done.title")}</h1>
-        <p>{t("done.subtitle")}</p>
+        <h1>{t("done.title", "✓ Análisis completado")}</h1>
+        <p>{t("done.subtitle", "Los datos se han guardado en tu carpeta de Descargas.")}</p>
       </div>
       <div className="card">
-        <div style={{ fontSize: 13, color: "var(--muted)" }}>{t("done.filename")}</div>
+        <div style={{ fontSize: 13, color: "var(--muted)" }}>{t("done.filename", "Archivo generado:")}</div>
         <div style={{
           fontFamily: "SF Mono, Menlo, monospace",
           fontSize: 12,
@@ -178,13 +178,13 @@ export function App() {
         </div>
         <div className="row">
           <button className="btn" onClick={() => window.mvt?.openExternal("https://mvt-insight.lovable.app/upload")}>
-            {t("done.upload")}
+            {t("done.upload", "Subir al informe →")}
           </button>
           <button className="btn btn-secondary" onClick={() => zipPath && window.mvt?.openFolder(zipPath)}>
-            {t("done.openFolder")}
+            {t("done.openFolder", "Abrir carpeta")}
           </button>
           <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-            {t("done.new")}
+            {t("done.new", "Nuevo análisis")}
           </button>
         </div>
       </div>

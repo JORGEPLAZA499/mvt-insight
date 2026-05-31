@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CopyCommand } from "@/components/copy-command";
 import {
   UploadCloud,
   FileArchive,
@@ -14,17 +13,14 @@ import {
   Smartphone,
   Apple,
   Monitor,
-  HelpCircle,
-  CheckCircle2,
   Download,
-  Terminal,
-  Info,
 } from "lucide-react";
 
 
 import { upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 import { UsbConnect } from "@/components/usb-connect";
+
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),

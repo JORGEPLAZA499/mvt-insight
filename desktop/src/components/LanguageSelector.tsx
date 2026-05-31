@@ -2,10 +2,14 @@ import { useTranslation } from "react-i18next";
 
 export function LanguageSelector() {
   const { i18n, t } = useTranslation();
+  const tr = (key: string, fallback: string) => {
+    const value = t(key, { defaultValue: fallback });
+    return value === key ? fallback : value;
+  };
 
   return (
     <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--muted)" }}>
-      {t("language.label")}:
+      {tr("language.label", "Idioma")}:
       <select
         value={i18n.language.startsWith("en") ? "en" : "es"}
         onChange={(e) => i18n.changeLanguage(e.target.value)}
@@ -18,8 +22,8 @@ export function LanguageSelector() {
           fontSize: 13,
         }}
       >
-        <option value="es">{t("language.spanish")}</option>
-        <option value="en">{t("language.english")}</option>
+        <option value="es">{tr("language.spanish", "Español")}</option>
+        <option value="en">{tr("language.english", "English")}</option>
       </select>
     </label>
   );

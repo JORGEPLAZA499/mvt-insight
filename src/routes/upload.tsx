@@ -451,7 +451,75 @@ function StepRun({
         Un paso cada vez. No te saltes ninguno o el análisis no funcionará.
       </p>
 
+      <details className="mt-5 rounded-xl border border-warning/40 bg-warning/5 p-4 group">
+        <summary className="cursor-pointer flex items-center gap-2 text-sm font-medium">
+          <Lock className="h-4 w-4 text-warning" />
+          Protocolo forense recomendado (máxima privacidad)
+          <span className="ml-auto text-xs text-muted-foreground group-open:hidden">Mostrar</span>
+          <span className="ml-auto text-xs text-muted-foreground hidden group-open:inline">Ocultar</span>
+        </summary>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Si sospechas que el móvil está realmente comprometido, sigue este protocolo para evitar
+          que el spyware "se entere" de que lo estás analizando o filtre datos durante el proceso:
+        </p>
+        <ol className="mt-3 space-y-3 text-sm">
+          <li className="flex gap-3">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">A</div>
+            <div>
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <WifiOff className="h-3.5 w-3.5" /> PC sin Internet
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Usa un ordenador desconectado (cable de red desenchufado y Wi-Fi apagado, o en modo avión).
+                Antes, ejecuta la app de escritorio <strong className="text-foreground">una vez con Internet</strong> para
+                que descargue las herramientas; luego ya puedes desconectar.
+              </p>
+            </div>
+          </li>
+          <li className="flex gap-3">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">B</div>
+            <div>
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <Smartphone className="h-3.5 w-3.5" /> Móvil en modo avión
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Activa el modo avión en el móvil para cortarle Internet. Mantén el USB activo
+                (en Android, la depuración USB sigue funcionando aunque el móvil esté sin red).
+              </p>
+            </div>
+          </li>
+          <li className="flex gap-3">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">C</div>
+            <div>
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <Usb className="h-3.5 w-3.5" /> Conecta por cable USB y recolecta
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Conecta móvil y PC con el cable USB y ejecuta la recolección con la app de escritorio.
+                Todo el proceso es 100 % local: no sale nada a Internet.
+              </p>
+            </div>
+          </li>
+          <li className="flex gap-3">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">D</div>
+            <div>
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <UploadCloud className="h-3.5 w-3.5" /> Sube el ZIP desde otro PC con Internet
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Copia el ZIP a un USB o disco externo y súbelo desde un ordenador limpio con Internet
+                para generar el informe aquí.
+              </p>
+            </div>
+          </li>
+        </ol>
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          ¿Solo curiosidad o revisión rutinaria? No es necesario este protocolo: puedes hacer todo desde el mismo PC con Internet.
+        </p>
+      </details>
+
       <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground">
+
         <span>
           Paso {current} de {total}
         </span>

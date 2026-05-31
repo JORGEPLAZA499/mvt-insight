@@ -137,19 +137,19 @@ export function App() {
         </div>
 
         <details style={{ marginTop: 16 }}>
-          <summary>{t("details.toggle")}</summary>
+          <summary>{t("details.toggle", "Ver detalles técnicos")}</summary>
           <div className="log" ref={logRef}>
-            {logs.length === 0 ? t("details.waiting") : logs.join("")}
+            {logs.length === 0 ? t("details.waiting", "Esperando salida del proceso…") : logs.join("")}
           </div>
         </details>
 
         {error && (
           <div className="card" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
-            <strong>{t("error.title")}</strong>
+            <strong>{t("error.title", "Algo salió mal:")}</strong>
             <div style={{ marginTop: 6, fontSize: 13 }}>{error}</div>
             <div className="row">
               <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-                {t("error.back")}
+                {t("error.back", "Volver al inicio")}
               </button>
             </div>
           </div>

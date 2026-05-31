@@ -13,6 +13,10 @@ interface PhaseState {
 
 export function App() {
   const { t } = useTranslation();
+  const tr = (key: string, fallback: string) => {
+    const value = t(key, { defaultValue: fallback });
+    return value === key ? fallback : value;
+  };
   const [screen, setScreen] = useState<Screen>("welcome");
   const [device, setDevice] = useState<Device | null>(null);
   const [phase, setPhase] = useState<PhaseState>({ num: 0, label: "", progress: 0 });
@@ -22,9 +26,9 @@ export function App() {
   const logRef = useRef<HTMLDivElement>(null);
 
   const PHASES = [
-    t("phases.download", "Descargando AndroidQF"),
-    t("phases.connect", "Conectando con el dispositivo"),
-    t("phases.collect", "Recolectando datos"),
+    tr("phases.download", "Descargando AndroidQF"),
+    tr("phases.connect", "Conectando con el dispositivo"),
+    tr("phases.collect", "Recolectando datos"),
   ];
 
   useEffect(() => {
@@ -47,10 +51,10 @@ export function App() {
     setScreen("running");
     setLogs([]);
     setError(null);
-    setPhase({ num: 1, label: t("running.starting", "Iniciando…"), progress: 0 });
+    setPhase({ num: 1, label: tr("running.starting", "Iniciando…"), progress: 0 });
 
     if (!window.mvt) {
-      setError(t("error.browserOnly", "Esta función solo está disponible en la app de escritorio."));
+      setError(tr("error.browserOnly", "Esta función solo está disponible en la app de escritorio."));
       return;
     }
     const result = await window.mvt.start(d);
@@ -58,7 +62,7 @@ export function App() {
       setZipPath(result.zipPath);
       setScreen("done");
     } else {
-      setError(result.error ?? t("error.unknown", "Error desconocido"));
+      setError(result.error ?? tr("error.unknown", "Error desconocido"));
     }
   };
 
@@ -73,27 +77,27 @@ export function App() {
       <div className="app">
         {TopBar}
         <div className="header">
-          <h1>{t("app.title", "MVT Insight Desktop")}</h1>
-          <p>{t("app.subtitle", "Análisis forense de indicios de spyware")}</p>
+          <h1>{tr("app.title", "MVT Insight Desktop")}</h1>
+          <p>{tr("app.subtitle", "Análisis forense de indicios de spyware")}</p>
         </div>
         <div className="choice-grid">
           <button className="choice" onClick={() => start("android")}>
             <div className="icon">📱</div>
-            <div className="title">{t("welcome.android.title", "Android")}</div>
-            <div className="sub">{t("welcome.android.sub", "Samsung, Xiaomi, Pixel…")}</div>
+            <div className="title">{tr("welcome.android.title", "Android")}</div>
+            <div className="sub">{tr("welcome.android.sub", "Samsung, Xiaomi, Pixel…")}</div>
           </button>
           <button className="choice" onClick={() => start("ios")} disabled>
             <div className="icon">📲</div>
-            <div className="title">{t("welcome.ios.title", "iPhone")}</div>
-            <div className="sub">{t("welcome.ios.sub", "Próximamente (solo macOS)")}</div>
+            <div className="title">{tr("welcome.ios.title", "iPhone")}</div>
+            <div className="sub">{tr("welcome.ios.sub", "Próximamente (solo macOS)")}</div>
           </button>
         </div>
         <div className="card" style={{ marginTop: 24 }}>
-          <strong>{t("welcome.before.title", "Antes de empezar:")}</strong>
+          <strong>{tr("welcome.before.title", "Antes de empezar:")}</strong>
           <ul style={{ margin: "8px 0 0", paddingLeft: 18, color: "var(--muted)", fontSize: 13 }}>
-            <li>{t("welcome.before.usb", "Activa la Depuración USB en tu Android.")}</li>
-            <li>{t("welcome.before.cable", "Conecta el móvil con un cable USB (mejor el original).")}</li>
-            <li>{t("welcome.before.unlocked", "Mantén la pantalla del móvil desbloqueada durante todo el proceso.")}</li>
+            <li>{tr("welcome.before.usb", "Activa la Depuración USB en tu Android.")}</li>
+            <li>{tr("welcome.before.cable", "Conecta el móvil con un cable USB (mejor el original).")}</li>
+            <li>{tr("welcome.before.unlocked", "Mantén la pantalla del móvil desbloqueada durante todo el proceso.")}</li>
           </ul>
         </div>
       </div>
@@ -105,8 +109,8 @@ export function App() {
       <div className="app">
         {TopBar}
         <div className="header">
-          <h1>{device === "android" ? t("running.title.android", "Analizando Android…") : t("running.title.ios", "Analizando iPhone…")}</h1>
-          <p>{t("running.subtitle", "No cierres esta ventana. Tarda entre 5 y 15 minutos.")}</p>
+          <h1>{device === "android" ? tr("running.title.android", "Analizando Android…") : tr("running.title.ios", "Analizando iPhone…")}</h1>
+          <p>{tr("running.subtitle", "No cierres esta ventana. Tarda entre 5 y 15 minutos.")}</p>
         </div>
 
         <div className="card">
@@ -137,19 +141,19 @@ export function App() {
         </div>
 
         <details style={{ marginTop: 16 }}>
-          <summary>{t("details.toggle", "Ver detalles técnicos")}</summary>
+          <summary>{tr("details.toggle", "Ver detalles técnicos")}</summary>
           <div className="log" ref={logRef}>
-            {logs.length === 0 ? t("details.waiting", "Esperando salida del proceso…") : logs.join("")}
+            {logs.length === 0 ? tr("details.waiting", "Esperando salida del proceso…") : logs.join("")}
           </div>
         </details>
 
         {error && (
           <div className="card" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
-            <strong>{t("error.title", "Algo salió mal:")}</strong>
+            <strong>{tr("error.title", "Algo salió mal:")}</strong>
             <div style={{ marginTop: 6, fontSize: 13 }}>{error}</div>
             <div className="row">
               <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-                {t("error.back", "Volver al inicio")}
+                {tr("error.back", "Volver al inicio")}
               </button>
             </div>
           </div>
@@ -163,11 +167,11 @@ export function App() {
     <div className="app">
       {TopBar}
       <div className="header">
-        <h1>{t("done.title", "✓ Análisis completado")}</h1>
-        <p>{t("done.subtitle", "Los datos se han guardado en tu carpeta de Descargas.")}</p>
+        <h1>{tr("done.title", "✓ Análisis completado")}</h1>
+        <p>{tr("done.subtitle", "Los datos se han guardado en tu carpeta de Descargas.")}</p>
       </div>
       <div className="card">
-        <div style={{ fontSize: 13, color: "var(--muted)" }}>{t("done.filename", "Archivo generado:")}</div>
+        <div style={{ fontSize: 13, color: "var(--muted)" }}>{tr("done.filename", "Archivo generado:")}</div>
         <div style={{
           fontFamily: "SF Mono, Menlo, monospace",
           fontSize: 12,
@@ -178,13 +182,13 @@ export function App() {
         </div>
         <div className="row">
           <button className="btn" onClick={() => window.mvt?.openExternal("https://mvt-insight.lovable.app/upload")}>
-            {t("done.upload", "Subir al informe →")}
+            {tr("done.upload", "Subir al informe →")}
           </button>
           <button className="btn btn-secondary" onClick={() => zipPath && window.mvt?.openFolder(zipPath)}>
-            {t("done.openFolder", "Abrir carpeta")}
+            {tr("done.openFolder", "Abrir carpeta")}
           </button>
           <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-            {t("done.new", "Nuevo análisis")}
+            {tr("done.new", "Nuevo análisis")}
           </button>
         </div>
       </div>

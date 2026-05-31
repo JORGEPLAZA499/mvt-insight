@@ -1,34 +1,28 @@
-## Añadir soporte bilingüe (Inglés / Español) con selector de idioma
+## Generar paquete i18n descargable para la app de escritorio `mvt-insight`
 
 ### Objetivo
-Permitir cambiar toda la interfaz de la web entre **Español** e **Inglés** mediante un selector con banderitas (SVG) visible en todas las páginas.
+Entregar en `/mnt/documents/mvt-insight-i18n/` (y como `.zip`) todos los archivos necesarios para añadir soporte bilingüe ES/EN con autodetección + selector de banderas a la app Electron `mvt-insight`, listos para pegar en su repo.
 
-### Qué se hará
+### Archivos a generar
 
-1. **Sistema de i18n ligero (sin dependencias pesadas)**
-   - Crear `src/i18n/translations.ts` con un objeto `{ es: {...}, en: {...} }` que contenga todas las cadenas de la web (home, upload, dashboard, history, reports, login, analysis, navegación, protocolo forense, etc.).
-   - Crear `src/i18n/LanguageContext.tsx` con un `LanguageProvider` + hook `useT()` que devuelve `t('clave')` y `{ lang, setLang }`.
-   - Persistir el idioma elegido en `localStorage` y autodetectar el idioma del navegador la primera vez (`navigator.language`).
+1. `src/i18n/index.ts` — config i18next con detector custom: localStorage → `window.electronAPI.getSystemLocale()` → fallback EN.
+2. `src/i18n/locales/es.json` y `src/i18n/locales/en.json` — diccionarios con claves para botones, fases de análisis, errores y diálogos.
+3. `src/components/LanguageSelector.tsx` — selector con banderas SVG inline (ES + GB), igual al de la web.
+4. `electron/preload.cjs` — expone `window.electronAPI.getSystemLocale()` via `contextBridge`.
+5. `electron/main.patch.cjs` — snippet con el `ipcMain.handle('get-system-locale', () => app.getLocale())` para añadir al main existente.
+6. `src/main.patch.tsx` — snippet con el import de `./i18n` y el montaje del `LanguageSelector`.
+7. `README-i18n.md` — instalación (`npm install i18next react-i18next`), ubicación de archivos, ejemplo de uso (`{t('app.startAnalysis')}`), cómo añadir más idiomas.
 
-2. **Selector de idioma con banderitas SVG**
-   - Nuevo componente `src/components/LanguageSwitcher.tsx`.
-   - Banderas dibujadas como SVG inline (sin imágenes externas): bandera de **España** (rojo/amarillo/rojo) y bandera de **Reino Unido / Union Jack** para inglés.
-   - UI: botón redondeado con la bandera actual + dropdown (usando `DropdownMenu` de shadcn ya disponible) para elegir la otra. Tamaño ~24×16 px.
-   - Se monta en `src/routes/__root.tsx` (esquina superior derecha, fixed) para que aparezca en todas las páginas.
+### Comportamiento (Opción C)
+- Primer arranque: lee idioma del SO via Electron → ES si empieza por `es`, EN en otro caso.
+- Cambio manual: guardado en `localStorage`, aplicado al instante.
+- Arranques siguientes: respeta la elección guardada.
 
-3. **Aplicar traducciones**
-   - Reemplazar todas las cadenas literales en español de las páginas (`upload.tsx`, `index.tsx`, `dashboard.tsx`, `history.tsx`, `reports.tsx`, `login.tsx`, `analysis.$id.tsx`) por llamadas `t('...')`.
-   - Incluye el bloque del **protocolo forense** (pasos A/B/C/D) recién añadido en `upload.tsx`.
-   - Los `<title>` y `meta description` de cada `head()` también se traducen.
+### Entrega
+- Carpeta `/mnt/documents/mvt-insight-i18n/` con todos los archivos.
+- `mvt-insight-i18n.zip` para descarga única.
+- Tag `<presentation-artifact>` para el zip al final.
 
-4. **Sin cambios de backend ni de lógica** — solo capa de presentación e i18n.
-
-### Detalles técnicos
-- Stack: React Context + hook propio, **sin** `react-i18next` (evita peso y configuración SSR).
-- Tipo seguro: las claves de traducción se tipan con `keyof typeof translations.es`.
-- Provider envuelve el `<Outlet />` en `__root.tsx`, dentro del shell ya existente.
-- El selector usa los tokens del design system (`bg-card`, `border-border`, `hover:bg-accent`).
-- Banderas SVG accesibles con `<title>` y `aria-label`.
-
-### Resultado esperado
-En la esquina superior derecha aparece un botón con la banderita del idioma activo. Al pulsarlo, se despliega la otra opción; al elegirla, toda la web (incluido el protocolo forense recién añadido) cambia de idioma al instante y se recuerda en la próxima visita.
+### Notas
+- No se modifica nada del proyecto actual (es un paquete externo).
+- Si la estructura del repo `mvt-insight` difiere, solo cambian rutas — el código es válido para Electron + React estándar.

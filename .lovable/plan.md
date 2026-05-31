@@ -1,26 +1,34 @@
-## Objetivo
-Mostrar el procedimiento forense recomendado (PC offline + móvil en modo avión + cable USB; luego subir ZIP desde otro PC con Internet) como pasos visuales dentro del flujo de análisis de la web.
+## Añadir soporte bilingüe (Inglés / Español) con selector de idioma
 
-## Cambios propuestos
+### Objetivo
+Permitir cambiar toda la interfaz de la web entre **Español** e **Inglés** mediante un selector con banderitas (SVG) visible en todas las páginas.
 
-### 1. Componente de protocolo forense en `upload.tsx`
-En el paso 3 (`StepRun`), justo antes de las instrucciones de conexión actual, añadir un bloque visual desplegable o fijo que muestre los 3 pasos del protocolo forense ideal:
+### Qué se hará
 
-- **Paso A**: Preparar un PC sin conexión a Internet (o en modo avión).
-- **Paso B**: Poner el móvil en modo avión y conectarlo por USB al PC offline.
-- **Paso C**: Realizar la recolección con la app de escritorio y guardar el ZIP.
-- **Paso D**: En otro PC con Internet, subir el ZIP a esta plataforma para el informe.
+1. **Sistema de i18n ligero (sin dependencias pesadas)**
+   - Crear `src/i18n/translations.ts` con un objeto `{ es: {...}, en: {...} }` que contenga todas las cadenas de la web (home, upload, dashboard, history, reports, login, analysis, navegación, protocolo forense, etc.).
+   - Crear `src/i18n/LanguageContext.tsx` con un `LanguageProvider` + hook `useT()` que devuelve `t('clave')` y `{ lang, setLang }`.
+   - Persistir el idioma elegido en `localStorage` y autodetectar el idioma del navegador la primera vez (`navigator.language`).
 
-Diseño: usar una caja destacada con borde sutil, iconos de escudo/candado, y texto conciso. Esto reforzará la privacidad y seriedad forense del producto.
+2. **Selector de idioma con banderitas SVG**
+   - Nuevo componente `src/components/LanguageSwitcher.tsx`.
+   - Banderas dibujadas como SVG inline (sin imágenes externas): bandera de **España** (rojo/amarillo/rojo) y bandera de **Reino Unido / Union Jack** para inglés.
+   - UI: botón redondeado con la bandera actual + dropdown (usando `DropdownMenu` de shadcn ya disponible) para elegir la otra. Tamaño ~24×16 px.
+   - Se monta en `src/routes/__root.tsx` (esquina superior derecha, fixed) para que aparezca en todas las páginas.
 
-### 2. (Opcional) Badge/etiqueta en landing
-Añadir una línea corta en la sección "Cómo funciona" de `index.tsx` que mencione el análisis 100 % offline como ventaja de privacidad.
+3. **Aplicar traducciones**
+   - Reemplazar todas las cadenas literales en español de las páginas (`upload.tsx`, `index.tsx`, `dashboard.tsx`, `history.tsx`, `reports.tsx`, `login.tsx`, `analysis.$id.tsx`) por llamadas `t('...')`.
+   - Incluye el bloque del **protocolo forense** (pasos A/B/C/D) recién añadido en `upload.tsx`.
+   - Los `<title>` y `meta description` de cada `head()` también se traducen.
 
-## Archivos a editar
-- `src/routes/upload.tsx` — añadir el bloque de protocolo forense en `StepRun`.
-- `src/routes/index.tsx` — añadir mención al protocolo offline en la sección "Cómo funciona".
+4. **Sin cambios de backend ni de lógica** — solo capa de presentación e i18n.
 
-## Técnico
-- Usar tokens de diseño existentes (`--warning`, `--success`, bordes, fondos de tarjeta).
-- No modificar lógica de negocio ni el flujo de pasos numéricos (1-4); el bloque forense será informativo/desplegable dentro del paso 3.
-- Iconos sugeridos: `Shield`, `WifiOff`, `Smartphone`, `Usb`, `UploadCloud` de lucide-react.
+### Detalles técnicos
+- Stack: React Context + hook propio, **sin** `react-i18next` (evita peso y configuración SSR).
+- Tipo seguro: las claves de traducción se tipan con `keyof typeof translations.es`.
+- Provider envuelve el `<Outlet />` en `__root.tsx`, dentro del shell ya existente.
+- El selector usa los tokens del design system (`bg-card`, `border-border`, `hover:bg-accent`).
+- Banderas SVG accesibles con `<title>` y `aria-label`.
+
+### Resultado esperado
+En la esquina superior derecha aparece un botón con la banderita del idioma activo. Al pulsarlo, se despliega la otra opción; al elegirla, toda la web (incluido el protocolo forense recién añadido) cambia de idioma al instante y se recuerda en la próxima visita.

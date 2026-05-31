@@ -337,7 +337,7 @@ function StepRun({
 
           <div className="grid sm:grid-cols-3 gap-2">
             <a
-              href={`${SCRIPT_BASE_URL}/downloads/MvtInsight-windows-x64.zip`}
+              href={`${RELEASES_BASE_URL}/MvtInsight-windows-x64.zip`}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "windows"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
@@ -348,7 +348,7 @@ function StepRun({
               Windows
             </a>
             <a
-              href={`${SCRIPT_BASE_URL}/downloads/MvtInsight-macos-x64.zip`}
+              href={`${RELEASES_BASE_URL}/MvtInsight-macos-x64.zip`}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "mac"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
@@ -359,7 +359,7 @@ function StepRun({
               macOS
             </a>
             <a
-              href={`${SCRIPT_BASE_URL}/downloads/MvtInsight-linux-x64.tar.gz`}
+              href={`${RELEASES_BASE_URL}/MvtInsight-linux-x64.tar.gz`}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "linux"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
@@ -374,7 +374,10 @@ function StepRun({
           <p className="mt-3 text-[11px] text-muted-foreground">
             Recomendado para ti: <strong className="text-foreground">
               {os === "windows" ? "Windows" : os === "mac" ? "macOS" : "Linux"}
-            </strong> (detectado automáticamente)
+            </strong> (detectado automáticamente) · {" "}
+            <a href={RELEASES_PAGE_URL} target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+              Ver todas las versiones en GitHub
+            </a>
           </p>
         </div>
 

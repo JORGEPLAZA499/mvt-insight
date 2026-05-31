@@ -1,8 +1,9 @@
-Voy a corregir el punto real que aún está mal: `desktop/src/main.tsx` no importa `./i18n`, así que la inicialización no ocurre antes de montar React. Aunque `App.tsx` lo importe, es más seguro y correcto inicializar i18n en el entrypoint.
+La captura muestra que i18n sí está inicializado: `app.title`, `app.subtitle` e `Idioma` traducen bien. El problema ahora es más específico: las claves `welcome.*` están llegando como faltantes en el runtime que estás abriendo.
 
 Plan:
-1. Editar `desktop/src/main.tsx` para agregar `import "./i18n";` antes de renderizar `<App />`.
-2. Quitar el import duplicado de `./i18n` en `desktop/src/App.tsx` para dejar la inicialización en un solo lugar.
-3. Confirmar que las claves de `es.json` y `en.json` coinciden con las usadas por `t()`.
+1. Mantener `import "./i18n";` en `desktop/src/main.tsx`, porque ya está correcto.
+2. Reforzar `desktop/src/App.tsx` agregando `defaultValue` a todas las llamadas `t("welcome.*")`, para que aunque el JSON local esté incompleto o Vite cargue una versión vieja, nunca se vean claves como `welcome.android.title` en pantalla.
+3. Revisar que `desktop/src/i18n/locales/es.json` y `desktop/src/i18n/locales/en.json` conserven las claves `welcome.android`, `welcome.ios` y `welcome.before`.
+4. Indicar el reinicio local necesario: cerrar `npm run dev` y volver a ejecutarlo dentro de `desktop`.
 
-Después de aplicar esto, en tu PC debes reiniciar el servidor con `npm run dev` dentro de `desktop` para que Vite tome el cambio.
+Resultado esperado: la pantalla mostrará `Android`, `Samsung, Xiaomi, Pixel…`, `iPhone`, `Próximamente (solo macOS)` y `Antes de empezar:` aunque haya un problema temporal de carga de traducciones.

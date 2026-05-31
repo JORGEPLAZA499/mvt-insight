@@ -184,89 +184,9 @@ function StepRun({
   onDone: () => void;
   onChangeOS: () => void;
 }) {
-  const [showHelp, setShowHelp] = useState(false);
-  const [showAlt, setShowAlt] = useState(false);
   const [subStep, setSubStep] = useState<number>(1);
-  const [downloaded, setDownloaded] = useState(false);
 
   const blocked = device === "ios" && os === "windows";
-
-  const analyzerFile =
-    device === "ios"
-      ? "analizar-ios.sh"
-      : os === "windows"
-        ? "analizar-android.ps1"
-        : "analizar-android.sh";
-
-  const scriptUrl = `${SCRIPT_BASE_URL}/api/public/scripts/${analyzerFile}`;
-
-  const command =
-    os === "windows"
-      ? `irm ${scriptUrl} | iex`
-      : `curl -fsSL ${scriptUrl} | bash`;
-
-  const terminalHelp: Record<OS, string> = {
-    mac: "Pulsa Cmd (⌘) + Espacio, escribe «terminal» y pulsa Enter.",
-    linux: "Pulsa Ctrl + Alt + T, o busca «Terminal» en el menú.",
-    windows:
-      "Pulsa la tecla Windows, escribe «powershell» y abre «Windows PowerShell».",
-  };
-
-  const prep =
-    device === "android"
-      ? "Antes de continuar: en el móvil activa la Depuración USB y conéctalo por cable."
-      : "Antes de continuar: crea un backup cifrado del iPhone con Finder/iTunes y recuerda la contraseña.";
-
-  /* ---------- Generación del lanzador (cliente) ---------- */
-  const launcher = useMemo(() => {
-    if (os === "windows") {
-      const content =
-        `@echo off\r\n` +
-        `title Analisis forense - Spyware Insight\r\n` +
-        `echo ============================================\r\n` +
-        `echo  Iniciando analisis forense...\r\n` +
-        `echo ============================================\r\n` +
-        `echo.\r\n` +
-        `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm ${scriptUrl} | iex"\r\n` +
-        `echo.\r\n` +
-        `pause\r\n`;
-      return {
-        content,
-        filename: device === "ios" ? "analizar-iphone.bat" : "analizar-android.bat",
-        mime: "application/bat",
-      };
-    }
-    // mac & linux
-    const content =
-      `#!/bin/bash\n` +
-      `echo "============================================"\n` +
-      `echo " Iniciando análisis forense…"\n` +
-      `echo "============================================"\n` +
-      `echo ""\n` +
-      `curl -fsSL ${scriptUrl} | bash\n` +
-      `echo ""\n` +
-      `echo "Listo. Pulsa Enter para cerrar esta ventana."\n` +
-      `read\n`;
-    const ext = os === "mac" ? "command" : "sh";
-    return {
-      content,
-      filename: `${device === "ios" ? "analizar-iphone" : "analizar-android"}.${ext}`,
-      mime: "application/x-sh",
-    };
-  }, [os, device, scriptUrl]);
-
-  const downloadLauncher = () => {
-    const blob = new Blob([launcher.content], { type: launcher.mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = launcher.filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setDownloaded(true);
-  };
 
   if (blocked) {
     return (
@@ -286,55 +206,7 @@ function StepRun({
     );
   }
 
-  const launcherPrimary = os === "windows" || os === "mac";
 
-  const launcherBlock = launcherPrimary ? (
-    <div className="rounded-xl border border-primary/40 bg-gradient-to-br from-primary/10 to-transparent p-5 shadow-glow">
-      <div className="flex items-start gap-4">
-        <div className="h-12 w-12 rounded-lg bg-gradient-primary grid place-items-center shadow-glow shrink-0">
-          <Download className="h-6 w-6 text-primary-foreground" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold">{launcher.filename}</div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {os === "windows"
-              ? "Descarga el archivo, haz doble clic y la Terminal se abrirá sola ejecutando el análisis."
-              : "Descarga el archivo y haz doble clic. La Terminal se abrirá automáticamente y ejecutará el análisis."}
-          </p>
-          <Button
-            onClick={downloadLauncher}
-            className="mt-3 bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-          >
-            <Download className="h-4 w-4 mr-1.5" />
-            Descargar lanzador
-          </Button>
-          {downloaded && (
-            <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-success">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Descargado. Búscalo en tu carpeta Descargas y haz doble clic.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {os === "mac" && (
-        <details className="mt-4 text-xs">
-          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-            ¿Sale "permiso denegado" al hacer doble clic?
-          </summary>
-          <div className="mt-2 p-3 rounded-md bg-card border border-border text-muted-foreground">
-            Es una protección de macOS. Abre la Terminal una vez y pega:
-            <pre className="mt-2 font-mono text-foreground bg-muted/40 p-2 rounded text-[11px] overflow-x-auto">
-              chmod +x ~/Downloads/{launcher.filename}
-            </pre>
-            Luego vuelve a hacer doble clic en el archivo.
-          </div>
-        </details>
-      )}
-    </div>
-  ) : (
-    <CopyCommand command={command} label="Terminal" />
-  );
 
   const preambleStep = {
     title: "Prepara el cable y el móvil",

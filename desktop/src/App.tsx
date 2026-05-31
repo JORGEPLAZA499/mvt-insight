@@ -73,8 +73,8 @@ export function App() {
       <div className="app">
         {TopBar}
         <div className="header">
-          <h1>{t("app.title")}</h1>
-          <p>{t("app.subtitle")}</p>
+          <h1>{t("app.title", "MVT Insight Desktop")}</h1>
+          <p>{t("app.subtitle", "Análisis forense de indicios de spyware")}</p>
         </div>
         <div className="choice-grid">
           <button className="choice" onClick={() => start("android")}>

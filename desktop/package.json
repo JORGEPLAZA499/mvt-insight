@@ -1,0 +1,26 @@
+{
+  "name": "mvt-insight-desktop",
+  "version": "1.0.0",
+  "description": "MVT Insight — App de escritorio para recolectar datos forenses de Android/iOS y subirlos a mvt-insight.lovable.app",
+  "main": "electron/main.cjs",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron:dev": "vite build && electron .",
+    "package:win": "vite build && electron-packager . MvtInsight --platform=win32 --arch=x64 --out=release --overwrite --ignore='^/src' --ignore='^/release'",
+    "package:mac": "vite build && electron-packager . MvtInsight --platform=darwin --arch=x64 --out=release --overwrite --ignore='^/src' --ignore='^/release'",
+    "package:linux": "vite build && electron-packager . MvtInsight --platform=linux --arch=x64 --out=release --overwrite --ignore='^/src' --ignore='^/release'"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.0",
+    "typescript": "^5.6.3",
+    "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

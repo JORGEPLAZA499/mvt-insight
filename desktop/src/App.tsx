@@ -47,10 +47,10 @@ export function App() {
     setScreen("running");
     setLogs([]);
     setError(null);
-    setPhase({ num: 1, label: t("running.starting"), progress: 0 });
+    setPhase({ num: 1, label: t("running.starting", "Iniciando…"), progress: 0 });
 
     if (!window.mvt) {
-      setError(t("error.browserOnly"));
+      setError(t("error.browserOnly", "Esta función solo está disponible en la app de escritorio."));
       return;
     }
     const result = await window.mvt.start(d);
@@ -58,7 +58,7 @@ export function App() {
       setZipPath(result.zipPath);
       setScreen("done");
     } else {
-      setError(result.error ?? t("error.unknown"));
+      setError(result.error ?? t("error.unknown", "Error desconocido"));
     }
   };
 

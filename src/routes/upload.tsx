@@ -15,6 +15,11 @@ import {
   Monitor,
   Download,
   CheckCircle2,
+  WifiOff,
+  Usb,
+  Lock,
+
+
 
 } from "lucide-react";
 

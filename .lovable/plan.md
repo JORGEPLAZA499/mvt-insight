@@ -1,70 +1,26 @@
-Repo confirmado: `https://github.com/JORGEPLAZA499/mvt-insight.git`
+## Objetivo
+Mostrar el procedimiento forense recomendado (PC offline + móvil en modo avión + cable USB; luego subir ZIP desde otro PC con Internet) como pasos visuales dentro del flujo de análisis de la web.
 
-## Pasos en tu PC Windows (PowerShell)
+## Cambios propuestos
 
-### 1. Verificar requisitos
-```powershell
-node --version
-npm --version
-git --version
-```
-Si falta alguno: instalar Node.js LTS desde nodejs.org y Git desde git-scm.com.
+### 1. Componente de protocolo forense en `upload.tsx`
+En el paso 3 (`StepRun`), justo antes de las instrucciones de conexión actual, añadir un bloque visual desplegable o fijo que muestre los 3 pasos del protocolo forense ideal:
 
-### 2. Clonar el repo
-```powershell
-cd "C:\Users\GAMING F15\Documents"
-git clone https://github.com/JORGEPLAZA499/mvt-insight.git
-cd mvt-insight
-```
+- **Paso A**: Preparar un PC sin conexión a Internet (o en modo avión).
+- **Paso B**: Poner el móvil en modo avión y conectarlo por USB al PC offline.
+- **Paso C**: Realizar la recolección con la app de escritorio y guardar el ZIP.
+- **Paso D**: En otro PC con Internet, subir el ZIP a esta plataforma para el informe.
 
-### 3. Instalar dependencias del proyecto raíz (necesario para que Vite construya el frontend que Electron carga)
-```powershell
-npm install
-```
+Diseño: usar una caja destacada con borde sutil, iconos de escudo/candado, y texto conciso. Esto reforzará la privacidad y seriedad forense del producto.
 
-### 4. Construir el frontend
-```powershell
-npm run build
-```
-Esto genera la carpeta `dist/` que Electron va a empaquetar.
+### 2. (Opcional) Badge/etiqueta en landing
+Añadir una línea corta en la sección "Cómo funciona" de `index.tsx` que mencione el análisis 100 % offline como ventaja de privacidad.
 
-### 5. Instalar dependencias de Electron y empaquetar
-```powershell
-cd desktop
-npm install
-npm run package:win
-```
+## Archivos a editar
+- `src/routes/upload.tsx` — añadir el bloque de protocolo forense en `StepRun`.
+- `src/routes/index.tsx` — añadir mención al protocolo offline en la sección "Cómo funciona".
 
-Si tu PowerShell es 5.1 y `&&` falla, usar:
-```powershell
-npm install; if ($?) { npm run package:win }
-```
-
-### 6. Recoger el ejecutable
-Ruta del binario:
-```
-C:\Users\GAMING F15\Documents\mvt-insight\desktop\release\MvtInsight-win32-x64\MvtInsight.exe
-```
-Doble clic para abrir. La primera vez Windows SmartScreen avisará → "Más información" → "Ejecutar de todas formas".
-
-### 7. Distribuir
-Comprimir la carpeta completa `MvtInsight-win32-x64` (no solo el `.exe` — necesita los archivos vecinos) en un `.zip` y subirla a Drive, GitHub Releases, etc. Quien la reciba solo descomprime y ejecuta.
-
-### 8. Actualizaciones futuras
-Cuando hagas cambios en Lovable:
-```powershell
-cd "C:\Users\GAMING F15\Documents\mvt-insight"
-git pull
-npm install
-npm run build
-cd desktop
-npm install
-npm run package:win
-```
-
-## Qué reportar si algo falla
-- Comando exacto que falló
-- Mensaje de error completo (copia/pega)
-- Versión de Node (`node --version`)
-
-No requiere cambios de código en Lovable. Aprueba el plan y procede con los pasos en tu PC.
+## Técnico
+- Usar tokens de diseño existentes (`--warning`, `--success`, bordes, fondos de tarjeta).
+- No modificar lógica de negocio ni el flujo de pasos numéricos (1-4); el bloque forense será informativo/desplegable dentro del paso 3.
+- Iconos sugeridos: `Shield`, `WifiOff`, `Smartphone`, `Usb`, `UploadCloud` de lucide-react.

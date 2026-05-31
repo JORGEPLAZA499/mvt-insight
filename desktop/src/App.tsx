@@ -163,11 +163,11 @@ export function App() {
     <div className="app">
       {TopBar}
       <div className="header">
-        <h1>{t("done.title")}</h1>
-        <p>{t("done.subtitle")}</p>
+        <h1>{t("done.title", "✓ Análisis completado")}</h1>
+        <p>{t("done.subtitle", "Los datos se han guardado en tu carpeta de Descargas.")}</p>
       </div>
       <div className="card">
-        <div style={{ fontSize: 13, color: "var(--muted)" }}>{t("done.filename")}</div>
+        <div style={{ fontSize: 13, color: "var(--muted)" }}>{t("done.filename", "Archivo generado:")}</div>
         <div style={{
           fontFamily: "SF Mono, Menlo, monospace",
           fontSize: 12,
@@ -178,13 +178,13 @@ export function App() {
         </div>
         <div className="row">
           <button className="btn" onClick={() => window.mvt?.openExternal("https://mvt-insight.lovable.app/upload")}>
-            {t("done.upload")}
+            {t("done.upload", "Subir al informe →")}
           </button>
           <button className="btn btn-secondary" onClick={() => zipPath && window.mvt?.openFolder(zipPath)}>
-            {t("done.openFolder")}
+            {t("done.openFolder", "Abrir carpeta")}
           </button>
           <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-            {t("done.new")}
+            {t("done.new", "Nuevo análisis")}
           </button>
         </div>
       </div>

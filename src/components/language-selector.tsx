@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import type { ReactElement } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n";
 import {
@@ -41,7 +42,7 @@ function FlagGB({ className = "" }: { className?: string }) {
   );
 }
 
-const FLAGS: Record<SupportedLanguage, (props: { className?: string }) => JSX.Element> = {
+const FLAGS: Record<SupportedLanguage, (props: { className?: string }) => ReactElement> = {
   es: FlagES,
   en: FlagGB,
 };

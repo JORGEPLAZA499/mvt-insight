@@ -7,11 +7,16 @@ import {
   History,
   LogOut,
   Sparkles,
+  Zap,
+  Loader2,
 } from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getSession, setSession, getAnalyses } from "@/lib/mock-store";
+import { getSession, setSession, getAnalyses, upsertAnalysis, Analysis } from "@/lib/mock-store";
+import { parseMvtFiles } from "@/lib/mvt-parser";
 import { LanguageSelector } from "@/components/language-selector";
+
+const QUICK_MAX_SIZE = 500 * 1024 * 1024;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
@@ -19,6 +24,54 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [session, setSessionState] = useState<{ email: string } | null>(null);
   const [historyCount, setHistoryCount] = useState(0);
+  const quickInputRef = useRef<HTMLInputElement>(null);
+  const [quickBusy, setQuickBusy] = useState(false);
+  const [quickError, setQuickError] = useState<string | null>(null);
+
+  const handleQuickUpload = async (filesList: FileList | null) => {
+    if (!filesList || filesList.length === 0) return;
+    setQuickError(null);
+    const incoming = Array.from(filesList);
+    const ok: File[] = [];
+    for (const f of incoming) {
+      const lower = f.name.toLowerCase();
+      if (!lower.endsWith(".json") && !lower.endsWith(".zip")) {
+        setQuickError(`No soportado: ${f.name}`);
+        continue;
+      }
+      if (f.size > QUICK_MAX_SIZE) {
+        setQuickError(`${f.name} supera 500 MB`);
+        continue;
+      }
+      ok.push(f);
+    }
+    if (!ok.length) return;
+
+    setQuickBusy(true);
+    const id = crypto.randomUUID();
+    const sourceName = ok.length === 1 ? ok[0].name : `${ok.length} archivos MVT`;
+    const totalSize = ok.reduce((s, f) => s + f.size, 0);
+    const base: Analysis = {
+      id,
+      fileName: sourceName,
+      fileSize: totalSize,
+      uploadedAt: new Date().toISOString(),
+      status: "processing",
+      progress: 10,
+    };
+    upsertAnalysis(base);
+    try {
+      const result = await parseMvtFiles(ok, sourceName);
+      upsertAnalysis({ ...base, status: "completed", progress: 100, result });
+      navigate({ to: "/analysis/$id", params: { id } });
+    } catch (e: any) {
+      upsertAnalysis({ ...base, status: "error", progress: 0, error: e?.message || "Error" });
+      setQuickError(e?.message || "No se pudo procesar.");
+    } finally {
+      setQuickBusy(false);
+      if (quickInputRef.current) quickInputRef.current.value = "";
+    }
+  };
 
   const nav = [
     { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },
@@ -199,6 +252,42 @@ export function AppShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
+
+          {/* Quick upload */}
+          <div className="mt-5 px-2">
+            <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
+              Acceso rápido
+            </div>
+            <input
+              ref={quickInputRef}
+              type="file"
+              multiple
+              accept=".json,.zip"
+              className="hidden"
+              onChange={(e) => handleQuickUpload(e.target.files)}
+            />
+            <button
+              onClick={() => quickInputRef.current?.click()}
+              disabled={quickBusy}
+              className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 disabled:opacity-70 disabled:cursor-not-allowed transition"
+            >
+              {quickBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Zap className="h-4 w-4" />
+              )}
+              <span className="flex-1 text-left font-medium">
+                {quickBusy ? "Procesando…" : "Subir ZIP/JSON"}
+              </span>
+              <UploadCloud className="h-4 w-4 opacity-80" />
+            </button>
+            <p className="px-2 mt-1.5 text-[10px] text-muted-foreground/70 leading-tight">
+              Sube directamente los archivos MVT sin pasar por el asistente.
+            </p>
+            {quickError && (
+              <p className="mt-2 px-2 text-[11px] text-destructive">{quickError}</p>
+            )}
+          </div>
         </div>
 
         {/* User card + logout */}

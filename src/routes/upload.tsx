@@ -14,6 +14,8 @@ import {
   Apple,
   Monitor,
   Download,
+  CheckCircle2,
+
 } from "lucide-react";
 
 

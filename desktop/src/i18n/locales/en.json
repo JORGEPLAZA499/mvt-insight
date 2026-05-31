@@ -1,0 +1,58 @@
+{
+  "app": {
+    "title": "MVT Insight Desktop",
+    "subtitle": "Forensic analysis of spyware indicators"
+  },
+  "language": {
+    "label": "Language",
+    "spanish": "Español",
+    "english": "English"
+  },
+  "welcome": {
+    "android": {
+      "title": "Android",
+      "sub": "Samsung, Xiaomi, Pixel…"
+    },
+    "ios": {
+      "title": "iPhone",
+      "sub": "Coming soon (macOS only)"
+    },
+    "before": {
+      "title": "Before you start:",
+      "usb": "Enable USB Debugging on your Android.",
+      "cable": "Connect the phone with a USB cable (the original is best).",
+      "unlocked": "Keep the phone screen unlocked during the whole process."
+    }
+  },
+  "running": {
+    "title": {
+      "android": "Analyzing Android…",
+      "ios": "Analyzing iPhone…"
+    },
+    "subtitle": "Don't close this window. It takes between 5 and 15 minutes.",
+    "starting": "Starting…"
+  },
+  "phases": {
+    "download": "Downloading AndroidQF",
+    "connect": "Connecting to the device",
+    "collect": "Collecting data"
+  },
+  "details": {
+    "toggle": "Show technical details",
+    "waiting": "Waiting for process output…"
+  },
+  "error": {
+    "title": "Something went wrong:",
+    "back": "Back to start",
+    "unknown": "Unknown error",
+    "browserOnly": "This feature is only available in the desktop app."
+  },
+  "done": {
+    "title": "✓ Analysis complete",
+    "subtitle": "The data has been saved to your Downloads folder.",
+    "filename": "Generated file:",
+    "upload": "Upload to report →",
+    "openFolder": "Open folder",
+    "new": "New analysis"
+  }
+}

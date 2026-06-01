@@ -1,0 +1,81 @@
+name: Build & Release Desktop App
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: win
+            artifact: MvtInsight-windows-x64.zip
+            out_dir: MvtInsight-win32-x64
+          - os: macos-latest
+            target: mac
+            artifact: MvtInsight-macos-x64.zip
+            out_dir: MvtInsight-darwin-x64
+          - os: ubuntu-latest
+            target: linux
+            artifact: MvtInsight-linux-x64.zip
+            out_dir: MvtInsight-linux-x64
+
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Package app
+        run: npm run package:${{ matrix.target }}
+
+      - name: Zip output (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd release
+          zip -r "../${{ matrix.artifact }}" "${{ matrix.out_dir }}"
+
+      - name: Zip output (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "release/${{ matrix.out_dir }}" -DestinationPath "${{ matrix.artifact }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: desktop/${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+          name: ${{ github.ref_name == 'main' && 'Latest build' || github.ref_name }}
+          files: artifacts/*.zip
+          fail_on_unmatched_files: true

@@ -485,30 +485,6 @@ function StepRun({
               </p>
             </div>
           </li>
-          <li className="flex gap-3">
-            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">C</div>
-            <div>
-              <div className="flex items-center gap-1.5 font-medium text-foreground">
-                <Usb className="h-3.5 w-3.5" /> Conecta por cable USB y recolecta
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Conecta móvil y PC con el cable USB y ejecuta la recolección con la app de escritorio.
-                Todo el proceso es 100 % local: no sale nada a Internet.
-              </p>
-            </div>
-          </li>
-          <li className="flex gap-3">
-            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">D</div>
-            <div>
-              <div className="flex items-center gap-1.5 font-medium text-foreground">
-                <UploadCloud className="h-3.5 w-3.5" /> Sube el ZIP desde otro PC con Internet
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Copia el ZIP a un USB o disco externo y súbelo desde un ordenador limpio con Internet
-                para generar el informe aquí.
-              </p>
-            </div>
-          </li>
         </ol>
         <p className="mt-3 text-[11px] text-muted-foreground">
           ¿Solo curiosidad o revisión rutinaria? No es necesario este protocolo: puedes hacer todo desde el mismo PC con Internet.

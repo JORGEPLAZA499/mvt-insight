@@ -7,14 +7,14 @@ const c = (token: string, pct?: number) =>
     ? `var(--${token})`
     : `color-mix(in oklab, var(--${token}) ${pct}%, transparent)`;
 
-export function UsbConnect() {
+export function UsbConnect({ connected = false }: { connected?: boolean }) {
   return (
     <div className="w-full flex justify-center">
       <svg
         viewBox="0 0 400 180"
         className="w-full max-w-md h-auto"
         role="img"
-        aria-label="Ordenador, cable USB suelto y teléfono listos para conectar"
+        aria-label={connected ? "Ordenador y teléfono conectados por cable USB" : "Ordenador, cable USB suelto y teléfono listos para conectar"}
       >
         <defs>
           <linearGradient id="usb-screen" x1="0" y1="0" x2="0" y2="1">
@@ -51,31 +51,61 @@ export function UsbConnect() {
           <rect x="332" y="82" width="6" height="6" rx="1" fill={c("primary", 80)} />
         </g>
 
-        {/* Loose USB cable in the middle (not yet connected) */}
-        <g>
-          {/* Cable body, gentle S-curve, both ends free */}
-          <path
-            d="M180 150 C 200 130, 215 175, 235 155 C 250 140, 265 165, 280 145"
-            fill="none"
-            stroke={c("primary")}
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeDasharray="6 5"
-            className="usb-cable"
-          />
-          {/* Left USB-A connector (free end, near laptop) */}
-          <g transform="translate(172,146) rotate(-15)">
-            <rect x="0" y="0" width="14" height="9" rx="1.5"
+        {connected ? (
+          /* Cable connected: smooth curve from laptop port to phone port with flowing data */
+          <g>
+            <path
+              id="usb-cable-connected"
+              d="M160 125 C 210 175, 250 175, 300 95"
+              fill="none"
+              stroke={c("primary")}
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            {/* Flowing data pulses along the cable */}
+            <circle r="3" fill={c("primary")}>
+              <animateMotion dur="1.6s" repeatCount="indefinite"
+                path="M160 125 C 210 175, 250 175, 300 95" />
+            </circle>
+            <circle r="2.5" fill={c("primary", 70)}>
+              <animateMotion dur="1.6s" begin="0.5s" repeatCount="indefinite"
+                path="M160 125 C 210 175, 250 175, 300 95" />
+            </circle>
+            <circle r="2" fill={c("primary", 50)}>
+              <animateMotion dur="1.6s" begin="1s" repeatCount="indefinite"
+                path="M160 125 C 210 175, 250 175, 300 95" />
+            </circle>
+            {/* Connector plugged into laptop side */}
+            <rect x="152" y="121" width="12" height="8" rx="1.5"
                   fill={c("card")} stroke={c("primary")} strokeWidth="1.5" />
-            <rect x="2" y="2.5" width="10" height="4" rx="0.5" fill={c("primary", 60)} />
-          </g>
-          {/* Right USB-C / micro connector (free end, near phone) */}
-          <g transform="translate(280,140) rotate(20)">
-            <rect x="0" y="0" width="10" height="7" rx="1.5"
+            {/* Connector plugged into phone bottom */}
+            <rect x="296" y="91" width="8" height="10" rx="1.5"
                   fill={c("card")} stroke={c("primary")} strokeWidth="1.5" />
-            <rect x="1.5" y="2" width="7" height="3" rx="0.5" fill={c("primary", 60)} />
           </g>
-        </g>
+        ) : (
+          /* Loose USB cable in the middle (not yet connected) */
+          <g>
+            <path
+              d="M180 150 C 200 130, 215 175, 235 155 C 250 140, 265 165, 280 145"
+              fill="none"
+              stroke={c("primary")}
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray="6 5"
+              className="usb-cable"
+            />
+            <g transform="translate(172,146) rotate(-15)">
+              <rect x="0" y="0" width="14" height="9" rx="1.5"
+                    fill={c("card")} stroke={c("primary")} strokeWidth="1.5" />
+              <rect x="2" y="2.5" width="10" height="4" rx="0.5" fill={c("primary", 60)} />
+            </g>
+            <g transform="translate(280,140) rotate(20)">
+              <rect x="0" y="0" width="10" height="7" rx="1.5"
+                    fill={c("card")} stroke={c("primary")} strokeWidth="1.5" />
+              <rect x="1.5" y="2" width="7" height="3" rx="0.5" fill={c("primary", 60)} />
+            </g>
+          </g>
+        )}
 
       </svg>
     </div>

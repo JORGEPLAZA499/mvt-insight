@@ -265,9 +265,6 @@ function StepRun({
             </div>
           </li>
         </ol>
-        <p className="mt-3 text-[11px] text-muted-foreground">
-          ¿Solo curiosidad o revisión rutinaria? No es necesario este protocolo: puedes hacer todo desde el mismo PC con Internet.
-        </p>
       </>
     ),
   };

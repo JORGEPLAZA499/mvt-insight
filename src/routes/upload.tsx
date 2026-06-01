@@ -230,6 +230,48 @@ function StepRun({
     ),
   };
 
+  const protocolStep = {
+    title: "Protocolo forense recomendado (máxima privacidad)",
+    content: (
+      <>
+        <p className="text-sm text-muted-foreground">
+          Si sospechas que el móvil está realmente comprometido, sigue este protocolo para evitar
+          que el spyware "se entere" de que lo estás analizando o filtre datos durante el proceso:
+        </p>
+        <ol className="mt-3 space-y-3 text-sm">
+          <li className="flex gap-3">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">A</div>
+            <div>
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <WifiOff className="h-3.5 w-3.5" /> PC sin Internet
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Usa un ordenador desconectado (cable de red desenchufado y Wi-Fi apagado, o en modo avión).
+                Antes, ejecuta la app de escritorio <strong className="text-foreground">una vez con Internet</strong> para
+                que descargue las herramientas; luego ya puedes desconectar.
+              </p>
+            </div>
+          </li>
+          <li className="flex gap-3">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">B</div>
+            <div>
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <Smartphone className="h-3.5 w-3.5" /> Móvil en modo avión
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Activa el modo avión en el móvil para cortarle Internet. Mantén el USB activo
+                (en Android, la depuración USB sigue funcionando aunque el móvil esté sin red).
+              </p>
+            </div>
+          </li>
+        </ol>
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          ¿Solo curiosidad o revisión rutinaria? No es necesario este protocolo: puedes hacer todo desde el mismo PC con Internet.
+        </p>
+      </>
+    ),
+  };
+
   const subSteps: { title: string; content: React.ReactNode }[] =
     device === "android"
       ? [

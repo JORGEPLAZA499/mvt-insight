@@ -1,21 +1,43 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Shield, Lock, Activity, FileSearch, ArrowRight, CheckCircle2 } from "lucide-react";
+import { useTranslation, Trans } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/components/language-selector";
+import i18n from "@/i18n";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Spyware Forensic Analyzer — Análisis forense de indicios de spyware" },
-      { name: "description", content: "Plataforma de análisis forense preliminar de dispositivos móviles basada en MVT (Mobile Verification Toolkit). Detecta posibles indicios de compromiso." },
-      { property: "og:title", content: "Spyware Forensic Analyzer" },
-      { property: "og:description", content: "Análisis forense de indicios de spyware en dispositivos móviles con MVT." },
-    ],
-  }),
+  head: () => {
+    const t = i18n.getFixedT(null, "translation");
+    return {
+      meta: [
+        { title: t("landing.meta.title") },
+        { name: "description", content: t("landing.meta.description") },
+        { property: "og:title", content: t("landing.meta.ogTitle") },
+        { property: "og:description", content: t("landing.meta.ogDescription") },
+      ],
+    };
+  },
   component: Landing,
 });
 
 function Landing() {
+  const { t } = useTranslation();
+
+  const features = [
+    { icon: Shield, key: "mvt" },
+    { icon: Activity, key: "visual" },
+    { icon: FileSearch, key: "report" },
+    { icon: Lock, key: "privacy" },
+    { icon: CheckCircle2, key: "normalized" },
+    { icon: Shield, key: "consent" },
+  ] as const;
+
+  const steps = [
+    { n: "01", key: "s1" },
+    { n: "02", key: "s2" },
+    { n: "03", key: "s3" },
+  ] as const;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
@@ -28,14 +50,14 @@ function Landing() {
             <span className="font-semibold tracking-tight">Spyware Forensic Analyzer</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-            <a href="#features" className="hover:text-foreground">Características</a>
-            <a href="#how" className="hover:text-foreground">Cómo funciona</a>
-            <a href="#legal" className="hover:text-foreground">Aviso legal</a>
+            <a href="#features" className="hover:text-foreground">{t("landing.nav.features")}</a>
+            <a href="#how" className="hover:text-foreground">{t("landing.nav.how")}</a>
+            <a href="#legal" className="hover:text-foreground">{t("landing.nav.legal")}</a>
           </nav>
           <div className="flex items-center gap-2">
             <LanguageSelector />
-            <Button asChild variant="ghost" size="sm"><Link to="/login">Iniciar sesión</Link></Button>
-            <Button asChild size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"><Link to="/login">Empezar</Link></Button>
+            <Button asChild variant="ghost" size="sm"><Link to="/login">{t("landing.nav.login")}</Link></Button>
+            <Button asChild size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"><Link to="/login">{t("landing.nav.start")}</Link></Button>
           </div>
         </div>
       </header>
@@ -47,24 +69,29 @@ function Landing() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs text-muted-foreground mb-6">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              Motor basado en MVT · Mobile Verification Toolkit
+              {t("landing.hero.badge")}
             </div>
             <h1 className="text-5xl md:text-6xl font-semibold tracking-tight leading-[1.05]">
-              Análisis forense de <span className="text-gradient-primary">indicios de spyware</span> en dispositivos móviles.
+              {t("landing.hero.titleStart")}
+              <span className="text-gradient-primary">{t("landing.hero.titleHighlight")}</span>
+              {t("landing.hero.titleEnd")}
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
-              Sube los archivos generados por MVT o un backup preparado y obtén un informe estructurado con los posibles indicadores de compromiso, fechas, dominios y artefactos sospechosos.
+              {t("landing.hero.subtitle")}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
-                <Link to="/login">Iniciar análisis <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link to="/login">{t("landing.hero.ctaPrimary")} <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <a href="#how">Cómo funciona</a>
+                <a href="#how">{t("landing.hero.ctaSecondary")}</a>
               </Button>
             </div>
             <p className="mt-6 text-xs text-muted-foreground max-w-xl">
-              Esta plataforma <strong className="text-foreground">no instala spyware</strong>, no accede a dispositivos sin permiso y no realiza vigilancia. Ofrece indicios técnicos, no una certificación absoluta de infección.
+              <Trans
+                i18nKey="landing.hero.disclaimer"
+                components={[<strong key="0" className="text-foreground" />]}
+              />
             </p>
           </div>
         </div>
@@ -73,20 +100,13 @@ function Landing() {
       {/* Features */}
       <section id="features" className="max-w-7xl mx-auto px-6 py-24">
         <div className="grid md:grid-cols-3 gap-6">
-          {[
-            { icon: Shield, title: "Motor MVT", desc: "Procesa los artefactos generados por Mobile Verification Toolkit, incluidos resultados STIX2/IOC." },
-            { icon: Activity, title: "Resultados visuales", desc: "Métricas, línea de tiempo, severidad y origen de cada indicador detectado." },
-            { icon: FileSearch, title: "Informe exportable", desc: "Resumen ejecutivo y evidencias en PDF, listo para compartir con tu equipo." },
-            { icon: Lock, title: "Privacidad por diseño", desc: "Archivos cifrados en reposo. Eliminación definitiva bajo demanda." },
-            { icon: CheckCircle2, title: "Indicadores normalizados", desc: "Dominios, procesos, rutas, hashes y eventos correlacionados con feeds públicos." },
-            { icon: Shield, title: "Consentimiento primero", desc: "Diseñado para análisis con permiso explícito del titular del dispositivo." },
-          ].map((f, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card p-6 shadow-card hover:border-primary/40 transition-colors">
+          {features.map((f) => (
+            <div key={f.key} className="rounded-xl border border-border bg-card p-6 shadow-card hover:border-primary/40 transition-colors">
               <div className="h-10 w-10 rounded-lg bg-secondary grid place-items-center mb-4">
                 <f.icon className="h-5 w-5 text-primary" />
               </div>
-              <h3 className="font-semibold mb-1">{f.title}</h3>
-              <p className="text-sm text-muted-foreground">{f.desc}</p>
+              <h3 className="font-semibold mb-1">{t(`landing.features.items.${f.key}.title`)}</h3>
+              <p className="text-sm text-muted-foreground">{t(`landing.features.items.${f.key}.desc`)}</p>
             </div>
           ))}
         </div>
@@ -95,17 +115,13 @@ function Landing() {
       {/* How */}
       <section id="how" className="border-t border-border bg-card/30">
         <div className="max-w-7xl mx-auto px-6 py-24">
-          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">Tres pasos para un análisis preliminar</h2>
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">{t("landing.how.title")}</h2>
           <div className="mt-12 grid md:grid-cols-3 gap-6">
-            {[
-              { n: "01", t: "Sube los artefactos", d: "Carga los resultados JSON/CSV exportados por MVT o un backup preparado para análisis." },
-              { n: "02", t: "Procesamiento seguro", d: "El backend ejecuta MVT en un entorno aislado y correlaciona los IOC contra feeds públicos." },
-              { n: "03", t: "Informe estructurado", d: "Recibes coincidencias, nivel de riesgo estimado, línea de tiempo y un PDF descargable." },
-            ].map((s) => (
+            {steps.map((s) => (
               <div key={s.n} className="rounded-xl border border-border bg-background p-6">
                 <div className="text-xs font-mono text-primary">{s.n}</div>
-                <h3 className="mt-2 font-semibold">{s.t}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{s.d}</p>
+                <h3 className="mt-2 font-semibold">{t(`landing.how.steps.${s.key}.t`)}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{t(`landing.how.steps.${s.key}.d`)}</p>
               </div>
             ))}
           </div>
@@ -115,17 +131,17 @@ function Landing() {
       {/* Legal */}
       <section id="legal" className="max-w-4xl mx-auto px-6 py-20">
         <div className="rounded-xl border border-warning/40 bg-warning/5 p-6">
-          <h3 className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-warning" /> Aviso legal</h3>
+          <h3 className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-warning" /> {t("landing.legal.title")}</h3>
           <p className="text-sm text-muted-foreground">
-            Spyware Forensic Analyzer es una herramienta de análisis forense preliminar. Los resultados son indicios técnicos basados en patrones conocidos y no constituyen una certificación absoluta de infección. El análisis debe realizarse únicamente con el consentimiento explícito del propietario del dispositivo. No compartimos datos con terceros.
+            {t("landing.legal.body")}
           </p>
         </div>
       </section>
 
       <footer className="border-t border-border">
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span>© {new Date().getFullYear()} Spyware Forensic Analyzer</span>
-          <span>Motor técnico: MVT — Mobile Verification Toolkit (Amnesty International)</span>
+          <span>{t("landing.footer.copy", { year: new Date().getFullYear() })}</span>
+          <span>{t("landing.footer.engine")}</span>
         </div>
       </footer>
     </div>

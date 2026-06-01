@@ -33,5 +33,72 @@
       "user": "Para ti",
       "dev": "Modo desarrollador"
     }
+  },
+  "landing": {
+    "meta": {
+      "title": "Spyware Forensic Analyzer — Análisis forense de indicios de spyware",
+      "description": "Plataforma de análisis forense preliminar de dispositivos móviles basada en MVT (Mobile Verification Toolkit). Detecta posibles indicios de compromiso.",
+      "ogTitle": "Spyware Forensic Analyzer",
+      "ogDescription": "Análisis forense de indicios de spyware en dispositivos móviles con MVT."
+    },
+    "nav": {
+      "features": "Características",
+      "how": "Cómo funciona",
+      "legal": "Aviso legal",
+      "login": "Iniciar sesión",
+      "start": "Empezar"
+    },
+    "hero": {
+      "badge": "Motor basado en MVT · Mobile Verification Toolkit",
+      "titleStart": "Análisis forense de ",
+      "titleHighlight": "indicios de spyware",
+      "titleEnd": " en dispositivos móviles.",
+      "subtitle": "Sube los archivos generados por MVT o un backup preparado y obtén un informe estructurado con los posibles indicadores de compromiso, fechas, dominios y artefactos sospechosos.",
+      "ctaPrimary": "Iniciar análisis",
+      "ctaSecondary": "Cómo funciona",
+      "disclaimer": "Esta plataforma <0>no instala spyware</0>, no accede a dispositivos sin permiso y no realiza vigilancia. Ofrece indicios técnicos, no una certificación absoluta de infección."
+    },
+    "features": {
+      "items": {
+        "mvt": { "title": "Motor MVT", "desc": "Procesa los artefactos generados por Mobile Verification Toolkit, incluidos resultados STIX2/IOC." },
+        "visual": { "title": "Resultados visuales", "desc": "Métricas, línea de tiempo, severidad y origen de cada indicador detectado." },
+        "report": { "title": "Informe exportable", "desc": "Resumen ejecutivo y evidencias en PDF, listo para compartir con tu equipo." },
+        "privacy": { "title": "Privacidad por diseño", "desc": "Archivos cifrados en reposo. Eliminación definitiva bajo demanda." },
+        "normalized": { "title": "Indicadores normalizados", "desc": "Dominios, procesos, rutas, hashes y eventos correlacionados con feeds públicos." },
+        "consent": { "title": "Consentimiento primero", "desc": "Diseñado para análisis con permiso explícito del titular del dispositivo." }
+      }
+    },
+    "how": {
+      "title": "Tres pasos para un análisis preliminar",
+      "steps": {
+        "s1": { "t": "Sube los artefactos", "d": "Carga los resultados JSON/CSV exportados por MVT o un backup preparado para análisis." },
+        "s2": { "t": "Procesamiento seguro", "d": "El backend ejecuta MVT en un entorno aislado y correlaciona los IOC contra feeds públicos." },
+        "s3": { "t": "Informe estructurado", "d": "Recibes coincidencias, nivel de riesgo estimado, línea de tiempo y un PDF descargable." }
+      }
+    },
+    "legal": {
+      "title": "Aviso legal",
+      "body": "Spyware Forensic Analyzer es una herramienta de análisis forense preliminar. Los resultados son indicios técnicos basados en patrones conocidos y no constituyen una certificación absoluta de infección. El análisis debe realizarse únicamente con el consentimiento explícito del propietario del dispositivo. No compartimos datos con terceros."
+    },
+    "footer": {
+      "copy": "© {{year}} Spyware Forensic Analyzer",
+      "engine": "Motor técnico: MVT — Mobile Verification Toolkit (Amnesty International)"
+    }
+  },
+  "login": {
+    "meta": { "title": "Iniciar sesión — Spyware Forensic Analyzer" },
+    "sideTitle": "Privacidad por diseño.",
+    "sideDesc": "Tus archivos se procesan en un entorno aislado y pueden eliminarse de forma definitiva en cualquier momento.",
+    "titleLogin": "Inicia sesión",
+    "titleRegister": "Crea tu cuenta",
+    "subtitle": "Accede a tus análisis e informes.",
+    "email": "Correo electrónico",
+    "emailPlaceholder": "tucorreo@dominio.com",
+    "password": "Contraseña",
+    "submitLogin": "Entrar",
+    "submitRegister": "Crear cuenta",
+    "toggleToRegister": "¿No tienes cuenta? Regístrate",
+    "toggleToLogin": "¿Ya tienes cuenta? Inicia sesión",
+    "demoNote": "Demo: cualquier correo y contraseña inicia sesión. La autenticación real se conectará al backend."
   }
 }

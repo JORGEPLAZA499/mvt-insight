@@ -1,17 +1,24 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Shield } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LanguageSelector } from "@/components/language-selector";
 import { setSession } from "@/lib/mock-store";
+import i18n from "@/i18n";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Iniciar sesión — Spyware Forensic Analyzer" }] }),
+  head: () => {
+    const t = i18n.getFixedT(null, "translation");
+    return { meta: [{ title: t("login.meta.title") }] };
+  },
   component: Login,
 });
 
 function Login() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -35,39 +42,42 @@ function Login() {
           <span className="font-semibold">Spyware Forensic Analyzer</span>
         </Link>
         <div className="relative max-w-md">
-          <h2 className="text-3xl font-semibold tracking-tight">Privacidad por diseño.</h2>
+          <h2 className="text-3xl font-semibold tracking-tight">{t("login.sideTitle")}</h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            Tus archivos se procesan en un entorno aislado y pueden eliminarse de forma definitiva en cualquier momento.
+            {t("login.sideDesc")}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center justify-center p-6">
+      <div className="flex items-center justify-center p-6 relative">
+        <div className="absolute top-4 right-4">
+          <LanguageSelector />
+        </div>
         <div className="w-full max-w-sm">
           <h1 className="text-2xl font-semibold tracking-tight">
-            {mode === "login" ? "Inicia sesión" : "Crea tu cuenta"}
+            {mode === "login" ? t("login.titleLogin") : t("login.titleRegister")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Accede a tus análisis e informes.
+            {t("login.subtitle")}
           </p>
           <form onSubmit={submit} className="mt-8 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
-              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tucorreo@dominio.com" />
+              <Label htmlFor="email">{t("login.email")}</Label>
+              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("login.emailPlaceholder")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="pwd">Contraseña</Label>
+              <Label htmlFor="pwd">{t("login.password")}</Label>
               <Input id="pwd" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
             </div>
             <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
-              {mode === "login" ? "Entrar" : "Crear cuenta"}
+              {mode === "login" ? t("login.submitLogin") : t("login.submitRegister")}
             </Button>
           </form>
           <button onClick={() => setMode(mode === "login" ? "register" : "login")} className="mt-6 text-xs text-muted-foreground hover:text-foreground">
-            {mode === "login" ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}
+            {mode === "login" ? t("login.toggleToRegister") : t("login.toggleToLogin")}
           </button>
           <p className="mt-8 text-[11px] text-muted-foreground">
-            Demo: cualquier correo y contraseña inicia sesión. La autenticación real se conectará al backend.
+            {t("login.demoNote")}
           </p>
         </div>
       </div>

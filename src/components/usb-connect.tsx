@@ -14,7 +14,7 @@ export function UsbConnect() {
         viewBox="0 0 400 180"
         className="w-full max-w-md h-auto"
         role="img"
-        aria-label="Ordenador conectado por cable USB a un teléfono"
+        aria-label="Ordenador, cable USB suelto y teléfono listos para conectar"
       >
         <defs>
           <linearGradient id="usb-screen" x1="0" y1="0" x2="0" y2="1">

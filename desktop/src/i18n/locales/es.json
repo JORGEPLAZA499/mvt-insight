@@ -21,7 +21,8 @@
       "title": "Antes de empezar:",
       "usb": "Activa la Depuración USB en tu Android.",
       "cable": "Conecta el móvil con un cable USB (mejor el original).",
-      "unlocked": "Mantén la pantalla del móvil desbloqueada durante todo el proceso."
+      "unlocked": "Mantén la pantalla del móvil desbloqueada durante todo el proceso.",
+      "connectNow": "Conecta ahora el teléfono al computador"
     }
   },
   "running": {

@@ -21,7 +21,8 @@
       "title": "Before you start:",
       "usb": "Enable USB Debugging on your Android.",
       "cable": "Connect the phone with a USB cable (the original is best).",
-      "unlocked": "Keep the phone screen unlocked during the whole process."
+      "unlocked": "Keep the phone screen unlocked during the whole process.",
+      "connectNow": "Now connect the phone to the computer"
     }
   },
   "running": {

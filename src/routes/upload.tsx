@@ -458,6 +458,8 @@ function StepRun({
     ),
   });
 
+  subSteps.push(protocolStep);
+
   subSteps.push({
     title: "Sube el ZIP generado por la app",
     content: (

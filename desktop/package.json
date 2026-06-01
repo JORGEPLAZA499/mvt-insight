@@ -4,13 +4,18 @@
   "description": "MVT Insight — App de escritorio para recolectar datos forenses de Android/iOS y subirlos a mvt-insight.lovable.app",
   "main": "electron/main.cjs",
   "private": true,
+  "author": {
+    "name": "Jorge Plaza",
+    "email": "soporte@mvt-insight.lovable.app"
+  },
+  "homepage": "https://mvt-insight.lovable.app",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "electron:dev": "vite build && electron .",
-    "dist:win": "vite build && electron-builder --win",
-    "dist:mac": "vite build && electron-builder --mac",
-    "dist:linux": "vite build && electron-builder --linux"
+    "dist:win": "vite build && electron-builder --win --publish never",
+    "dist:mac": "vite build && electron-builder --mac --publish never",
+    "dist:linux": "vite build && electron-builder --linux --publish never"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

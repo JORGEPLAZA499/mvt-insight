@@ -273,7 +273,6 @@ function StepRun({
     device === "android"
       ? [
           preambleStep,
-          protocolStep,
           {
             title: "Activa el modo desarrollador en el móvil",
             content: (
@@ -322,7 +321,6 @@ function StepRun({
         ]
       : [
           preambleStep,
-          protocolStep,
           {
             title: "Confía en el ordenador desde el iPhone",
             content: (
@@ -459,6 +457,8 @@ function StepRun({
       </>
     ),
   });
+
+  subSteps.push(protocolStep);
 
   subSteps.push({
     title: "Sube el ZIP generado por la app",

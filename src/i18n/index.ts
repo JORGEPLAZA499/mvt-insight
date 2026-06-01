@@ -27,7 +27,7 @@ if (!i18n.isInitialized) {
     fallbackLng: "es",
     supportedLngs: ["es", "en"],
     interpolation: { escapeValue: false },
-    initImmediate: false,
+    
     detection: {
       order: ["localStorage", "navigator", "htmlTag"],
       caches: ["localStorage"],

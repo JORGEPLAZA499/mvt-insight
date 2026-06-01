@@ -309,13 +309,18 @@ function StepRun({
             ),
           },
           {
-            title: "Conecta el móvil al ordenador con un cable USB",
+            title: "Conecta ahora el teléfono al computador mediante el cable USB",
             content: (
-              <p>
-                Usa el <strong className="text-foreground">cable original</strong> si puedes (algunos cables solo cargan, no transmiten datos).
-                En el móvil aparecerá un aviso: <strong className="text-foreground">"¿Permitir depuración USB?"</strong>.
-                Marca <strong className="text-foreground">"Permitir siempre desde este ordenador"</strong> y pulsa Aceptar.
-              </p>
+              <>
+                <p>
+                  Usa el <strong className="text-foreground">cable original</strong> si puedes (algunos cables solo cargan, no transmiten datos).
+                  En el móvil aparecerá un aviso: <strong className="text-foreground">"¿Permitir depuración USB?"</strong>.
+                  Marca <strong className="text-foreground">"Permitir siempre desde este ordenador"</strong> y pulsa Aceptar.
+                </p>
+                <div className="mt-4 rounded-xl border border-border bg-card/40 p-4">
+                  <UsbConnect connected />
+                </div>
+              </>
             ),
           },
         ]

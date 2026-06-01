@@ -92,41 +92,6 @@ export function App() {
             <div className="sub">{tr("welcome.ios.sub", "Próximamente (solo macOS)")}</div>
           </button>
         </div>
-        <div className="card" style={{ marginTop: 24 }}>
-          <strong>{tr("welcome.before.title", "Antes de empezar:")}</strong>
-          <ul style={{ margin: "8px 0 0", paddingLeft: 18, color: "var(--muted)", fontSize: 13 }}>
-            <li>{tr("welcome.before.usb", "Activa la Depuración USB en tu Android.")}</li>
-            <li>{tr("welcome.before.cable", "Conecta el móvil con un cable USB (mejor el original).")}</li>
-            <li>{tr("welcome.before.unlocked", "Mantén la pantalla del móvil desbloqueada durante todo el proceso.")}</li>
-            <li>{tr("welcome.before.connectNow", "Conecta ahora el teléfono al computador")}</li>
-          </ul>
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
-            <svg
-              viewBox="0 0 280 120"
-              style={{ width: "100%", maxWidth: 280, color: "var(--primary, #6ea8fe)" }}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              {/* Monitor */}
-              <rect x="10" y="20" width="110" height="70" rx="6" />
-              <line x1="40" y1="100" x2="90" y2="100" />
-              <line x1="65" y1="90" x2="65" y2="100" />
-              {/* Phone */}
-              <rect x="210" y="30" width="50" height="80" rx="8" />
-              <line x1="222" y1="38" x2="248" y2="38" />
-              <circle cx="235" cy="102" r="2" />
-              {/* USB cable */}
-              <path d="M120 60 C 150 60, 160 80, 180 80 S 200 70, 210 70" />
-              {/* USB connectors */}
-              <rect x="116" y="56" width="8" height="8" rx="1" fill="currentColor" />
-              <rect x="206" y="66" width="8" height="8" rx="1" fill="currentColor" />
-            </svg>
-          </div>
-        </div>
       </div>
     );
   }

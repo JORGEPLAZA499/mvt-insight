@@ -8,14 +8,14 @@
     "dev": "vite",
     "build": "vite build",
     "electron:dev": "vite build && electron .",
-    "package:win": "vite build && electron-packager . MvtInsight --platform=win32 --arch=x64 --out=release --overwrite --ignore='^/src' --ignore='^/release'",
-    "package:mac": "vite build && electron-packager . MvtInsight --platform=darwin --arch=x64 --out=release --overwrite --ignore='^/src' --ignore='^/release'",
-    "package:linux": "vite build && electron-packager . MvtInsight --platform=linux --arch=x64 --out=release --overwrite --ignore='^/src' --ignore='^/release'"
+    "dist:win": "vite build && electron-builder --win",
+    "dist:mac": "vite build && electron-builder --mac",
+    "dist:linux": "vite build && electron-builder --linux"
   },
   "devDependencies": {
-    "@electron/packager": "^18.3.6",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
     "typescript": "^5.6.3",
     "vite": "^7.0.0"
   },
@@ -24,5 +24,46 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^15.1.1"
+  },
+  "build": {
+    "appId": "com.jorgeplaza.mvtinsight",
+    "productName": "MvtInsight",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "artifactName": "MvtInsight-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MvtInsight"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "artifactName": "MvtInsight-${version}-${arch}.${ext}",
+      "category": "public.app-category.utilities"
+    },
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] }
+      ],
+      "artifactName": "MvtInsight-${version}.${ext}",
+      "category": "Utility"
+    }
   }
 }

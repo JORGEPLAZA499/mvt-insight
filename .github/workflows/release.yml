@@ -17,16 +17,10 @@ jobs:
         include:
           - os: windows-latest
             target: win
-            artifact: MvtInsight-windows-x64.zip
-            out_dir: MvtInsight-win32-x64
           - os: macos-latest
             target: mac
-            artifact: MvtInsight-macos-x64.zip
-            out_dir: MvtInsight-darwin-x64
           - os: ubuntu-latest
             target: linux
-            artifact: MvtInsight-linux-x64.zip
-            out_dir: MvtInsight-linux-x64
 
     runs-on: ${{ matrix.os }}
     defaults:
@@ -43,25 +37,22 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Package app
-        run: npm run package:${{ matrix.target }}
+      - name: Build installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run dist:${{ matrix.target }}
 
-      - name: Zip output (Unix)
-        if: matrix.os != 'windows-latest'
+      - name: Collect installers
+        shell: bash
         run: |
-          cd release
-          zip -r "../${{ matrix.artifact }}" "${{ matrix.out_dir }}"
-
-      - name: Zip output (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          Compress-Archive -Path "release/${{ matrix.out_dir }}" -DestinationPath "${{ matrix.artifact }}"
+          mkdir -p dist-installers
+          find release -maxdepth 2 -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \) -exec cp {} dist-installers/ \;
+          ls -la dist-installers
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: desktop/${{ matrix.artifact }}
+          name: installers-${{ matrix.target }}
+          path: desktop/dist-installers/*
 
   release:
     needs: build
@@ -72,10 +63,16 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: List artifacts
+        run: ls -la artifacts
+
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
           name: ${{ github.ref_name == 'main' && 'Latest build' || github.ref_name }}
-          files: artifacts/*.zip
+          files: |
+            artifacts/*.exe
+            artifacts/*.dmg
+            artifacts/*.AppImage
           fail_on_unmatched_files: true

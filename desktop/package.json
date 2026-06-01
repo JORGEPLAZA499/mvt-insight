@@ -4,6 +4,11 @@
   "description": "MVT Insight — App de escritorio para recolectar datos forenses de Android/iOS y subirlos a mvt-insight.lovable.app",
   "main": "electron/main.cjs",
   "private": true,
+  "author": {
+    "name": "Jorge Plaza",
+    "email": "soporte@mvt-insight.lovable.app"
+  },
+  "homepage": "https://mvt-insight.lovable.app",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

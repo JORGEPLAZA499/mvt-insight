@@ -159,10 +159,12 @@ function Upload() {
 function StepDevice({
   value,
   disabled = false,
+  isLoading = false,
   onSelect,
 }: {
   value: Device | null;
   disabled?: boolean;
+  isLoading?: boolean;
   onSelect: (d: Device) => void;
 }) {
   const { t } = useTranslation();
@@ -173,7 +175,7 @@ function StepDevice({
       </h1>
       <p className="text-sm text-muted-foreground mt-1">{t("upload.step1.subtitle")}</p>
 
-      {disabled && (
+      {disabled && !isLoading && (
         <div className="mt-5 rounded-xl border border-warning/40 bg-warning/10 p-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />

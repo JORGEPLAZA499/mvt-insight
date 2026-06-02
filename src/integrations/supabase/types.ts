@@ -17,21 +17,78 @@ export type Database = {
       accounts: {
         Row: {
           created_at: string
+          credits: number
           id: string
           last_login_at: string
           user_code: string
         }
         Insert: {
           created_at?: string
+          credits?: number
           id: string
           last_login_at?: string
           user_code: string
         }
         Update: {
           created_at?: string
+          credits?: number
           id?: string
           last_login_at?: string
           user_code?: string
+        }
+        Relationships: []
+      }
+      credit_recharges: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          id: string
+          token_id: string | null
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          created_at?: string
+          id?: string
+          token_id?: string | null
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          token_id?: string | null
+        }
+        Relationships: []
+      }
+      credit_tokens: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          credits: number
+          id: string
+          redeemed_at: string | null
+          redeemed_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          credits: number
+          id?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          credits?: number
+          id?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
         }
         Relationships: []
       }
@@ -40,7 +97,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

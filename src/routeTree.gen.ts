@@ -18,6 +18,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalysisIdRouteImport } from './routes/analysis.$id'
 import { Route as ApiPublicScriptsFileRouteImport } from './routes/api/public/scripts/$file'
+import { Route as ApiPublicCronPurgeInactiveRouteImport } from './routes/api/public/cron/purge-inactive'
 
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
@@ -64,6 +65,12 @@ const ApiPublicScriptsFileRoute = ApiPublicScriptsFileRouteImport.update({
   path: '/api/public/scripts/$file',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronPurgeInactiveRoute =
+  ApiPublicCronPurgeInactiveRouteImport.update({
+    id: '/api/public/cron/purge-inactive',
+    path: '/api/public/cron/purge-inactive',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +93,7 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
 export interface FileRoutesById {
@@ -97,6 +106,7 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/upload'
     | '/analysis/$id'
+    | '/api/public/cron/purge-inactive'
     | '/api/public/scripts/$file'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/upload'
     | '/analysis/$id'
+    | '/api/public/cron/purge-inactive'
     | '/api/public/scripts/$file'
   id:
     | '__root__'
@@ -132,6 +144,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/upload'
     | '/analysis/$id'
+    | '/api/public/cron/purge-inactive'
     | '/api/public/scripts/$file'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +157,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   UploadRoute: typeof UploadRoute
   AnalysisIdRoute: typeof AnalysisIdRoute
+  ApiPublicCronPurgeInactiveRoute: typeof ApiPublicCronPurgeInactiveRoute
   ApiPublicScriptsFileRoute: typeof ApiPublicScriptsFileRoute
 }
 
@@ -212,6 +226,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicScriptsFileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/purge-inactive': {
+      id: '/api/public/cron/purge-inactive'
+      path: '/api/public/cron/purge-inactive'
+      fullPath: '/api/public/cron/purge-inactive'
+      preLoaderRoute: typeof ApiPublicCronPurgeInactiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -224,8 +245,19 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   UploadRoute: UploadRoute,
   AnalysisIdRoute: AnalysisIdRoute,
+  ApiPublicCronPurgeInactiveRoute: ApiPublicCronPurgeInactiveRoute,
   ApiPublicScriptsFileRoute: ApiPublicScriptsFileRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

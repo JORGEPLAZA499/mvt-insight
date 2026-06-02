@@ -290,6 +290,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
               <UploadCloud className="h-4 w-4 opacity-80" />
             </button>
+            <button
+              onClick={() => alert("Próximamente: tienda de créditos")}
+              className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 transition mt-2"
+            >
+              <Coins className="h-4 w-4" />
+              <span className="flex-1 text-left font-medium">Comprar créditos</span>
+              <Sparkles className="h-4 w-4 opacity-80" />
+            </button>
             <p className="px-2 mt-1.5 text-[10px] text-muted-foreground/70 leading-tight">
               Sube directamente los archivos MVT sin pasar por el asistente.
             </p>

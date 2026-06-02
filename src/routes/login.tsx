@@ -34,12 +34,13 @@ function Login() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      <div className="hidden lg:flex relative bg-hero p-12 flex-col justify-between">
+      <div className="hidden lg:flex relative bg-hero p-12 flex-col items-center">
         <div className="absolute inset-0 grid-bg opacity-40" />
-        <Link to="/" className="relative flex items-center gap-2">
-          <img src={logoAsset.url} alt="" className="h-[210px] w-[210px] object-contain" />
-          
-        </Link>
+        <div className="relative flex-1 flex items-center justify-center w-full">
+          <Link to="/">
+            <img src={logoAsset.url} alt="" className="h-[210px] w-[210px] object-contain" />
+          </Link>
+        </div>
         <div className="relative max-w-md">
           <h2 className="text-3xl font-semibold tracking-tight">{t("login.sideTitle")}</h2>
           <p className="mt-3 text-sm text-muted-foreground">

@@ -113,8 +113,31 @@ button {
   margin-bottom: 8px;
 }
 
-.choice .title { font-weight: 600; }
-.choice .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.choice .title { font-weight: 600; font-size: 16px; color: var(--text); }
+.choice .sub { color: rgba(245, 245, 250, 0.75); font-size: 12px; margin-top: 4px; }
+.choice:disabled { opacity: 0.6; }
+.choice:disabled .title, .choice:disabled .sub { color: rgba(245, 245, 250, 0.7); }
+
+.brand-logo {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  display: block;
+  border-radius: 16px;
+  object-fit: contain;
+}
+
+.brand-logo-sm {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 10px;
+  display: block;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+.header { text-align: center; }
+.header h1 { margin-top: 4px; }
 
 .phase {
   display: flex;

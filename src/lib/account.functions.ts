@@ -74,21 +74,21 @@ export const registerAccount = createServerFn({ method: "POST" })
 
 export const resolveLoginEmail = createServerFn({ method: "POST" })
   .inputValidator((input: { code: string }) => {
-    const normalized = input.code.trim().toUpperCase();
-    if (!CODE_REGEX.test(normalized)) {
-      throw new Error("Formato de código inválido. Debe ser XXX-XXX-XXX.");
+    const normalized = input.code.trim();
+    const isWord = /^[A-Za-z]{2,20}$/.test(normalized);
+    if (!isWord && !CODE_REGEX.test(normalized.toUpperCase())) {
+      throw new Error("Formato de código inválido.");
     }
-    return { code: normalized };
+    return { code: isWord ? normalized : normalized.toUpperCase() };
   })
   .handler(async ({ data }) => {
     const { data: row, error } = await supabaseAdmin
       .from("accounts")
       .select("id, user_code")
-      .eq("user_code", data.code)
+      .ilike("user_code", data.code)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!row) {
-      // No revelamos si existe o no — mensaje genérico
       throw new Error("Código o contraseña incorrectos.");
     }
     return { email: codeToEmail(row.user_code) };

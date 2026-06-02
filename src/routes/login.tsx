@@ -35,6 +35,11 @@ export const Route = createFileRoute("/login")({
 const CODE_RE = /^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}$/;
 
 function formatCodeInput(raw: string): string {
+  const trimmed = raw.trim();
+  // Permitir códigos alfabéticos especiales (ej. "Admin") sin máscara
+  if (/^[A-Za-z]+$/.test(trimmed)) {
+    return trimmed.toUpperCase().slice(0, 20);
+  }
   const clean = raw
     .toUpperCase()
     .replace(/[^A-HJ-NP-Z2-9]/g, "")
@@ -280,7 +285,7 @@ function Login() {
                   onChange={(e) => setCode(formatCodeInput(e.target.value))}
                   placeholder="XXX-XXX-XXX"
                   className="font-mono tracking-[0.2em] uppercase"
-                  maxLength={11}
+                  maxLength={20}
                 />
               </div>
               <div className="space-y-2">

@@ -60,6 +60,7 @@ function Login() {
 
   const search = Route.useSearch();
   const [mode, setMode] = useState<"login" | "register">(search.mode ?? "login");
+  const [registerStep, setRegisterStep] = useState<1 | 2>(1);
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");

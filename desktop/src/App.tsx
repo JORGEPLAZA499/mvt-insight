@@ -97,6 +97,7 @@ export function App() {
       <div className="app">
         {TopBar}
         <div className="header">
+          <Logo size={72} />
           <h1>{tr("app.title", "MVT Insight Desktop")}</h1>
           <p>{tr("app.subtitle", "Análisis forense de indicios de spyware")}</p>
         </div>
@@ -104,7 +105,7 @@ export function App() {
           <button className="choice" onClick={() => start("android")}>
             <div className="icon">📱</div>
             <div className="title">{tr("welcome.android.title", "Android")}</div>
-            <div className="sub">{tr("welcome.android.sub", "Samsung, Xiaomi, Pixel…")}</div>
+            <div className="sub">{tr("welcome.android.sub", "Sistema operativo Android")}</div>
           </button>
           <button className="choice" onClick={() => start("ios")} disabled>
             <div className="icon">📲</div>

@@ -339,7 +339,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <button
                 onClick={() => quickInputRef.current?.click()}
                 disabled={quickBusy}
-                className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 disabled:opacity-70 disabled:cursor-not-allowed transition"
+                className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 disabled:opacity-70 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 {quickBusy ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -353,7 +353,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </button>
               <button
                 onClick={() => openPurchaseCard()}
-                className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 transition mt-2"
+                className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 transition mt-2 cursor-pointer"
               >
                 <Coins className="h-4 w-4" />
                 <span className="flex-1 text-left font-medium">Comprar créditos</span>

@@ -1,44 +1,50 @@
-# Reordenar subpasos del proceso de análisis
+# Actualizar la app de escritorio (.exe / .dmg / .AppImage) a v1.0.2
 
-## Objetivo
-En el paso 3 de `/upload`, cambiar el orden para que el usuario primero descargue la app de escritorio (.exe/.dmg/.AppImage) y, en segundo lugar, vea las instrucciones de desconexión de internet (modo avión en ordenador y teléfono). El resto de subpasos se mantiene a continuación.
+## Qué cambia respecto a v1.0.1
 
-## Nuevo orden propuesto
+De los cambios hechos en esta sesión, casi todos son del web app y NO requieren tocar el desktop:
 
-**Android:**
-1. Descargar la app (Windows/macOS/Linux)
-2. Cortar datos / modo avión (PC + móvil)
-3. Activar modo desarrollador y depuración USB
-4. Usar cable USB de datos
-5. Conectar el teléfono al ordenador
-6. Subir el resultado
+| Cambio (web) | Afecta al .exe |
+|---|---|
+| Integración Stripe + paquetes de crédito | No |
+| Créditos en tiempo real en el dashboard | No |
+| Banner de cookies más lento | No |
+| Gate de "sin créditos" en `/upload` | No (pero ver punto 1 abajo) |
+| Reordenar subpasos del wizard de subida | No |
 
-**iOS:**
-1. Descargar la app
-2. Cortar datos / modo avión (PC + móvil)
-3. Confiar en el ordenador
-4. Hacer backup cifrado
-5. Mantener el iPhone desbloqueado
-6. Subir el resultado
+Lo que sí toca en el desktop:
 
-Nota: el subpaso "preámbulo" actual (que incluía el componente `UsbConnect` y el texto introductorio sobre conectar el USB) queda absorbido por el nuevo subpaso "Conectar el teléfono al ordenador" en Android. En iOS desaparece porque el flujo iOS ya no necesita esa intro USB. Si prefieres conservarlo como subpaso 0 ("antes de empezar"), dímelo y lo dejamos.
+1. **URL del backend desactualizada.** El binario instalado en los usuarios sigue abriendo `https://mvt-insight.lovable.app/upload` al terminar el análisis. El dominio real de la plataforma ahora es `https://spyware.rpjsoftware.com`. Hay que actualizarlo en:
+   - `desktop/src/App.tsx` (botón "Subir al informe")
+   - `desktop/package.json` (`description`, `homepage`, `author.email`)
+   - `public/scripts/analizar-android.ps1` (`Start-Process`)
+   - `public/scripts/analizar-android.sh` (mensaje final + `open` / `xdg-open`)
 
-## Cambios técnicos
+2. **Bump de versión** en `desktop/package.json`: `1.0.1` → `1.0.2`. Sin esto `electron-updater` no detecta una nueva release.
 
-Archivo único: `src/routes/upload.tsx` (función `Step3Process`, líneas ~209–474).
+3. **Release en GitHub** (`v1.0.2`). El workflow `.github/workflows/release.yml` ya construye y publica `.exe` (Windows), `.dmg` (mac x64 + arm64), `.AppImage` (Linux) y los `latest*.yml` que `electron-updater` necesita.
 
-- Reordenar el array `subSteps`:
-  - Quitar `preambleStep` del principio en ambas ramas.
-  - Mover el bloque de descarga (`subSteps.push({ title: …download… })`) para que sea el **primer** elemento.
-  - Mover `protocolStep` (modo avión) para que sea el **segundo** elemento.
-  - A continuación, los subpasos específicos del dispositivo en su orden actual.
-  - Mantener el subpaso final `upload` al final.
-- El componente `UsbConnect` (que estaba dentro del preámbulo) se reubica dentro del subpaso "Conectar el teléfono" en Android (ya existe ese subpaso con `<UsbConnect connected />`; añadimos también la variante inicial si quieres feedback antes de conectar).
-- No se tocan claves de i18n (`es.json` / `en.json`); solo cambia el orden de renderizado.
-- La barra de progreso y el contador (`current / total`) siguen funcionando porque dependen del tamaño del array.
+## Pasos de la actualización
 
-## Fuera de alcance
-- Textos, estilos, lógica de detección de dispositivo/OS, y los componentes auxiliares (`UsbConnect`, `CopyCommand`) no se modifican.
-- No se tocan los scripts de `public/scripts/` ni el flujo del paso 4 (subida).
+1. Sustituir `https://mvt-insight.lovable.app` → `https://spyware.rpjsoftware.com` en los 4 archivos listados arriba. La cadena `mvt-insight.lovable.app` se mantiene solo en el `email` de autor (lo dejamos o lo cambias tú).
+2. Subir `desktop/package.json` versión a `1.0.2`.
+3. (Opcional, recomendable) Actualizar las URLs hard-codeadas de los instaladores en `src/routes/upload.tsx` (`RELEASES_BASE_URL`) si quieres que el botón "descargar" del wizard apunte al nombre nuevo `MvtInsight-Setup-1.0.2.exe` automáticamente — actualmente apunta a `1.0.0`. Si lo cambiamos a `latest/download/MvtInsight-Setup.exe`-style sin versión, GitHub no soporta alias sin versión; mejor pasar a la URL "latest release page" sin versión específica, o actualizar el número a `1.0.2`.
 
-¿Confirmas el nuevo orden y que el "preámbulo" se puede eliminar (absorbido en "Conectar")? Si quieres conservarlo, lo movemos justo antes de "Conectar" en Android y al final de iOS.
+## Liberar la release
+
+Una vez aplicados los cambios y mergeado a `main`, crear y subir el tag para disparar GitHub Actions:
+
+```
+git tag v1.0.2
+git push origin v1.0.2
+```
+
+Yo no puedo ejecutar `git tag`/`git push` desde aquí — ese paso lo tienes que lanzar tú localmente (o desde la pestaña Releases de GitHub). El workflow tarda ~5–10 min y publica los binarios + `latest.yml` automáticamente.
+
+Cuando termine, los usuarios con `1.0.1` ya instalada verán el modal "Actualización disponible" la próxima vez que abran la app y se actualizarán solos.
+
+## Preguntas antes de implementar
+
+- ¿Confirmas el cambio de URL a `https://spyware.rpjsoftware.com` (custom domain) o prefieres el subdominio Lovable `https://spyware-rpjsoftware-com.lovable.app`?
+- ¿Actualizo también el botón de descarga del wizard web (`src/routes/upload.tsx`) para que apunte a `MvtInsight-Setup-1.0.2.exe`?
+- ¿Quieres añadir alguna funcionalidad nueva al desktop (p. ej. mostrar saldo de créditos del usuario antes de empezar el análisis, login, etc.) o solo el refresco de URL + bump de versión?

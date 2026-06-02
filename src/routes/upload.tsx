@@ -100,7 +100,8 @@ function Upload() {
     };
   }, []);
 
-  const hasCredits = credits === null ? true : credits > 0;
+  const isLoadingCredits = credits === null;
+  const hasCredits = !isLoadingCredits && (credits ?? 0) > 0;
 
   const next = () => setStep((s) => (Math.min(TOTAL_STEPS, s + 1) as 1 | 2 | 3 | 4));
   const back = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4));

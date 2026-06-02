@@ -1,45 +1,36 @@
-## Cambio en código
+## Problema
 
-**`desktop/package.json`** — añadir `"releaseType": "release"` al bloque `publish` para que futuras versiones se publiquen automáticamente en GitHub Releases (sin quedarse como Draft).
+En `/upload` las tarjetas **Android** e **iPhone** son clicables durante los ~2 segundos que tarda en cargar el saldo de créditos desde Supabase. Si el usuario hace clic rápido sin tener créditos, avanza al paso 2 igualmente.
 
-```json
-"publish": [
-  {
-    "provider": "github",
-    "owner": "JORGEPLAZA499",
-    "repo": "mvt-insight",
-    "releaseType": "release"
-  }
-]
+Causa exacta en `src/routes/upload.tsx` línea 103:
+
+```ts
+const hasCredits = credits === null ? true : credits > 0;
 ```
 
-Es el único cambio. No toco nada más del proyecto.
+Mientras `credits === null` (estado de carga), `hasCredits` es `true` → las tarjetas están habilitadas.
 
-## Pasos que harás tú después
+## Cambio
 
-### 1. Publicar el draft v1.0.3 actual (una vez)
-- Ve a https://github.com/JORGEPLAZA499/mvt-insight/releases
-- Click en el draft `1.0.3` con **10 assets**
-- Lápiz ✏️ (Edit) → botón verde **Publish release**
-- Borra el otro draft con 4 assets
+Un solo archivo: `src/routes/upload.tsx`.
 
-### 2. Resetear tu repo local a GitHub
-Tu local está 398 commits por detrás y con archivos sin commitear que ya existen en remoto. En PowerShell:
+1. **Línea 103** — invertir el valor por defecto durante la carga:
+   ```ts
+   const isLoadingCredits = credits === null;
+   const hasCredits = !isLoadingCredits && credits! > 0;
+   ```
+   Así las tarjetas quedan **deshabilitadas** hasta que llegue la respuesta de Supabase.
 
-```powershell
-cd $HOME\Documents\mvt-insight
-git reset --hard origin/main
-git clean -fd
-git pull
-```
+2. **Aviso amarillo "No tienes créditos disponibles"** (líneas 174-194 en `StepDevice`) — mostrarlo solo cuando ya sabemos que no hay créditos, no durante la carga. Para eso pasamos también `isLoading` al componente y:
+   - Si `isLoading` → no mostrar la alerta amarilla (evita el "flash" del aviso que aparece y desaparece).
+   - Si `!isLoading && !hasCredits` → mostrar la alerta como ahora.
 
-⚠️ Esto descarta cambios locales sin recuperación. Todo lo que veo en tu `git status` (i18n, package.json, App.tsx, main.tsx) ya está en GitHub hecho por Lovable, así que es seguro.
+3. **Tarjetas** (líneas 196-213) — quedan deshabilitadas cuando `isLoading || !hasCredits`. Se aprovecha la prop `disabled` que ya acepta `ChoiceCard`. Opcionalmente se les puede añadir un texto "Cargando…" o simplemente quedan en estado deshabilitado visual (gris/opacidad) sin texto extra.
 
-### 3. Para futuras releases
-Solo necesitas:
-```powershell
-git pull
-git tag v1.0.4
-git push origin v1.0.4
-```
-Y la release se publicará sola en GitHub, sin draft.
+## Resultado
+
+- Durante la carga: tarjetas grises/no clicables, sin aviso amarillo.
+- Si hay créditos: tarjetas activas, sin aviso.
+- Si no hay créditos: aviso amarillo + tarjetas deshabilitadas (igual que ahora).
+
+No se toca la lógica de fetch, ni realtime, ni la i18n, ni ningún otro paso del wizard.

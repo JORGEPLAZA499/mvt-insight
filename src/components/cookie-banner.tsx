@@ -108,7 +108,7 @@ export function CookieBanner() {
     setTimeout(() => {
       setOpen(false);
       setCustomize(false);
-    }, 280);
+    }, 800);
   };
 
   const acceptAll = () => {

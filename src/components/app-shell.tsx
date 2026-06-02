@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getSession, setSession, getAnalyses, upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 import { LanguageSelector } from "@/components/language-selector";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 const QUICK_MAX_SIZE = 500 * 1024 * 1024;
 

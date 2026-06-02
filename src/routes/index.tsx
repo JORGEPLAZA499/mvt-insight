@@ -43,10 +43,9 @@ function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
       <header className="border-b border-border/60 backdrop-blur-md sticky top-0 z-50 bg-background/70">
-        <div className="max-w-7xl mx-auto px-6 h-auto py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logoAsset.url} alt="" className="h-[210px] w-[210px] object-contain" />
-            
+            <img src={logoAsset.url} alt="" className="h-10 w-auto object-contain" />
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground">{t("landing.nav.features")}</a>

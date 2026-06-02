@@ -49,7 +49,9 @@
     ],
     "publish": [
       {
-        "provider": "github"
+        "provider": "github",
+        "owner": "JORGEPLAZA499",
+        "repo": "mvt-insight"
       }
     ],
     "win": {

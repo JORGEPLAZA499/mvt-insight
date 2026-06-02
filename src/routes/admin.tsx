@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Copy, RefreshCw, Users, Ticket, Activity } from "lucide-react";
+import { Loader2, Copy, RefreshCw } from "lucide-react";
 import {
   listAccounts,
   generateCreditToken,
@@ -16,8 +15,16 @@ import {
   getSystemHealth,
 } from "@/lib/admin.functions";
 
+type AdminTab = "clients" | "tokens" | "health";
+
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Panel de control" }] }),
+  validateSearch: (search: Record<string, unknown>): { tab: AdminTab } => {
+    const t = search.tab;
+    return {
+      tab: t === "tokens" || t === "health" ? t : "clients",
+    };
+  },
   component: AdminPanel,
 });
 

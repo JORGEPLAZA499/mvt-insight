@@ -442,7 +442,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {userCode && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
               <Coins className="h-4 w-4" />
-              <span>{credits} créditos</span>
+              <span>{t("shell.creditsBadge", { count: credits })}</span>
             </div>
           )}
           <LanguageSelector />

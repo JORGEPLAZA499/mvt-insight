@@ -421,7 +421,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1 min-w-0 h-screen overflow-y-auto">
         <div className="md:hidden border-b border-border px-4 py-3 flex items-center gap-2">
           <img src={logoAsset.url} alt="" className="h-[210px] w-[210px] object-contain" />
-          <span className="text-sm font-semibold">Spyware Forensic Analyzer</span>
+          
         </div>
         <div className="hidden md:flex items-center justify-end border-b border-border/60 px-6 py-3 gap-4">
           <LanguageSelector />

@@ -1,5 +1,32 @@
 {
+  "cookies": {
+    "title": "Cookie settings",
+    "description": "We use strictly necessary cookies to run the site and, with your consent, analytics and marketing cookies to improve the service. You can accept, reject or customise your choice. Read more in our",
+    "privacyPolicy": "Privacy Policy",
+    "acceptAll": "Accept all",
+    "rejectAll": "Reject all",
+    "customize": "Customise",
+    "savePrefs": "Save preferences",
+    "alwaysOn": "Always on",
+    "close": "Close",
+    "gdprNote": "Complies with the EU GDPR and ePrivacy Directive.",
+    "cats": {
+      "necessary": {
+        "title": "Strictly necessary",
+        "desc": "Required to sign in, keep your session and protect the site. No consent needed."
+      },
+      "analytics": {
+        "title": "Analytics & performance",
+        "desc": "Help us understand how the site is used so we can improve it. Only enabled with your consent."
+      },
+      "marketing": {
+        "title": "Marketing",
+        "desc": "Allow measuring campaigns and showing relevant content. Only enabled with your consent."
+      }
+    }
+  },
   "common": {
+
     "goHome": "Go home",
     "tryAgain": "Try again",
     "language": "Language",

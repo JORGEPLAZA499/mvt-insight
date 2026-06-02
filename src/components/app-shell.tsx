@@ -428,7 +428,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <LanguageSelector />
         </div>
         <PurchaseCard />
-        {usePurchaseCardOpen() ? (
+        {purchaseOpen ? (
           <div className="flex-1" />
         ) : (
           children

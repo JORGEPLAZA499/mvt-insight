@@ -110,6 +110,8 @@ function Dashboard() {
           <HudPill icon={AlertCircle} label={t("dashboard.hud.highRisk")} value={stats.highRisk} color="var(--destructive)" />
         </div>
 
+        <PurchaseCard />
+
         {/* Recent analyses */}
         <div className="mt-10">
           <div className="flex items-center justify-between mb-4">

@@ -19,7 +19,7 @@ export function PublicHeader({ anchorsToHome = false }: PublicHeaderProps) {
         <Link to="/" className="flex items-center gap-2">
           <img src={logoAsset.url} alt="" className="h-[80px] md:h-[100px] lg:h-[180px] w-auto object-contain" />
         </Link>
-        <nav className="hidden md:flex items-center gap-8 text-sm uppercase tracking-widest">
+        <nav className="hidden md:flex items-center gap-8 text-xs md:text-[11px] lg:text-sm uppercase tracking-widest">
           <a href={`${prefix}#features`} className="relative text-muted-foreground hover:text-primary transition-colors duration-300 group">
             <span className="drop-shadow-[0_0_6px_rgba(0,0,0,0)] group-hover:drop-shadow-[0_0_8px_var(--primary)] transition-all duration-300">
               {t("landing.nav.features")}

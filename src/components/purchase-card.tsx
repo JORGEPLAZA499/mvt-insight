@@ -109,23 +109,36 @@ export function PurchaseCard() {
               </div>
 
               <div className="mt-4">
-                <label htmlFor="credits-select" className="block text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                <label className="block text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
                   Selecciona tu paquete
                 </label>
-                <div className="relative">
-                  <select
-                    id="credits-select"
-                    value={credits}
-                    onChange={(e) => setCredits(Number(e.target.value))}
-                    className="w-full max-w-xs appearance-none cursor-pointer rounded-xl border border-primary/30 bg-background/70 backdrop-blur px-4 py-3 pr-10 text-sm font-medium text-foreground hover:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
-                  >
-                    {CREDIT_OPTIONS.map((c) => (
-                      <option key={c} value={c}>
-                        {c} créditos — {c} €
-                      </option>
-                    ))}
-                  </select>
-                  <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">▾</span>
+                <div className="space-y-2 max-w-sm">
+                  {/* header */}
+                  <div className="grid grid-cols-3 gap-3 px-4 text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <span>Créditos</span>
+                    <span>Análisis</span>
+                    <span>Precio</span>
+                  </div>
+                  {CREDIT_OPTIONS.map((c) => {
+                    const analyses = c / 98;
+                    const selected = credits === c;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setCredits(c)}
+                        className={`w-full grid grid-cols-3 gap-3 px-4 py-2.5 rounded-xl border text-sm font-medium transition cursor-pointer ${
+                          selected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-primary/30 bg-background/70 text-foreground hover:border-primary/60"
+                        }`}
+                      >
+                        <span className="tabular-nums">{c}</span>
+                        <span className="tabular-nums">{analyses}</span>
+                        <span className="tabular-nums">{c} €</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

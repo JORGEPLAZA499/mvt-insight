@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getSession, setSession, getAnalyses, upsertAnalysis, Analysis } from "@/lib/mock-store";
+import { getAnalyses, upsertAnalysis, Analysis } from "@/lib/mock-store";
+import { supabase } from "@/integrations/supabase/client";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 import { LanguageSelector } from "@/components/language-selector";
 import logoAsset from "@/assets/logo.png.asset.json";
@@ -23,7 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const [session, setSessionState] = useState<{ email: string } | null>(null);
+  const [userCode, setUserCode] = useState<string | null>(null);
   const [historyCount, setHistoryCount] = useState(0);
   const quickInputRef = useRef<HTMLInputElement>(null);
   const [quickBusy, setQuickBusy] = useState(false);
@@ -82,17 +83,30 @@ export function AppShell({ children }: { children: ReactNode }) {
   ];
 
   useEffect(() => {
-    const s = getSession();
-    if (!s) {
-      navigate({ to: "/login" });
-      return;
-    }
-    setSessionState(s);
-    setHistoryCount(getAnalyses().length);
+    let active = true;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!active) return;
+      if (!data.user) {
+        navigate({ to: "/login" });
+        return;
+      }
+      const { data: acc } = await supabase
+        .from("accounts")
+        .select("user_code")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (!active) return;
+      setUserCode(acc?.user_code ?? null);
+      setHistoryCount(getAnalyses().length);
+    })();
+    return () => {
+      active = false;
+    };
   }, [navigate, path]);
 
-  const initial = session?.email?.[0]?.toUpperCase() ?? "U";
-  const emailShort = session?.email?.split("@")[0] ?? "usuario";
+  const initial = userCode?.[0] ?? "U";
+  const emailShort = userCode ?? "—";
 
   return (
     <div className="h-screen flex w-full bg-background overflow-hidden">
@@ -310,10 +324,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium truncate">{emailShort}</div>
+                <div className="text-xs font-mono font-medium tracking-wider truncate" title={userCode ?? ""}>{emailShort}</div>
                 <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <span className="h-1 w-1 rounded-full bg-success" />
-                  {t("common.online")}
+                  Cuenta anónima
                 </div>
               </div>
             </div>
@@ -321,8 +335,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 
           <button
-            onClick={() => {
-              setSession(null);
+            onClick={async () => {
+              await supabase.auth.signOut();
               navigate({ to: "/login" });
             }}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground border border-transparent hover:border-destructive/30 hover:text-destructive hover:bg-destructive/5 transition-all duration-200 group"

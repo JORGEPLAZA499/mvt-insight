@@ -105,7 +105,7 @@ function Landing() {
       </section>
 
       {/* Features */}
-      <section id="features" className="scroll-mt-48 max-w-7xl mx-auto px-6 py-24">
+      <section id="features" className="scroll-mt-[200px] max-w-7xl mx-auto px-6 py-24">
         <div className="grid md:grid-cols-3 gap-6">
           {features.map((f) => (
             <div key={f.key} className="rounded-xl border border-border bg-card p-6 shadow-card hover:border-primary/40 transition-colors">
@@ -120,7 +120,7 @@ function Landing() {
       </section>
 
       {/* How */}
-      <section id="how" className="scroll-mt-48 border-t border-border bg-card/30">
+      <section id="how" className="scroll-mt-[200px] border-t border-border bg-card/30">
         <div className="max-w-7xl mx-auto px-6 py-24">
           <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">{t("landing.how.title")}</h2>
           <div className="mt-12 grid md:grid-cols-3 gap-6">
@@ -136,7 +136,7 @@ function Landing() {
       </section>
 
       {/* Legal */}
-      <section id="legal" className="scroll-mt-48 max-w-4xl mx-auto px-6 py-20">
+      <section id="legal" className="scroll-mt-[200px] max-w-4xl mx-auto px-6 py-20">
         <div className="rounded-xl border border-warning/40 bg-warning/5 p-6">
           <h3 className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-warning" /> {t("landing.legal.title")}</h3>
           <p className="text-sm text-muted-foreground">

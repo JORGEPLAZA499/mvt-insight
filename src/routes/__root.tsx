@@ -12,7 +12,9 @@ import { useTranslation } from "react-i18next";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { CookieBanner } from "../components/cookie-banner";
 import "../i18n";
+
 
 function NotFoundComponent() {
   const { t } = useTranslation();

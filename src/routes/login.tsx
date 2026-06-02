@@ -38,7 +38,7 @@ function Login() {
         <div className="absolute inset-0 grid-bg opacity-40" />
         <div className="relative flex-1 flex items-center justify-center w-full">
           <Link to="/">
-            <img src={logoAsset.url} alt="" className="h-[210px] w-[210px] object-contain" />
+            <img src={logoAsset.url} alt="" className="h-[300px] w-[300px] object-contain" />
           </Link>
         </div>
         <div className="relative max-w-md">

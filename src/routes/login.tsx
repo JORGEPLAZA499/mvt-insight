@@ -368,6 +368,10 @@ function Login() {
             Privacidad por diseño: no pedimos email ni datos personales. Si no inicias
             sesión durante <b>10 días</b>, la cuenta se elimina automáticamente.
           </p>
+          <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+            Teclado virtual con orden aleatorio que se reordena tras cada tecla y
+            contraseña ofuscada en memoria. Úsalo desde un equipo de confianza.
+          </p>
         </div>
       </div>
     </div>

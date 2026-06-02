@@ -133,7 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Brand */}
         <Link
           to="/dashboard"
-          className="relative flex items-center gap-3 px-5 py-5 group"
+          className="relative flex flex-col items-center gap-1 px-5 py-5 group"
         >
           <div className="relative">
             <div
@@ -144,10 +144,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <img
               src={logoAsset.url}
               alt="Spyware Forensic Analyzer"
-              className="relative h-[150px] w-[150px] object-contain"
+              className="relative h-[210px] w-[210px] object-contain"
             />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 text-center">
             <div className="text-sm font-semibold tracking-tight truncate">
               {t("shell.brand")}
             </div>
@@ -343,7 +343,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="flex-1 min-w-0 h-screen overflow-y-auto">
         <div className="md:hidden border-b border-border px-4 py-3 flex items-center gap-2">
-          <img src={logoAsset.url} alt="" className="h-[150px] w-[150px] object-contain" />
+          <img src={logoAsset.url} alt="" className="h-[210px] w-[210px] object-contain" />
           <span className="text-sm font-semibold">Spyware Forensic Analyzer</span>
         </div>
         <div className="hidden md:flex items-center justify-end border-b border-border/60 px-6 py-3 gap-4">

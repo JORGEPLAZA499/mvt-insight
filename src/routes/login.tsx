@@ -293,7 +293,7 @@ function Login() {
                   required
                   autoComplete="current-password"
                   value={password}
-                  onChange={setPassword}
+                  onChange={(v) => { setPassword(v); syncBuffer(pwdBuf, v); }}
                   placeholder="••••••••"
                 />
               </div>

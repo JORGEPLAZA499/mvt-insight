@@ -40,10 +40,10 @@ function Landing() {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <PublicHeader />
 
-      {/* Hero */}
+      <main className="flex-1">
       <section className="relative bg-hero">
         <div className="absolute inset-0 grid-bg opacity-40" aria-hidden />
         <div className="relative max-w-7xl mx-auto px-6 py-24 md:py-32">
@@ -102,7 +102,7 @@ function Landing() {
           </div>
         </div>
       </section>
-
+      </main>
 
       <PublicFooter />
     </div>

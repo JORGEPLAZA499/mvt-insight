@@ -45,6 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const navigate = useNavigate();
   const purchaseOpen = usePurchaseCardOpen();
+  const [credits, setCredits] = useState(0);
   const [userCode, setUserCode] = useState<string | null>(null);
   const [historyCount, setHistoryCount] = useState(0);
   const quickInputRef = useRef<HTMLInputElement>(null);

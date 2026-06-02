@@ -407,6 +407,35 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         {children}
       </main>
+
+      <Dialog open={redeemOpen} onOpenChange={setRedeemOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Comprar créditos</DialogTitle>
+            <DialogDescription>
+              Introduce el token de créditos que te ha proporcionado el administrador.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="redeem-code">Código del token</Label>
+            <Input
+              id="redeem-code"
+              value={redeemCode}
+              onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+              placeholder="XXXX-XXXX-XXXX"
+              className="font-mono"
+            />
+            {redeemError && <p className="text-xs text-destructive">{redeemError}</p>}
+            {redeemSuccess && <p className="text-xs text-success">{redeemSuccess}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRedeemOpen(false)}>Cerrar</Button>
+            <Button onClick={onRedeem} disabled={redeemBusy || !redeemCode.trim()}>
+              {redeemBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Canjear"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

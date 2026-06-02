@@ -239,7 +239,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Nav */}
         <div className="relative flex-1 px-3 py-4 overflow-y-auto">
           <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
-            {inAdminMode ? "Administración" : t("shell.sectionPrimary")}
+            {inAdminMode ? t("shell.sectionAdmin") : t("shell.sectionPrimary")}
           </div>
           <nav className="space-y-1">
             {nav.map((n) => {

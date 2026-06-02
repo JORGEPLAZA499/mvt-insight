@@ -1,18 +1,22 @@
-## Objetivo
+## Problema
 
-Hacer que el footer quede siempre pegado al fondo de la ventana en `/legal` (y en cualquier página que use el mismo patrón), eliminando el hueco vacío entre el contenido y el pie cuando hay poco contenido. En `/` no debe haber cambios visibles porque el contenido ya llena la pantalla.
+Al pulsar "Cómo funciona", el título de la sección queda demasiado abajo (mucho espacio vacío entre el header y el título "Tres pasos para un análisis preliminar"), como se ve en la imagen.
 
-## Cambios
+## Causa
 
-**`src/routes/legal.tsx`**
-- Contenedor raíz: cambiar `min-h-screen` por `min-h-screen flex flex-col`.
-- `<main>`: añadir `flex-1` para que ocupe todo el espacio disponible y empuje el footer al fondo.
+En `src/routes/index.tsx` línea 91, la sección `#how` tiene:
+- `scroll-mt-[200px]` → reserva 200 px de margen superior al hacer scroll
+- `py-24` interno (96 px arriba) sobre el contenedor del título
 
-**`src/routes/index.tsx`**
-- Aplicar el mismo patrón por consistencia (`flex flex-col` en el contenedor raíz). El `<main>` no existe como wrapper único en index, así que envolveré el contenido entre `<PublicHeader />` y `<PublicFooter />` en un `<main className="flex-1">` para mantener el patrón uniforme y semántico.
+Total desde el borde superior visible hasta el título: ~200 + 96 = **~296 px**, lo que deja el hueco que se aprecia.
+
+## Cambio
+
+**`src/routes/index.tsx` (línea 91)**
+- Reducir `scroll-mt-[200px]` a `scroll-mt-[180px]` para igualarlo al ajuste usado en las otras anclas (Características y Aviso legal anterior).
+
+No se toca el padding interno (`py-24`), solo el margen de scroll, para que el título quede alineado justo debajo del header sticky.
 
 ## Resultado
 
-- `/legal`: el footer se ancla al borde inferior de la ventana sin importar lo corto que sea el contenido.
-- `/`: sin cambios visuales (el contenido ya supera la altura de la ventana), pero con la misma estructura semántica.
-- Altura del footer sigue siendo fija 64 px (`h-16`), idéntica en ambas rutas.
+Al pulsar "Cómo funciona" en el menú, el título de la sección quedará anclado a 180 px del borde superior, eliminando el hueco vacío visible en la captura.

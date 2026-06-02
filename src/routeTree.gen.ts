@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LegalRouteImport } from './routes/legal'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
@@ -31,6 +32,11 @@ const ReportsRoute = ReportsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalRoute = LegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/legal': typeof LegalRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/upload': typeof UploadRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/legal': typeof LegalRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/upload': typeof UploadRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/legal': typeof LegalRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/upload': typeof UploadRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/history'
+    | '/legal'
     | '/login'
     | '/reports'
     | '/upload'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/history'
+    | '/legal'
     | '/login'
     | '/reports'
     | '/upload'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/history'
+    | '/legal'
     | '/login'
     | '/reports'
     | '/upload'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   HistoryRoute: typeof HistoryRoute
+  LegalRoute: typeof LegalRoute
   LoginRoute: typeof LoginRoute
   ReportsRoute: typeof ReportsRoute
   UploadRoute: typeof UploadRoute
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal': {
+      id: '/legal'
+      path: '/legal'
+      fullPath: '/legal'
+      preLoaderRoute: typeof LegalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   HistoryRoute: HistoryRoute,
+  LegalRoute: LegalRoute,
   LoginRoute: LoginRoute,
   ReportsRoute: ReportsRoute,
   UploadRoute: UploadRoute,

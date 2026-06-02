@@ -1,5 +1,32 @@
 {
+  "cookies": {
+    "title": "Configuración de cookies",
+    "description": "Usamos cookies estrictamente necesarias para el funcionamiento del sitio y, con tu consentimiento, cookies analíticas y de marketing para mejorar el servicio. Puedes aceptar, rechazar o personalizar tu elección. Más información en nuestra",
+    "privacyPolicy": "Política de Privacidad",
+    "acceptAll": "Aceptar todo",
+    "rejectAll": "Rechazar todo",
+    "customize": "Personalizar",
+    "savePrefs": "Guardar preferencias",
+    "alwaysOn": "Siempre activa",
+    "close": "Cerrar",
+    "gdprNote": "Cumple con el RGPD y la Directiva ePrivacy de la UE.",
+    "cats": {
+      "necessary": {
+        "title": "Estrictamente necesarias",
+        "desc": "Imprescindibles para iniciar sesión, mantener tu sesión y proteger el sitio. No requieren consentimiento."
+      },
+      "analytics": {
+        "title": "Análisis y rendimiento",
+        "desc": "Nos ayudan a entender cómo se usa el sitio para mejorarlo. Solo se activan con tu consentimiento."
+      },
+      "marketing": {
+        "title": "Marketing",
+        "desc": "Permiten medir campañas y mostrar contenido relevante. Solo se activan con tu consentimiento."
+      }
+    }
+  },
   "common": {
+
     "goHome": "Ir al inicio",
     "tryAgain": "Reintentar",
     "language": "Idioma",

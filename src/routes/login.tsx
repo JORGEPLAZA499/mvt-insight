@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +20,10 @@ export const Route = createFileRoute("/login")({
   head: () => {
     const t = i18n.getFixedT(null, "translation");
     return { meta: [{ title: t("login.meta.title") }] };
+  },
+  validateSearch: (search: Record<string, unknown>) => {
+    const mode = search.mode === "register" ? "register" : "login";
+    return { mode };
   },
   component: Login,
 });

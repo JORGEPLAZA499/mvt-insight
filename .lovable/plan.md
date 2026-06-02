@@ -1,22 +1,18 @@
-## Problema
+## Objetivo
+Que la app desktop (.exe) use el mismo logo que la web pública.
 
-Al pulsar "Cómo funciona", el título de la sección queda demasiado abajo (mucho espacio vacío entre el header y el título "Tres pasos para un análisis preliminar"), como se ve en la imagen.
+## Contexto
+- Web pública: `src/assets/logo.png.asset.json` → logo servido por CDN de Lovable (asset_id `9576fd0b...`).
+- Desktop: `desktop/src/assets/logo.png` (binario local importado en `desktop/src/App.tsx`).
+- El desktop corre en Electron desde `file://`, por lo que **no puede** usar la URL relativa `/__l5e/...` del CDN. Necesita el binario empacado localmente.
 
-## Causa
+## Cambios
+1. Descargar el PNG actual de la web desde el CDN de Lovable a `desktop/src/assets/logo.png`, sobreescribiendo el existente.
+   - Fuente: `https://mvt-insight.lovable.app/__l5e/assets-v1/9576fd0b-1d12-4848-a05a-52ab395831bb/logo.png`
+2. No tocar `desktop/src/App.tsx`: ya importa `./assets/logo.png` y lo renderiza con `<Logo size={210} />`.
+3. Verificación: confirmar que el archivo se reemplazó (tamaño ≈ 2.27 MB, igual que el `.asset.json` de la web) y que el preview/desktop sigue renderizando.
 
-En `src/routes/index.tsx` línea 91, la sección `#how` tiene:
-- `scroll-mt-[200px]` → reserva 200 px de margen superior al hacer scroll
-- `py-24` interno (96 px arriba) sobre el contenedor del título
-
-Total desde el borde superior visible hasta el título: ~200 + 96 = **~296 px**, lo que deja el hueco que se aprecia.
-
-## Cambio
-
-**`src/routes/index.tsx` (línea 91)**
-- Reducir `scroll-mt-[200px]` a `scroll-mt-[180px]` para igualarlo al ajuste usado en las otras anclas (Características y Aviso legal anterior).
-
-No se toca el padding interno (`py-24`), solo el margen de scroll, para que el título quede alineado justo debajo del header sticky.
-
-## Resultado
-
-Al pulsar "Cómo funciona" en el menú, el título de la sección quedará anclado a 180 px del borde superior, eliminando el hueco vacío visible en la captura.
+## Fuera de alcance
+- No se modifica el tamaño, posición ni layout del header del desktop.
+- No se portan breakpoints responsive ni el componente `PublicHeader` al desktop.
+- No se modifica la web.

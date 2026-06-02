@@ -103,9 +103,30 @@ export function PurchaseCard() {
                   className="text-4xl md:text-5xl font-bold tabular-nums bg-clip-text text-transparent"
                   style={{ backgroundImage: "var(--gradient-primary)" }}
                 >
-                  98 créditos
+                  {credits} créditos
                 </span>
-                <span className="text-sm text-muted-foreground">/ análisis</span>
+                <span className="text-sm text-muted-foreground">= {credits} €</span>
+              </div>
+
+              <div className="mt-4">
+                <label htmlFor="credits-select" className="block text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                  Selecciona tu paquete
+                </label>
+                <div className="relative">
+                  <select
+                    id="credits-select"
+                    value={credits}
+                    onChange={(e) => setCredits(Number(e.target.value))}
+                    className="w-full max-w-xs appearance-none cursor-pointer rounded-xl border border-primary/30 bg-background/70 backdrop-blur px-4 py-3 pr-10 text-sm font-medium text-foreground hover:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
+                  >
+                    {CREDIT_OPTIONS.map((c) => (
+                      <option key={c} value={c}>
+                        {c} créditos — {c} €
+                      </option>
+                    ))}
+                  </select>
+                  <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">▾</span>
+                </div>
               </div>
 
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground max-w-xl">

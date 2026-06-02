@@ -41,6 +41,7 @@ const QUICK_MAX_SIZE = 500 * 1024 * 1024;
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const navigate = useNavigate();
   const [userCode, setUserCode] = useState<string | null>(null);
   const [historyCount, setHistoryCount] = useState(0);

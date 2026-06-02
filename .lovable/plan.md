@@ -1,40 +1,45 @@
-# Fix build de Electron y release v1.0.3
+## Cambio en código
 
-## Problema
+**`desktop/package.json`** — añadir `"releaseType": "release"` al bloque `publish` para que futuras versiones se publiquen automáticamente en GitHub Releases (sin quedarse como Draft).
 
-El workflow de GitHub Actions falló en las 3 plataformas con:
+```json
+"publish": [
+  {
+    "provider": "github",
+    "owner": "JORGEPLAZA499",
+    "repo": "mvt-insight",
+    "releaseType": "release"
+  }
+]
 ```
-Error: Cannot detect repository by .git/config. Please specify "repository" in the package.json
-```
 
-Causa: `desktop/package.json` está en subcarpeta y `electron-builder` no logra autodetectar el repo de GitHub para publicar la release.
+Es el único cambio. No toco nada más del proyecto.
 
-## Cambios
+## Pasos que harás tú después
 
-### 1. `desktop/package.json`
-- Subir `version` de `1.0.2` → `1.0.3`
-- Añadir campo `repository` a nivel raíz apuntando a `https://github.com/JORGEPLAZA499/mvt-insight.git`
-- Cambiar bloque `build.publish` para declarar explícitamente `owner: "JORGEPLAZA499"` y `repo: "mvt-insight"`
+### 1. Publicar el draft v1.0.3 actual (una vez)
+- Ve a https://github.com/JORGEPLAZA499/mvt-insight/releases
+- Click en el draft `1.0.3` con **10 assets**
+- Lápiz ✏️ (Edit) → botón verde **Publish release**
+- Borra el otro draft con 4 assets
 
-### 2. `src/routes/upload.tsx` (si aplica)
-- Si existe constante `APP_VERSION` o similar, actualizarla a `1.0.3` para que el modal de auto-update compare correctamente.
+### 2. Resetear tu repo local a GitHub
+Tu local está 398 commits por detrás y con archivos sin commitear que ya existen en remoto. En PowerShell:
 
-## Pasos del usuario después del commit
-
-En PowerShell:
 ```powershell
 cd $HOME\Documents\mvt-insight
+git reset --hard origin/main
+git clean -fd
 git pull
-git tag v1.0.3
-git push origin v1.0.3
 ```
 
-Esto dispara el workflow. En ~10 min los 3 jobs deberían quedar en verde y publicar:
-- `MvtInsight-Setup-1.0.3.exe`
-- `MvtInsight-1.0.3-x64.dmg` / `MvtInsight-1.0.3-arm64.dmg`
-- `MvtInsight-1.0.3.AppImage`
+⚠️ Esto descarta cambios locales sin recuperación. Todo lo que veo en tu `git status` (i18n, package.json, App.tsx, main.tsx) ya está en GitHub hecho por Lovable, así que es seguro.
 
-## Notas
-
-- El tag `v1.0.2` queda obsoleto (existe en GitHub pero sin assets); se puede borrar luego desde la UI de Releases si molesta.
-- El warning "default Electron icon is used" no es bloqueante. Si quieres icono propio, lo añadimos en una iteración posterior.
+### 3. Para futuras releases
+Solo necesitas:
+```powershell
+git pull
+git tag v1.0.4
+git push origin v1.0.4
+```
+Y la release se publicará sola en GitHub, sin draft.

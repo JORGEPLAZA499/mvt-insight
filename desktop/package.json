@@ -51,7 +51,8 @@
       {
         "provider": "github",
         "owner": "JORGEPLAZA499",
-        "repo": "mvt-insight"
+        "repo": "mvt-insight",
+        "releaseType": "release"
       }
     ],
     "win": {

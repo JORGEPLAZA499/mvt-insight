@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PublicHeader } from "@/components/public-header";
+import { PublicFooter } from "@/components/public-footer";
 import i18n from "@/i18n";
 
 export const Route = createFileRoute("/legal")({
@@ -36,12 +37,7 @@ function LegalPage() {
           </p>
         </div>
       </main>
-      <footer className="border-t border-border">
-        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span>{t("landing.footer.copy", { year: new Date().getFullYear() })}</span>
-          <span>{t("landing.footer.engine")}</span>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

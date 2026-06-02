@@ -9,6 +9,7 @@ import {
   Sparkles,
   Zap,
   Loader2,
+  Coins,
 } from "lucide-react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";

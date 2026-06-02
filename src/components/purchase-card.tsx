@@ -1,17 +1,45 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { CreditCard, Bitcoin, ShieldCheck, Sparkles, X, FileText, ScanSearch } from "lucide-react";
 
 export const PURCHASE_EVENT = "open-purchase-card";
 
+// ---- shared open state (module-level) ----
+let purchaseOpen = false;
+const listeners = new Set<() => void>();
+
+function emit() {
+  listeners.forEach((fn) => fn());
+}
+
+function setPurchaseOpen(v: boolean) {
+  purchaseOpen = v;
+  emit();
+}
+
 export function openPurchaseCard() {
-  window.dispatchEvent(new CustomEvent(PURCHASE_EVENT));
+  setPurchaseOpen(true);
+}
+
+export function closePurchaseCard() {
+  setPurchaseOpen(false);
+}
+
+export function usePurchaseCardOpen() {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => purchaseOpen,
+    () => purchaseOpen
+  );
 }
 
 export function PurchaseCard() {
-  const [open, setOpen] = useState(false);
+  const open = usePurchaseCardOpen();
 
   useEffect(() => {
-    const handler = () => setOpen(true);
+    const handler = () => setPurchaseOpen(true);
     window.addEventListener(PURCHASE_EVENT, handler);
     return () => window.removeEventListener(PURCHASE_EVENT, handler);
   }, []);
@@ -51,7 +79,7 @@ export function PurchaseCard() {
           />
 
           <button
-            onClick={() => setOpen(false)}
+            onClick={() => setPurchaseOpen(false)}
             aria-label="Cerrar"
             className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground transition"
           >

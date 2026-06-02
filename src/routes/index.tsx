@@ -46,7 +46,7 @@ function Landing() {
         <div className="max-w-7xl mx-auto px-6 h-auto py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img src={logoAsset.url} alt="" className="h-[210px] w-[210px] object-contain" />
-            <span className="font-semibold tracking-tight">Spyware Forensic Analyzer</span>
+            
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground">{t("landing.nav.features")}</a>

@@ -106,9 +106,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const nav = inAdminMode
     ? [
-        { to: "/admin", label: "Clientes", icon: Users, hint: "", search: { tab: "clients" }, tabKey: "clients" },
-        { to: "/admin", label: "Tokens", icon: Ticket, hint: "", search: { tab: "tokens" }, tabKey: "tokens" },
-        { to: "/admin", label: "Salud del sistema", icon: Activity, hint: "", search: { tab: "health" }, tabKey: "health" },
+        { to: "/admin", label: t("shell.admin.clients"), icon: Users, hint: "", search: { tab: "clients" }, tabKey: "clients" },
+        { to: "/admin", label: t("shell.admin.tokens"), icon: Ticket, hint: "", search: { tab: "tokens" }, tabKey: "tokens" },
+        { to: "/admin", label: t("shell.admin.health"), icon: Activity, hint: "", search: { tab: "health" }, tabKey: "health" },
       ]
     : [
         { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },
@@ -116,9 +116,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
         { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
         ...(isAdmin
-          ? [{ to: "/admin", label: "Administración", icon: ShieldCheck, hint: "Panel de control" }]
+          ? [{ to: "/admin", label: t("shell.nav.admin"), icon: ShieldCheck, hint: t("shell.adminHint") }]
           : []),
       ] as any[];
+
 
   // Redeem credit token dialog
   const redeemFn = useServerFn(redeemCreditToken);

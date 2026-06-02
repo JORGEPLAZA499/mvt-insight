@@ -73,12 +73,14 @@ export const createCreditsCheckout = createServerFn({ method: 'POST' })
         ui_mode: 'embedded_page',
         return_url: data.returnUrl,
         customer: customerId,
-        managed_payments: { enabled: true },
         payment_intent_data: { description: product.name },
         metadata: {
           userId,
           credits: String(credits),
         },
+        // Stripe-managed payments: end-to-end tax/fraud/dispute handling (+3.5%).
+        // Cast: the type def in the pinned SDK lags behind the API.
+        ...({ managed_payments: { enabled: true } } as any),
       });
 
       return { clientSecret: session.client_secret ?? '' };

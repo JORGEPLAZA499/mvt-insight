@@ -234,7 +234,12 @@
       "title": "Which device do you want to analyze?",
       "subtitle": "Pick the mobile operating system.",
       "android": { "title": "Android", "sub": "Samsung, Xiaomi, Pixel…" },
-      "ios": { "title": "iPhone", "sub": "iOS 14 or newer" }
+      "ios": { "title": "iPhone", "sub": "iOS 14 or newer" },
+      "noCredits": {
+        "title": "You have no credits available",
+        "body": "You need at least 1 credit to start an analysis. Top up credits from your dashboard to enable the options.",
+        "cta": "Go top up credits"
+      }
     },
     "step2": {
       "title": "Which computer will you use?",

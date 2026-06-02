@@ -10,6 +10,7 @@ import { LanguageSelector } from "@/components/language-selector";
 import { PasswordField } from "@/components/password-field";
 import { PasswordStrengthMeter } from "@/components/password-strength-meter";
 import { scorePassword } from "@/lib/password-strength";
+import { createSecureBuffer } from "@/lib/secure-string";
 import logoAsset from "@/assets/logo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import {

@@ -124,8 +124,8 @@ export function PurchaseCard() {
               </button>
 
               <div className="mt-2 grid grid-cols-2 gap-3">
-                <PayGroup title="Card Payments" items={["MC", "VISA", "AMEX", "Pay", "Pay"]} />
-                <PayGroup title="Crypto" items={["BTC", "ETH", "USDT", "TRX", "BNB"]} />
+                <PayGroup title="Card Payments" items={cardBrands} />
+                <PayGroup title="Crypto Payments" items={cryptoBrands} />
               </div>
             </div>
           </div>

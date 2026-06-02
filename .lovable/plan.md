@@ -1,36 +1,64 @@
-# Apertura automática del teclado virtual + protección contra keyloggers
+## Panel de administración
 
-## 1. Apertura automática (eliminar icono)
+Crear una sección de admin accesible solo cuando el `user_code` del usuario logueado es `Admin`. Tres pestañas dentro del panel.
 
-`src/components/password-field.tsx`:
-- Eliminar el botón con icono `Keyboard`.
-- Abrir el teclado virtual con `onFocus` del input; cerrar solo desde el botón "✕" del propio teclado.
-- Input siempre `readOnly` cuando el VK está abierto.
-- Añadir `inputMode="none"`, `spellCheck={false}`, `autoCapitalize="off"`, `autoCorrect="off"`.
-- Bloquear `onCopy`, `onPaste`, `onCut`, `onDrop`, `onContextMenu`.
+### 1. Acceso
+- Nueva ruta `/_authenticated/admin` protegida por un check: si `account.user_code !== "Admin"` → redirect a `/dashboard`.
+- Añadir un ítem "Administración" en el sidebar (`app-shell.tsx`) visible solo cuando el usuario actual es Admin.
 
-## 2. Endurecimiento anti-keylogger
+### 2. Cambios de base de datos (migraciones)
 
-**`src/components/virtual-keyboard.tsx`**:
-- Re-barajar automáticamente tras cada pulsación de tecla (no solo al abrir).
-- Mantener botón "Reordenar" y toggle de orden normal.
-- Sin feedback visual del carácter pulsado.
+**Tabla `accounts`** — añadir columnas:
+- `credits` (int, default 0) — saldo de créditos del usuario.
 
-**`src/lib/secure-string.ts`** (nuevo): utilidad `createSecureBuffer()` que guarda el valor XOR-eado con una clave aleatoria por instancia. API: `append(ch)`, `pop()`, `clear()`, `reveal()`, `length`. La contraseña en claro solo existe durante el `reveal()` justo antes del submit.
+**Nueva tabla `credit_recharges`** — historial de recargas:
+- `account_id` (uuid, FK a accounts)
+- `amount` (int) — créditos añadidos
+- `token_id` (uuid, nullable) — token usado, si aplica
+- `created_at` (timestamptz)
 
-**`src/routes/login.tsx`**:
-- Reemplazar `useState<string>` de `password`/`confirm` por un wrapper basado en `SecureBuffer` (estado con `[buffer, version]` para re-renderizar).
-- Pasar al `PasswordField` un `value` enmascarado (longitud) y `onChange` que diff-ea y aplica `append`/`pop`/`clear` al buffer.
-- En `submit`: `reveal()` → enviar → `clear()` inmediato.
-- `useEffect` cleanup: `clear()` al desmontar.
-- El medidor de fortaleza recibe la contraseña revelada en cada render (necesario para puntuar) — aceptable porque vive solo en memoria del componente; alternativa: puntuar sobre el buffer XOR-eado descodificando temporalmente.
+**Nueva tabla `credit_tokens`** — tokens canjeables para comprar créditos:
+- `code` (text único) — el token generado
+- `credits` (int) — cuántos créditos otorga
+- `created_by` (uuid) — admin que lo generó
+- `redeemed_by` (uuid, nullable) — usuario que lo canjeó
+- `redeemed_at` (timestamptz, nullable)
+- `created_at` (timestamptz)
 
-## 3. UI / copy
+RLS:
+- `accounts`: política extra para que Admin pueda leer todos los registros.
+- `credit_recharges` / `credit_tokens`: lectura/escritura solo para Admin; los usuarios normales solo ven sus propias recargas y pueden canjear tokens vía server function.
 
-- Nota debajo del formulario: "Teclado virtual con orden aleatorio y contraseña ofuscada en memoria. Úsalo desde un equipo de confianza."
-- Sin cambios en backend ni en la BD.
+### 3. Pestañas del panel
 
-## Archivos
+**a) Clientes**
+Tabla con: número de usuario (`user_code`), créditos actuales, total recargado, fecha y hora del último login, fecha de creación. Búsqueda por código.
 
-- Modificados: `src/components/password-field.tsx`, `src/components/virtual-keyboard.tsx`, `src/routes/login.tsx`
-- Nuevos: `src/lib/secure-string.ts`
+**b) Tokens**
+- Formulario: input "créditos" + botón "Generar token" → server function crea token aleatorio (12 chars) y lo muestra para copiar.
+- Tabla de tokens emitidos con estado (Disponible / Canjeado por X el [fecha]).
+- En el sidebar de usuarios normales, el botón "Comprar créditos" abrirá un diálogo donde pegan el código → server function lo valida y acredita.
+
+**c) Salud del sistema**
+Tarjetas con:
+- Estado de la conexión a la base de datos (ping).
+- Conteos: nº de cuentas, nº de análisis totales (si hay tabla), tokens activos vs canjeados, créditos en circulación.
+- Última actividad (último login registrado, última recarga).
+- Versión de la app y timestamp de carga.
+
+### 4. Server functions (nuevas, en `src/lib/admin.functions.ts` y `src/lib/credits.functions.ts`)
+- `listAccounts` (Admin) — lista todos con stats agregadas.
+- `generateCreditToken({ credits })` (Admin) — crea token.
+- `listCreditTokens` (Admin).
+- `getSystemHealth` (Admin) — conteos y ping.
+- `redeemCreditToken({ code })` (cualquier user autenticado) — canjea token, inserta `credit_recharges`, incrementa `accounts.credits`.
+
+Todas usan `requireSupabaseAuth` y verifican el rol comprobando `user_code === 'Admin'` antes de ejecutar.
+
+### 5. UI
+- Componentes shadcn existentes (Tabs, Table, Card, Dialog, Input, Button).
+- Diseño coherente con el resto del dashboard (mismos tokens semánticos).
+
+### Notas técnicas
+- "Admin" se identifica por el valor literal `user_code = 'Admin'` en la tabla `accounts`. El usuario tendrá que registrarse con ese código (o lo marcamos manualmente tras el registro).
+- No se implementa pasarela de pago real: las recargas se hacen exclusivamente vía tokens generados por el admin.

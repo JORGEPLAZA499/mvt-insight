@@ -66,6 +66,27 @@ function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Buffers ofuscados en memoria — espejo del estado para poder wipear al desmontar/enviar
+  const pwdBuf = useRef(createSecureBuffer());
+  const confirmBuf = useRef(createSecureBuffer());
+
+  const syncBuffer = (
+    buf: React.MutableRefObject<ReturnType<typeof createSecureBuffer>>,
+    next: string,
+  ) => {
+    buf.current.clear();
+    buf.current.append(next);
+  };
+
+  useEffect(() => {
+    const p = pwdBuf.current;
+    const c = confirmBuf.current;
+    return () => {
+      p.clear();
+      c.clear();
+    };
+  }, []);
+
   // Estado post-registro
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);

@@ -114,6 +114,8 @@ function Login() {
         throw new Error("Código o contraseña incorrectos.");
       }
       await touch({ data: { userId: data.user.id } });
+      pwdBuf.current.clear();
+      setPassword("");
       navigate({ to: "/dashboard" });
     } catch (err: any) {
       setError(err?.message || "No se pudo iniciar sesión.");

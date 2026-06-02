@@ -60,6 +60,7 @@ function Login() {
 
   const search = Route.useSearch();
   const [mode, setMode] = useState<"login" | "register">(search.mode ?? "login");
+  const [registerStep, setRegisterStep] = useState<1 | 2>(1);
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -158,10 +159,6 @@ function Login() {
     }
   };
 
-  const registerBlocked =
-    !password ||
-    password !== confirm ||
-    scorePassword(password).level === "low";
 
   const copyCode = async () => {
     if (!issuedCode) return;
@@ -308,45 +305,80 @@ function Login() {
             </form>
           ) : (
             <form onSubmit={submitRegister} className="mt-8 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="pwd">Contraseña</Label>
-                <PasswordField
-                  id="pwd"
-                  required
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(v) => { setPassword(v); syncBuffer(pwdBuf, v); }}
-                  placeholder="Mín 8 · May + min + número"
-                />
-                <PasswordStrengthMeter password={password} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pwd2">Repite la contraseña</Label>
-                <PasswordField
-                  id="pwd2"
-                  required
-                  autoComplete="new-password"
-                  value={confirm}
-                  onChange={(v) => { setConfirm(v); syncBuffer(confirmBuf, v); }}
-                  placeholder="••••••••"
-                />
-                {confirm && confirm !== password && (
-                  <p className="text-[11px] text-destructive">Las contraseñas no coinciden.</p>
-                )}
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Al crear la cuenta el sistema generará un código único{" "}
-                <span className="font-mono">XXX-XXX-XXX</span>. Será tu único identificador:
-                guárdalo en un lugar seguro porque <b>no se puede recuperar</b>.
-              </p>
-              {error && <p className="text-xs text-destructive">{error}</p>}
-              <Button
-                type="submit"
-                disabled={busy || registerBlocked}
-                className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-              >
-                {busy ? "Creando…" : "Crear cuenta"}
-              </Button>
+              {registerStep === 1 ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="pwd">Contraseña</Label>
+                    <PasswordField
+                      id="pwd"
+                      required
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(v) => { setPassword(v); syncBuffer(pwdBuf, v); }}
+                      placeholder="Mín 8 · May + min + número"
+                    />
+                    <PasswordStrengthMeter password={password} />
+                  </div>
+                  {error && <p className="text-xs text-destructive">{error}</p>}
+                  <Button
+                    type="button"
+                    disabled={busy || !password || scorePassword(password).level === "low"}
+                    onClick={() => {
+                      const pwdErr = validatePassword(password);
+                      if (pwdErr) {
+                        setError(pwdErr);
+                        return;
+                      }
+                      if (scorePassword(password).level === "low") {
+                        setError("La contraseña es demasiado débil. Mejora la seguridad antes de continuar.");
+                        return;
+                      }
+                      setError(null);
+                      setRegisterStep(2);
+                    }}
+                    className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+                  >
+                    Continuar
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="pwd2">Repite la contraseña</Label>
+                    <PasswordField
+                      id="pwd2"
+                      required
+                      autoComplete="new-password"
+                      value={confirm}
+                      onChange={(v) => { setConfirm(v); syncBuffer(confirmBuf, v); }}
+                      placeholder="••••••••"
+                    />
+                    {confirm && confirm !== password && (
+                      <p className="text-[11px] text-destructive">Las contraseñas no coinciden.</p>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Al crear la cuenta el sistema generará un código único{" "}
+                    <span className="font-mono">XXX-XXX-XXX</span>. Será tu único identificador:
+                    guárdalo en un lugar seguro porque <b>no se puede recuperar</b>.
+                  </p>
+                  {error && <p className="text-xs text-destructive">{error}</p>}
+                  <Button
+                    type="submit"
+                    disabled={busy || !password || password !== confirm || scorePassword(password).level === "low"}
+                    className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+                  >
+                    {busy ? "Creando…" : "Crear cuenta"}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => { setRegisterStep(1); setError(null); setConfirm(""); confirmBuf.current.clear(); }}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    ← Volver a contraseña
+                  </button>
+                </>
+              )}
             </form>
           )}
 
@@ -356,6 +388,7 @@ function Login() {
               setError(null);
               setPassword("");
               setConfirm("");
+              setRegisterStep(1);
             }}
             className="mt-6 text-xs text-muted-foreground hover:text-foreground"
           >

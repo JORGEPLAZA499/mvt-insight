@@ -240,7 +240,7 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background items-start">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       <div className="hidden lg:flex sticky top-0 h-screen relative bg-hero p-12 flex-col items-center">
         <div className="absolute inset-0 grid-bg opacity-40" />
         <div className="relative flex-1 flex items-center justify-center w-full">
@@ -254,7 +254,7 @@ function Login() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center p-6 relative">
+      <div className="flex items-center justify-center p-6 relative min-h-screen">
         <div className="absolute top-4 right-4">
           <LanguageSelector />
         </div>

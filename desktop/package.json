@@ -25,7 +25,7 @@
     "vite": "^7.0.0"
   },
   "dependencies": {
-    "electron-updater": "^6.3.9",
+    "electron-updater": "^6.8.3",
     "i18next": "^23.15.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -50,7 +50,12 @@
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "artifactName": "MvtInsight-Setup-${version}.${ext}"
     },
@@ -64,14 +69,25 @@
     },
     "mac": {
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "artifactName": "MvtInsight-${version}-${arch}.${ext}",
       "category": "public.app-category.utilities"
     },
     "linux": {
       "target": [
-        { "target": "AppImage", "arch": ["x64"] }
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "artifactName": "MvtInsight-${version}.${ext}",
       "category": "Utility"

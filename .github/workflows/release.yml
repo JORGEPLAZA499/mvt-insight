@@ -37,40 +37,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build installer
+      - name: Build & publish installer to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run dist:${{ matrix.target }}
-
-      - name: Collect installers
-        shell: bash
-        run: |
-          mkdir -p dist-installers
-          find release -maxdepth 2 -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \) -exec cp {} dist-installers/ \;
-          ls -la dist-installers
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: installers-${{ matrix.target }}
-          path: desktop/dist-installers/*
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - name: List artifacts
-        run: ls -la artifacts
-
-      - name: Publish Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
-          name: ${{ github.ref_name == 'main' && 'Latest build' || github.ref_name }}
-          files: |
-            artifacts/*.exe
-            artifacts/*.dmg
-            artifacts/*.AppImage
-          fail_on_unmatched_files: true

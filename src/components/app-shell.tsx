@@ -91,7 +91,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       navigate({ to: "/analysis/$id", params: { id } });
     } catch (e: any) {
       upsertAnalysis({ ...base, status: "error", progress: 0, error: e?.message || "Error" });
-      setQuickError(e?.message || "No se pudo procesar.");
+      setQuickError(e?.message || t("shell.quick.genericError"));
+
     } finally {
       setQuickBusy(false);
       if (quickInputRef.current) quickInputRef.current.value = "";

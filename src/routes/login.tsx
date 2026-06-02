@@ -108,6 +108,10 @@ function Login() {
       setError(pwdErr);
       return;
     }
+    if (scorePassword(password).level === "low") {
+      setError("La contraseña es demasiado débil. Mejora la seguridad antes de continuar.");
+      return;
+    }
     if (password !== confirm) {
       setError("Las contraseñas no coinciden.");
       return;
@@ -124,6 +128,11 @@ function Login() {
       setBusy(false);
     }
   };
+
+  const registerBlocked =
+    !password ||
+    password !== confirm ||
+    scorePassword(password).level === "low";
 
   const copyCode = async () => {
     if (!issuedCode) return;

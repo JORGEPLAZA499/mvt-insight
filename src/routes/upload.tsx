@@ -156,9 +156,11 @@ function Upload() {
 /* -------------------------- Paso 1 -------------------------- */
 function StepDevice({
   value,
+  disabled = false,
   onSelect,
 }: {
   value: Device | null;
+  disabled?: boolean;
   onSelect: (d: Device) => void;
 }) {
   const { t } = useTranslation();
@@ -169,9 +171,32 @@ function StepDevice({
       </h1>
       <p className="text-sm text-muted-foreground mt-1">{t("upload.step1.subtitle")}</p>
 
+      {disabled && (
+        <div className="mt-5 rounded-xl border border-warning/40 bg-warning/10 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-semibold text-foreground">
+                {t("upload.step1.noCredits.title")}
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t("upload.step1.noCredits.body")}
+              </p>
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center mt-3 rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium hover:opacity-90 transition"
+              >
+                {t("upload.step1.noCredits.cta")}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 grid grid-cols-2 gap-3">
         <ChoiceCard
           active={value === "android"}
+          disabled={disabled}
           onClick={() => onSelect("android")}
           icon={<Smartphone className="h-7 w-7" />}
           title={t("upload.step1.android.title")}
@@ -179,6 +204,7 @@ function StepDevice({
         />
         <ChoiceCard
           active={value === "ios"}
+          disabled={disabled}
           onClick={() => onSelect("ios")}
           icon={<Apple className="h-7 w-7" />}
           title={t("upload.step1.ios.title")}
@@ -732,23 +758,33 @@ function ChoiceCard({
   icon,
   title,
   subtitle,
+  disabled = false,
 }: {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   title: string;
   subtitle?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`group rounded-xl border bg-card text-card-foreground p-6 text-left transition-all hover:border-primary/60 hover:bg-card/80 ${
-        active ? "border-primary shadow-glow" : "border-border"
+      disabled={disabled}
+      aria-disabled={disabled}
+      className={`group rounded-xl border bg-card text-card-foreground p-6 text-left transition-all ${
+        disabled
+          ? "opacity-50 cursor-not-allowed border-border"
+          : `hover:border-primary/60 hover:bg-card/80 ${
+              active ? "border-primary shadow-glow" : "border-border"
+            }`
       }`}
     >
       <div
         className={`h-12 w-12 rounded-lg grid place-items-center mb-3 transition-colors ${
-          active ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-muted text-foreground"
+          active && !disabled
+            ? "bg-gradient-primary text-primary-foreground shadow-glow"
+            : "bg-muted text-foreground"
         }`}
       >
         {icon}

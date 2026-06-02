@@ -407,7 +407,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <div className="text-xs font-mono font-medium tracking-wider truncate" title={userCode ?? ""}>{emailShort}</div>
                 <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <span className="h-1 w-1 rounded-full bg-success" />
-                  Cuenta anónima
+                  {t("shell.anonAccount")}
+
                 </div>
               </div>
             </div>

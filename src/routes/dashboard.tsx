@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { GaugeClock } from "@/components/gauge-clock";
 import { MiniGauge } from "@/components/mini-gauge";
-import { PurchaseCard } from "@/components/purchase-card";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Spyware Forensic Analyzer" }] }),
@@ -109,8 +108,6 @@ function Dashboard() {
           <HudPill icon={CheckCircle2} label={t("dashboard.hud.completed")} value={stats.completed} color="var(--success)" />
           <HudPill icon={AlertCircle} label={t("dashboard.hud.highRisk")} value={stats.highRisk} color="var(--destructive)" />
         </div>
-
-        <PurchaseCard />
 
         {/* Recent analyses */}
         <div className="mt-10">

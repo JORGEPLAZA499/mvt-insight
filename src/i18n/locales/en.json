@@ -17,6 +17,10 @@
     "brand": "Spyware Forensic",
     "subBrand": "Analyzer",
     "sectionPrimary": "Main",
+    "sectionAdmin": "Administration",
+    "adminHint": "Control panel",
+    "anonAccount": "Anonymous account",
+    "creditsBadge": "{{count}} credits",
     "nav": {
       "dashboard": "Dashboard",
       "newAnalysis": "New analysis",
@@ -25,9 +29,57 @@
       "dashboardHint": "Overview",
       "uploadHint": "Upload artifacts",
       "reportsHint": "Results",
-      "historyHint": "Previous analyses"
+      "historyHint": "Previous analyses",
+      "admin": "Administration"
+    },
+    "admin": {
+      "clients": "Clients",
+      "tokens": "Tokens",
+      "health": "System health"
+    },
+    "quick": {
+      "title": "Quick access",
+      "processing": "Processing…",
+      "upload": "Upload ZIP/JSON",
+      "uploadHint": "Upload MVT files directly without using the wizard.",
+      "buyCredits": "Buy credits",
+      "notSupported": "Unsupported: {{name}}",
+      "tooBig": "{{name}} exceeds 500 MB",
+      "filesLabel": "{{count}} MVT files",
+      "genericError": "Could not process."
+    },
+    "redeem": {
+      "title": "Buy credits",
+      "desc": "Enter the credit token provided by the administrator.",
+      "label": "Token code",
+      "close": "Close",
+      "submit": "Redeem",
+      "success": "+{{added}} credits. Balance: {{balance}}",
+      "error": "Could not redeem the token"
     }
   },
+  "purchase": {
+    "close": "Close",
+    "badge": "Premium forensic service",
+    "title": "Mobile Forensic Analysis",
+    "pricePerAnalysis": "{{credits}} credits",
+    "perAnalysis": "/analysis",
+    "selectPackage": "Select your package",
+    "option": "{{credits}} credits — {{analyses}} analyses — {{credits}} €",
+    "description": "Technical verification of spyware, malware and suspicious activity indicators on mobile devices using artifacts, IOC/STIX2 indicators and MVT-compatible forensic tools.",
+    "features": {
+      "evidence": "Evidence review",
+      "risk": "Risk classification",
+      "visual": "Visual results",
+      "report": "PDF report"
+    },
+    "consent": "Analysis performed with the device owner's consent.",
+    "payCard": "Pay with Card",
+    "payCrypto": "Pay with Crypto",
+    "cardPayments": "Card Payments",
+    "cryptoPayments": "Crypto Payments"
+  },
+
   "analysis": {
     "tabs": {
       "user": "For you",

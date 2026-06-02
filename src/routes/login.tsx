@@ -143,6 +143,11 @@ function Login() {
       const { code: newCode, email } = await register({ data: { password } });
       // Inicia sesión automáticamente para que el usuario quede autenticado
       await supabase.auth.signInWithPassword({ email, password });
+      // Wipe de buffers tras enviar
+      pwdBuf.current.clear();
+      confirmBuf.current.clear();
+      setPassword("");
+      setConfirm("");
       setIssuedCode(newCode);
     } catch (err: any) {
       setError(err?.message || "No se pudo crear la cuenta.");

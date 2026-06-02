@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AppShell } from "@/components/app-shell";
 import { getAnalyses, Analysis, riskColor, riskLabel } from "@/lib/mock-store";
 import { Button } from "@/components/ui/button";
 import {
-  ShieldAlert,
   ShieldCheck,
   UploadCloud,
   Activity,
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function Dashboard() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<Analysis[]>([]);
   useEffect(() => {
     setItems(getAnalyses());
@@ -39,7 +40,6 @@ function Dashboard() {
     ).length;
     const matches = items.reduce((acc, i) => acc + (i.result?.totalDetections || 0), 0);
 
-    // Aggregate threat score 0..100
     const weights: Record<string, number> = { low: 10, medium: 40, high: 75, critical: 95 };
     const completedItems = items.filter((i) => i.result?.risk);
     const threatScore =
@@ -61,66 +61,65 @@ function Dashboard() {
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8 animate-fade-in">
           <div>
             <div className="text-xs uppercase tracking-[0.25em] text-primary/80 mb-2">
-              Forensic Command Center
+              {t("dashboard.eyebrow")}
             </div>
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Dashboard</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Resumen general de tus análisis forenses.
-            </p>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+              {t("dashboard.title")}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">{t("dashboard.subtitle")}</p>
           </div>
           <Button asChild className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
             <Link to="/upload">
-              <UploadCloud className="h-4 w-4 mr-2" /> Nuevo análisis
+              <UploadCloud className="h-4 w-4 mr-2" /> {t("dashboard.ctaNew")}
             </Link>
           </Button>
         </div>
 
-        {/* Hero: gauge + mini gauges (4 columnas iguales) */}
+        {/* Hero gauges */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in auto-rows-fr">
           <GaugeClock
             value={stats.threatScore}
-            label="Nivel de amenaza global"
-            sublabel={`${stats.completed} análisis evaluados`}
+            label={t("dashboard.gauges.threat")}
+            sublabel={t("dashboard.gauges.threatSub", { count: stats.completed })}
             tone={stats.tone}
           />
           <MiniGauge
             value={stats.total}
             max={Math.max(stats.total, 10)}
-            label="Análisis totales"
+            label={t("dashboard.gauges.total")}
             icon={Activity}
             tone="primary"
           />
           <MiniGauge
             value={stats.completed}
             max={Math.max(stats.total, 1)}
-            label="Completados"
+            label={t("dashboard.gauges.completed")}
             icon={ShieldCheck}
             tone="success"
           />
           <MiniGauge
             value={stats.matches}
             max={Math.max(stats.matches, 20)}
-            label="Coincidencias IOC"
+            label={t("dashboard.gauges.matches")}
             icon={FileSearch}
             tone="warning"
           />
         </div>
 
-
         {/* HUD strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 animate-fade-in">
-          <HudPill icon={Clock} label="Pendientes" value={stats.pending} color="var(--muted-foreground)" />
-          <HudPill icon={Loader2} label="Procesando" value={stats.processing} color="var(--primary)" spin />
-          <HudPill icon={CheckCircle2} label="Completados" value={stats.completed} color="var(--success)" />
-          <HudPill icon={AlertCircle} label="Riesgo alto" value={stats.highRisk} color="var(--destructive)" />
+          <HudPill icon={Clock} label={t("dashboard.hud.pending")} value={stats.pending} color="var(--muted-foreground)" />
+          <HudPill icon={Loader2} label={t("dashboard.hud.processing")} value={stats.processing} color="var(--primary)" spin />
+          <HudPill icon={CheckCircle2} label={t("dashboard.hud.completed")} value={stats.completed} color="var(--success)" />
+          <HudPill icon={AlertCircle} label={t("dashboard.hud.highRisk")} value={stats.highRisk} color="var(--destructive)" />
         </div>
 
         {/* Recent analyses */}
         <div className="mt-10">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold tracking-tight">Análisis recientes</h2>
+            <h2 className="text-lg font-semibold tracking-tight">{t("dashboard.recent.title")}</h2>
             <Link to="/history" className="text-xs text-primary hover:underline">
-              Ver historial completo →
+              {t("dashboard.recent.viewAll")}
             </Link>
           </div>
           {items.length === 0 ? (
@@ -130,11 +129,11 @@ function Dashboard() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium">Archivo</th>
-                    <th className="text-left px-4 py-3 font-medium">Plataforma</th>
-                    <th className="text-left px-4 py-3 font-medium">Estado</th>
-                    <th className="text-left px-4 py-3 font-medium">Riesgo</th>
-                    <th className="text-left px-4 py-3 font-medium">Detecciones</th>
+                    <th className="text-left px-4 py-3 font-medium">{t("dashboard.table.file")}</th>
+                    <th className="text-left px-4 py-3 font-medium">{t("dashboard.table.platform")}</th>
+                    <th className="text-left px-4 py-3 font-medium">{t("dashboard.table.status")}</th>
+                    <th className="text-left px-4 py-3 font-medium">{t("dashboard.table.risk")}</th>
+                    <th className="text-left px-4 py-3 font-medium">{t("dashboard.table.detections")}</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -185,7 +184,7 @@ function Dashboard() {
                         <td className="px-4 py-3 text-right">
                           <Button asChild variant="ghost" size="sm">
                             <Link to="/analysis/$id" params={{ id: a.id }}>
-                              Ver
+                              {t("dashboard.table.view")}
                             </Link>
                           </Button>
                         </td>
@@ -242,11 +241,12 @@ function HudPill({
 }
 
 function StatusBadge({ status }: { status: Analysis["status"] }) {
+  const { t } = useTranslation();
   const map = {
-    pending: { c: "bg-muted text-muted-foreground", l: "Pendiente" },
-    processing: { c: "bg-primary/15 text-primary", l: "Procesando" },
-    completed: { c: "bg-success/15 text-success", l: "Completado" },
-    error: { c: "bg-destructive/15 text-destructive", l: "Error" },
+    pending: { c: "bg-muted text-muted-foreground", l: t("dashboard.status.pending") },
+    processing: { c: "bg-primary/15 text-primary", l: t("dashboard.status.processing") },
+    completed: { c: "bg-success/15 text-success", l: t("dashboard.status.completed") },
+    error: { c: "bg-destructive/15 text-destructive", l: t("dashboard.status.error") },
   }[status];
   return (
     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${map.c}`}>
@@ -256,20 +256,19 @@ function StatusBadge({ status }: { status: Analysis["status"] }) {
 }
 
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center">
       <div className="mx-auto h-12 w-12 rounded-lg bg-secondary grid place-items-center mb-4">
         <UploadCloud className="h-6 w-6 text-primary" />
       </div>
-      <h3 className="font-semibold">Sin análisis todavía</h3>
-      <p className="text-sm text-muted-foreground mt-1">
-        Sube tu primer artefacto MVT para empezar.
-      </p>
+      <h3 className="font-semibold">{t("dashboard.empty.title")}</h3>
+      <p className="text-sm text-muted-foreground mt-1">{t("dashboard.empty.desc")}</p>
       <Button
         asChild
         className="mt-6 bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
       >
-        <Link to="/upload">Subir archivos</Link>
+        <Link to="/upload">{t("dashboard.empty.cta")}</Link>
       </Button>
     </div>
   );

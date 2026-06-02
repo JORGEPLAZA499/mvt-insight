@@ -90,12 +90,39 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   };
 
+  const isAdmin = userCode === "Admin";
   const nav = [
     { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },
     { to: "/upload", label: t("shell.nav.newAnalysis"), icon: UploadCloud, hint: t("shell.nav.uploadHint"), highlight: true },
     { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
     { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
+    ...(isAdmin
+      ? [{ to: "/admin", label: "Administración", icon: ShieldCheck, hint: "Panel de control" }]
+      : []),
   ];
+
+  // Redeem credit token dialog
+  const redeemFn = useServerFn(redeemCreditToken);
+  const [redeemOpen, setRedeemOpen] = useState(false);
+  const [redeemCode, setRedeemCode] = useState("");
+  const [redeemBusy, setRedeemBusy] = useState(false);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
+  const [redeemSuccess, setRedeemSuccess] = useState<string | null>(null);
+
+  const onRedeem = async () => {
+    setRedeemError(null);
+    setRedeemSuccess(null);
+    setRedeemBusy(true);
+    try {
+      const r = await redeemFn({ data: { code: redeemCode.trim() } });
+      setRedeemSuccess(`+${r.credits_added} créditos. Saldo: ${r.new_balance}`);
+      setRedeemCode("");
+    } catch (e: any) {
+      setRedeemError(e?.message ?? "No se pudo canjear el token");
+    } finally {
+      setRedeemBusy(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;

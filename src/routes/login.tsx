@@ -38,7 +38,7 @@ function Login() {
         <div className="absolute inset-0 grid-bg opacity-40" />
         <Link to="/" className="relative flex items-center gap-2">
           <img src={logoAsset.url} alt="" className="h-[210px] w-[210px] object-contain" />
-          <span className="font-semibold">Spyware Forensic Analyzer</span>
+          
         </Link>
         <div className="relative max-w-md">
           <h2 className="text-3xl font-semibold tracking-tight">{t("login.sideTitle")}</h2>

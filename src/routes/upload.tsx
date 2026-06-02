@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -16,18 +17,11 @@ import {
   Download,
   CheckCircle2,
   WifiOff,
-  Usb,
-  Lock,
-
-
-
 } from "lucide-react";
-
 
 import { upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 import { UsbConnect } from "@/components/usb-connect";
-
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),
@@ -35,7 +29,6 @@ export const Route = createFileRoute("/upload")({
 });
 
 const MAX_SIZE = 500 * 1024 * 1024;
-const SCRIPT_BASE_URL = "https://mvt-insight.lovable.app";
 const RELEASES_BASE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest/download";
 const RELEASES_PAGE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest";
 const TOTAL_STEPS = 4;
@@ -51,7 +44,14 @@ function detectOS(): OS {
   return "linux";
 }
 
+// Shared Trans components for inline markup in i18n bodies.
+const transComponents = {
+  b: <strong className="text-foreground" />,
+  code: <code className="font-mono text-foreground" />,
+};
+
 function Upload() {
+  const { t } = useTranslation();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [device, setDevice] = useState<Device | null>(null);
   const [os, setOs] = useState<OS>("mac");
@@ -73,10 +73,10 @@ function Upload() {
               disabled={step === 1}
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground disabled:opacity-0 disabled:cursor-default transition-opacity"
             >
-              <ArrowLeft className="h-4 w-4" /> Atrás
+              <ArrowLeft className="h-4 w-4" /> {t("upload.back")}
             </button>
             <span className="text-xs text-muted-foreground">
-              Paso {step} de {TOTAL_STEPS}
+              {t("upload.stepCounter", { step, total: TOTAL_STEPS })}
             </span>
           </div>
           <Progress value={(step / TOTAL_STEPS) * 100} className="h-1" />
@@ -117,29 +117,28 @@ function StepDevice({
   value: Device | null;
   onSelect: (d: Device) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <section>
       <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-        ¿Qué dispositivo quieres analizar?
+        {t("upload.step1.title")}
       </h1>
-      <p className="text-sm text-muted-foreground mt-1">
-        Elige el sistema operativo del móvil.
-      </p>
+      <p className="text-sm text-muted-foreground mt-1">{t("upload.step1.subtitle")}</p>
 
       <div className="mt-6 grid grid-cols-2 gap-3">
         <ChoiceCard
           active={value === "android"}
           onClick={() => onSelect("android")}
           icon={<Smartphone className="h-7 w-7" />}
-          title="Android"
-          subtitle="Samsung, Xiaomi, Pixel…"
+          title={t("upload.step1.android.title")}
+          subtitle={t("upload.step1.android.sub")}
         />
         <ChoiceCard
           active={value === "ios"}
           onClick={() => onSelect("ios")}
           icon={<Apple className="h-7 w-7" />}
-          title="iPhone"
-          subtitle="iOS 14 o superior"
+          title={t("upload.step1.ios.title")}
+          subtitle={t("upload.step1.ios.sub")}
         />
       </div>
     </section>
@@ -148,19 +147,18 @@ function StepDevice({
 
 /* -------------------------- Paso 2 -------------------------- */
 function StepOS({ value, onSelect }: { value: OS; onSelect: (o: OS) => void }) {
+  const { t } = useTranslation();
   const options: { id: OS; title: string; icon: React.ReactNode }[] = [
-    { id: "mac", title: "Mac", icon: <Apple className="h-7 w-7" /> },
-    { id: "windows", title: "Windows", icon: <Monitor className="h-7 w-7" /> },
-    { id: "linux", title: "Linux", icon: <Monitor className="h-7 w-7" /> },
+    { id: "mac", title: t("upload.step2.mac"), icon: <Apple className="h-7 w-7" /> },
+    { id: "windows", title: t("upload.step2.windows"), icon: <Monitor className="h-7 w-7" /> },
+    { id: "linux", title: t("upload.step2.linux"), icon: <Monitor className="h-7 w-7" /> },
   ];
   return (
     <section>
       <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-        ¿Desde qué computador lo harás?
+        {t("upload.step2.title")}
       </h1>
-      <p className="text-sm text-muted-foreground mt-1">
-        Necesitas un computador con cable USB para conectar el móvil.
-      </p>
+      <p className="text-sm text-muted-foreground mt-1">{t("upload.step2.subtitle")}</p>
 
       <div className="mt-6 grid grid-cols-3 gap-3">
         {options.map((o) => (
@@ -189,6 +187,7 @@ function StepRun({
   onDone: () => void;
   onChangeOS: () => void;
 }) {
+  const { t } = useTranslation();
   const [subStep, setSubStep] = useState<number>(1);
 
   const blocked = device === "ios" && os === "windows";
@@ -197,31 +196,22 @@ function StepRun({
     return (
       <section>
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-          iPhone necesita un Mac
+          {t("upload.step3.blocked.title")}
         </h1>
-        <p className="text-sm text-muted-foreground mt-2">
-          Para analizar un iPhone necesitas hacer el backup desde un Mac (o
-          desde Windows con iTunes y procesarlo luego en Mac/Linux). Cambia el
-          computador para continuar.
-        </p>
+        <p className="text-sm text-muted-foreground mt-2">{t("upload.step3.blocked.body")}</p>
         <Button className="mt-6" onClick={onChangeOS}>
-          ← Elegir otro computador
+          {t("upload.step3.blocked.cta")}
         </Button>
       </section>
     );
   }
 
-
-
   const preambleStep = {
-    title: "Prepara el cable y el móvil",
+    title: t("upload.step3.substeps.preamble.title"),
     content: (
       <>
         <p className="mt-2 text-sm text-muted-foreground">
-          Ten a mano un <strong className="text-foreground">cable USB</strong> (mejor el original,
-          que transmita datos, no solo carga). Mantén el móvil{" "}
-          <strong className="text-foreground">desbloqueado y con la pantalla encendida</strong> durante
-          todo el proceso.
+          <Trans i18nKey="upload.step3.substeps.preamble.body" components={transComponents} />
         </p>
         <div className="mt-4 rounded-xl border border-border bg-card/40 p-4">
           <UsbConnect />
@@ -231,36 +221,42 @@ function StepRun({
   };
 
   const protocolStep = {
-    title: "Protocolo forense recomendado (máxima privacidad)",
+    title: t("upload.step3.substeps.protocol.title"),
     content: (
       <>
         <p className="text-sm text-muted-foreground">
-          Si sospechas que el móvil está realmente comprometido, sigue este protocolo para evitar
-          que el spyware "se entere" de que lo estás analizando o filtre datos durante el proceso:
+          {t("upload.step3.substeps.protocol.intro")}
         </p>
         <ol className="mt-3 space-y-3 text-sm">
           <li className="flex gap-3">
-            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">A</div>
+            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">
+              A
+            </div>
             <div>
               <div className="flex items-center gap-1.5 font-medium text-foreground">
-                <WifiOff className="h-3.5 w-3.5" /> PC sin Internet
+                <WifiOff className="h-3.5 w-3.5" /> {t("upload.step3.substeps.protocol.a.title")}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Usa un ordenador desconectado (cable de red desenchufado y Wi-Fi apagado, o en modo avión).
-                Antes, ejecuta la app de escritorio <strong className="text-foreground">una vez con Internet</strong> para
-                que descargue las herramientas; luego ya puedes desconectar.
+                <Trans
+                  i18nKey="upload.step3.substeps.protocol.a.body"
+                  components={transComponents}
+                />
               </p>
             </div>
           </li>
           <li className="flex gap-3">
-            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">B</div>
+            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">
+              B
+            </div>
             <div>
               <div className="flex items-center gap-1.5 font-medium text-foreground">
-                <Smartphone className="h-3.5 w-3.5" /> Móvil en modo avión
+                <Smartphone className="h-3.5 w-3.5" /> {t("upload.step3.substeps.protocol.b.title")}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Activa el modo avión en el móvil para cortarle Internet. Mantén el USB activo
-                (en Android, la depuración USB sigue funcionando aunque el móvil esté sin red).
+                <Trans
+                  i18nKey="upload.step3.substeps.protocol.b.body"
+                  components={transComponents}
+                />
               </p>
             </div>
           </li>
@@ -269,53 +265,64 @@ function StepRun({
     ),
   };
 
+  const brandRoutes = t("upload.step3.substeps.dev.routes", {
+    returnObjects: true,
+  }) as string[];
+
+  const instructions = t("upload.step3.substeps.download.instructions", {
+    returnObjects: true,
+  }) as string[];
+
+  const osLabel = os === "windows" ? "Windows" : os === "mac" ? "macOS" : "Linux";
+
   const subSteps: { title: string; content: React.ReactNode }[] =
     device === "android"
       ? [
           preambleStep,
           {
-            title: "Activa el modo desarrollador en el móvil",
+            title: t("upload.step3.substeps.dev.title"),
             content: (
               <>
                 <p>
-                  Abre <strong className="text-foreground">Ajustes</strong> →{" "}
-                  <strong className="text-foreground">Información del teléfono</strong> y toca{" "}
-                  <strong className="text-foreground">7 veces</strong> sobre "Número de compilación".
-                  Verás un mensaje: "Ya eres desarrollador".
+                  <Trans i18nKey="upload.step3.substeps.dev.body" components={transComponents} />
                 </p>
                 <details className="mt-3">
                   <summary className="cursor-pointer text-primary hover:underline text-sm">
-                    Ruta exacta por marca
+                    {t("upload.step3.substeps.dev.routesSummary")}
                   </summary>
                   <ul className="mt-2 space-y-1 pl-4 list-disc text-sm">
-                    <li><strong className="text-foreground">Samsung:</strong> Ajustes → Acerca del teléfono → Información del software → tocar "Número de compilación" 7 veces.</li>
-                    <li><strong className="text-foreground">Xiaomi/Redmi:</strong> Ajustes → Sobre el teléfono → tocar "Versión MIUI" 7 veces.</li>
-                    <li><strong className="text-foreground">Pixel/Android puro:</strong> Ajustes → Acerca del teléfono → tocar "Número de compilación" 7 veces.</li>
-                    <li><strong className="text-foreground">Huawei/Honor:</strong> Ajustes → Sistema → Acerca del teléfono → tocar "Número de compilación" 7 veces.</li>
+                    {brandRoutes.map((html, i) => (
+                      <li key={i}>
+                        <Trans
+                          i18nKey={`upload.step3.substeps.dev.routes.${i}`}
+                          components={transComponents}
+                        >
+                          {html}
+                        </Trans>
+                      </li>
+                    ))}
                   </ul>
                 </details>
               </>
             ),
           },
           {
-            title: "Activa la Depuración USB",
+            title: t("upload.step3.substeps.usb.title"),
             content: (
               <p>
-                Vuelve a <strong className="text-foreground">Ajustes</strong> →{" "}
-                <strong className="text-foreground">Sistema</strong> →{" "}
-                <strong className="text-foreground">Opciones de desarrollador</strong> y activa{" "}
-                <strong className="text-foreground">"Depuración USB"</strong>. Confirma cuando te lo pida.
+                <Trans i18nKey="upload.step3.substeps.usb.body" components={transComponents} />
               </p>
             ),
           },
           {
-            title: "Conecta ahora el teléfono al computador mediante el cable USB",
+            title: t("upload.step3.substeps.connect.title"),
             content: (
               <>
                 <p>
-                  Usa el <strong className="text-foreground">cable original</strong> si puedes (algunos cables solo cargan, no transmiten datos).
-                  En el móvil aparecerá un aviso: <strong className="text-foreground">"¿Permitir depuración USB?"</strong>.
-                  Marca <strong className="text-foreground">"Permitir siempre desde este ordenador"</strong> y pulsa Aceptar.
+                  <Trans
+                    i18nKey="upload.step3.substeps.connect.body"
+                    components={transComponents}
+                  />
                 </p>
                 <div className="mt-4 rounded-xl border border-border bg-card/40 p-4">
                   <UsbConnect connected />
@@ -327,45 +334,49 @@ function StepRun({
       : [
           preambleStep,
           {
-            title: "Confía en el ordenador desde el iPhone",
+            title: t("upload.step3.substeps.iosTrust.title"),
             content: (
               <p>
-                Conecta el iPhone por USB, <strong className="text-foreground">desbloquéalo</strong> y, cuando aparezca el aviso{" "}
-                <strong className="text-foreground">"¿Confiar en este ordenador?"</strong>, pulsa{" "}
-                <strong className="text-foreground">Confiar</strong> e introduce el código del iPhone.
+                <Trans
+                  i18nKey="upload.step3.substeps.iosTrust.body"
+                  components={transComponents}
+                />
               </p>
             ),
           },
           {
-            title: "Crea un backup cifrado del iPhone",
+            title: t("upload.step3.substeps.iosBackup.title"),
             content: (
               <p>
-                Abre <strong className="text-foreground">Finder</strong> (macOS Catalina o superior) o{" "}
-                <strong className="text-foreground">iTunes</strong>, selecciona el iPhone, marca{" "}
-                <strong className="text-foreground">"Cifrar copia de seguridad local"</strong> y define una contraseña.
-                <span className="block mt-1 text-warning">⚠ Apunta la contraseña: la necesitarás más adelante.</span>
+                <Trans
+                  i18nKey="upload.step3.substeps.iosBackup.body"
+                  components={transComponents}
+                />
+                <span className="block mt-1 text-warning">
+                  {t("upload.step3.substeps.iosBackup.warn")}
+                </span>
               </p>
             ),
           },
           {
-            title: "Mantén el iPhone conectado y desbloqueado",
+            title: t("upload.step3.substeps.iosKeep.title"),
             content: (
               <p>
-                Durante todo el análisis el iPhone debe estar <strong className="text-foreground">conectado por USB</strong> y{" "}
-                <strong className="text-foreground">desbloqueado</strong>. Si se bloquea, vuelve a desbloquearlo.
+                <Trans
+                  i18nKey="upload.step3.substeps.iosKeep.body"
+                  components={transComponents}
+                />
               </p>
             ),
           },
         ];
 
   subSteps.push({
-    title: "Descarga la app de escritorio",
+    title: t("upload.step3.substeps.download.title"),
     content: (
       <>
         <p className="mb-4">
-          Descarga la app <strong className="text-foreground">MVT Insight Desktop</strong> para tu
-          sistema. La app hace todo el análisis con un solo botón: descarga las herramientas,
-          conecta con el móvil y guarda el ZIP listo para subir aquí. <strong className="text-foreground">Sin ventana negra ni comandos.</strong>
+          <Trans i18nKey="upload.step3.substeps.download.intro" components={transComponents} />
         </p>
 
         <div className="rounded-xl border border-primary/40 bg-gradient-to-br from-primary/10 to-transparent p-5 shadow-glow">
@@ -374,9 +385,9 @@ function StepRun({
               <Download className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <div className="font-semibold">MVT Insight Desktop</div>
+              <div className="font-semibold">{t("upload.step3.substeps.download.appName")}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                Versión 1.0 · Análisis con interfaz visual y barras de progreso
+                {t("upload.step3.substeps.download.version")}
               </p>
             </div>
           </div>
@@ -418,44 +429,53 @@ function StepRun({
           </div>
 
           <p className="mt-3 text-[11px] text-muted-foreground">
-            Recomendado para ti: <strong className="text-foreground">
-              {os === "windows" ? "Windows" : os === "mac" ? "macOS" : "Linux"}
-            </strong> (detectado automáticamente) · {" "}
-            <a href={RELEASES_PAGE_URL} target="_blank" rel="noreferrer" className="underline hover:text-foreground">
-              Ver todas las versiones en GitHub
+            <Trans
+              i18nKey="upload.step3.substeps.download.recommended"
+              values={{ os: osLabel }}
+              components={transComponents}
+            />{" "}
+            <a
+              href={RELEASES_PAGE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-foreground"
+            >
+              {t("upload.step3.substeps.download.seeAll")}
             </a>
           </p>
         </div>
 
         <ol className="mt-5 space-y-2 text-sm text-muted-foreground list-decimal pl-5">
-          <li>
-            Descomprime el archivo descargado y haz <strong className="text-foreground">doble clic</strong> en{" "}
-            <code className="font-mono text-foreground">MvtInsight</code>.
-          </li>
-          <li>
-            Pulsa <strong className="text-foreground">"Iniciar análisis"</strong> dentro de la app.
-            Verás barras de progreso para cada fase (descarga, conexión, recolección).
-          </li>
-          <li>
-            Al terminar, la app te dirá dónde está el ZIP y te traerá de vuelta aquí para subirlo.
-          </li>
+          {instructions.map((html, i) => (
+            <li key={i}>
+              <Trans
+                i18nKey={`upload.step3.substeps.download.instructions.${i}`}
+                components={transComponents}
+              >
+                {html}
+              </Trans>
+            </li>
+          ))}
         </ol>
 
         <details className="mt-4 text-xs">
           <summary className="cursor-pointer text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5" />
-            ¿Sale un aviso de "editor desconocido" al abrirla?
+            {t("upload.step3.substeps.download.unsignedSummary")}
           </summary>
           <div className="mt-2 p-3 rounded-md bg-card border border-border text-muted-foreground space-y-1.5">
+            <p>{t("upload.step3.substeps.download.unsigned.normal")}</p>
             <p>
-              Es normal: la app aún no tiene firma comercial (cuesta varios cientos al año).
-              No es un virus, su código es abierto.
+              <Trans
+                i18nKey="upload.step3.substeps.download.unsigned.windows"
+                components={transComponents}
+              />
             </p>
             <p>
-              <strong className="text-foreground">Windows:</strong> pulsa "Más información" → "Ejecutar de todos modos".
-            </p>
-            <p>
-              <strong className="text-foreground">macOS:</strong> clic derecho sobre la app → "Abrir" → confirma.
+              <Trans
+                i18nKey="upload.step3.substeps.download.unsigned.mac"
+                components={transComponents}
+              />
             </p>
           </div>
         </details>
@@ -466,19 +486,13 @@ function StepRun({
   subSteps.push(protocolStep);
 
   subSteps.push({
-    title: "Sube el ZIP generado por la app",
+    title: t("upload.step3.substeps.upload.title"),
     content: (
       <p>
-        Cuando la app termine, te mostrará un botón{" "}
-        <strong className="text-foreground">"Subir al informe"</strong> y la ruta del archivo{" "}
-        <code className="font-mono text-foreground">mvt-resultados-AAAAMMDD.zip</code>{" "}
-        (normalmente en <strong className="text-foreground">Descargas</strong>).
-        Pulsa el botón de abajo para subirlo y ver el informe.
+        <Trans i18nKey="upload.step3.substeps.upload.body" components={transComponents} />
       </p>
     ),
   });
-
-
 
   const total = subSteps.length;
   const current = Math.min(subStep, total);
@@ -488,22 +502,15 @@ function StepRun({
   return (
     <section>
       <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-        Sigue los pasos en orden
+        {t("upload.step3.header.title")}
       </h1>
-      <p className="text-sm text-muted-foreground mt-1">
-        Un paso cada vez. No te saltes ninguno o el análisis no funcionará.
-      </p>
-
+      <p className="text-sm text-muted-foreground mt-1">{t("upload.step3.header.subtitle")}</p>
 
       <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground">
-
-        <span>
-          Paso {current} de {total}
-        </span>
+        <span>{t("upload.step3.progress", { current, total })}</span>
         <span className="truncate ml-3">{active.title}</span>
       </div>
       <Progress value={(current / total) * 100} className="h-1 mt-2" />
-
 
       <div className="mt-6">
         <NumberedStep n={current} title={active.title}>
@@ -518,18 +525,18 @@ function StepRun({
           disabled={current === 1}
           className="disabled:opacity-0"
         >
-          <ArrowLeft className="h-4 w-4 mr-1.5" /> Anterior
+          <ArrowLeft className="h-4 w-4 mr-1.5" /> {t("upload.step3.prev")}
         </Button>
         {isLast ? (
           <Button onClick={onDone} className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
-            <CheckCircle2 className="h-4 w-4 mr-1.5" /> Ya tengo el ZIP
+            <CheckCircle2 className="h-4 w-4 mr-1.5" /> {t("upload.step3.done")}
           </Button>
         ) : (
           <Button
             onClick={() => setSubStep((s) => Math.min(total, s + 1))}
             className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
           >
-            Hecho, siguiente →
+            {t("upload.step3.next")}
           </Button>
         )}
       </div>
@@ -561,9 +568,9 @@ function NumberedStep({
   );
 }
 
-
 /* -------------------------- Paso 4 -------------------------- */
 function StepUpload() {
+  const { t } = useTranslation();
   const [files, setFiles] = useState<File[]>([]);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -577,11 +584,11 @@ function StepUpload() {
     for (const f of incoming) {
       const lower = f.name.toLowerCase();
       if (!lower.endsWith(".json") && !lower.endsWith(".zip")) {
-        setError(`Archivo no soportado: ${f.name}. Solo .json o .zip generados por MVT.`);
+        setError(t("upload.step4.errors.unsupported", { name: f.name }));
         continue;
       }
       if (f.size > MAX_SIZE) {
-        setError(`El archivo ${f.name} supera el límite de 500 MB.`);
+        setError(t("upload.step4.errors.tooBig", { name: f.name }));
         continue;
       }
       ok.push(f);
@@ -599,7 +606,8 @@ function StepUpload() {
     setBusy(true);
     setError(null);
     const id = crypto.randomUUID();
-    const sourceName = files.length === 1 ? files[0].name : `${files.length} archivos MVT`;
+    const sourceName =
+      files.length === 1 ? files[0].name : t("upload.step4.filesLabel", { count: files.length });
     const totalSize = files.reduce((s, f) => s + f.size, 0);
 
     const base: Analysis = {
@@ -618,9 +626,14 @@ function StepUpload() {
       upsertAnalysis(done);
       navigate({ to: "/analysis/$id", params: { id } });
     } catch (e: any) {
-      const errored: Analysis = { ...base, status: "error", progress: 0, error: e?.message || "Error al procesar" };
+      const errored: Analysis = {
+        ...base,
+        status: "error",
+        progress: 0,
+        error: e?.message || t("upload.step4.errors.generic"),
+      };
       upsertAnalysis(errored);
-      setError(e?.message || "No se pudieron procesar los archivos.");
+      setError(e?.message || t("upload.step4.errors.generic"));
       setBusy(false);
     }
   };
@@ -628,10 +641,10 @@ function StepUpload() {
   return (
     <section>
       <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-        Sube el ZIP de resultados
+        {t("upload.step4.title")}
       </h1>
       <p className="text-sm text-muted-foreground mt-1">
-        Arrastra el <code className="font-mono">.zip</code> que generó el script (o los <code className="font-mono">.json</code> sueltos).
+        <Trans i18nKey="upload.step4.subtitle" components={transComponents} />
       </p>
 
       <div
@@ -643,8 +656,8 @@ function StepUpload() {
         <div className="mx-auto h-12 w-12 rounded-lg bg-gradient-primary grid place-items-center shadow-glow mb-3">
           <UploadCloud className="h-6 w-6 text-primary-foreground" />
         </div>
-        <p className="text-sm font-medium">Arrastra aquí o haz clic</p>
-        <p className="text-xs text-muted-foreground mt-1">.json o .zip · máx. 500 MB</p>
+        <p className="text-sm font-medium">{t("upload.step4.dropLine1")}</p>
+        <p className="text-xs text-muted-foreground mt-1">{t("upload.step4.dropLine2")}</p>
         <input
           ref={inputRef}
           type="file"
@@ -683,20 +696,20 @@ function StepUpload() {
       <label className="mt-6 flex gap-3 items-start rounded-lg border border-warning/40 bg-warning/5 p-3 cursor-pointer">
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
         <span className="text-sm text-muted-foreground">
-          Soy propietario del dispositivo o tengo <strong className="text-foreground">consentimiento explícito</strong>. Los archivos se procesan localmente en mi navegador.
+          <Trans i18nKey="upload.step4.consent" components={transComponents} />
         </span>
       </label>
 
       <div className="mt-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <ShieldCheck className="h-4 w-4 text-success" /> 100% local
+          <ShieldCheck className="h-4 w-4 text-success" /> {t("upload.step4.local")}
         </div>
         <Button
           onClick={start}
           disabled={!files.length || !consent || busy}
           className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
         >
-          {busy ? "Procesando…" : "Analizar"}
+          {busy ? t("upload.step4.processing") : t("upload.step4.analyze")}
         </Button>
       </div>
     </section>

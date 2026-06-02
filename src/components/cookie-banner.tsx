@@ -108,7 +108,7 @@ export function CookieBanner() {
     setTimeout(() => {
       setOpen(false);
       setCustomize(false);
-    }, 280);
+    }, 800);
   };
 
   const acceptAll = () => {
@@ -132,7 +132,7 @@ export function CookieBanner() {
       aria-modal="false"
       aria-labelledby="cookie-banner-title"
       aria-describedby="cookie-banner-desc"
-      className={`fixed bottom-4 right-4 left-4 sm:left-auto z-[60] w-auto sm:max-w-md transition-all duration-300 ease-out ${
+      className={`fixed bottom-4 right-4 left-4 sm:left-auto z-[60] w-auto sm:max-w-md transition-all duration-[900ms] ease-out ${
         mounted ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
       }`}
     >

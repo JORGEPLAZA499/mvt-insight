@@ -135,11 +135,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     setRedeemBusy(true);
     try {
       const r = await redeemFn({ data: { code: redeemCode.trim() } });
-      setRedeemSuccess(`+${r.credits_added} créditos. Saldo: ${r.new_balance}`);
+      setRedeemSuccess(t("shell.redeem.success", { added: r.credits_added, balance: r.new_balance }));
       setCredits(r.new_balance);
       setRedeemCode("");
     } catch (e: any) {
-      setRedeemError(e?.message ?? "No se pudo canjear el token");
+      setRedeemError(e?.message ?? t("shell.redeem.error"));
+
     } finally {
       setRedeemBusy(false);
     }

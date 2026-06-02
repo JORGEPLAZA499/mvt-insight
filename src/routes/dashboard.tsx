@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { GaugeClock } from "@/components/gauge-clock";
 import { MiniGauge } from "@/components/mini-gauge";
+import { PurchaseCard } from "@/components/purchase-card";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Spyware Forensic Analyzer" }] }),

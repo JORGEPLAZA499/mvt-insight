@@ -67,24 +67,13 @@ export function App() {
     }
   };
 
-  const Logo = ({ size = 72 }: { size?: number }) => (
-    <div
+  const Logo = ({ size = 96 }: { size?: number }) => (
+    <img
+      src={logoUrl}
+      alt="Spyware Forensic Analyzer"
       className={size >= 72 ? "brand-logo" : "brand-logo-sm"}
-      style={{
-        width: size,
-        height: size,
-        background: "linear-gradient(135deg, var(--primary), var(--primary-glow))",
-        color: "var(--primary-fg)",
-        display: "grid",
-        placeItems: "center",
-        fontWeight: 800,
-        fontSize: size * 0.32,
-        letterSpacing: "0.04em",
-      }}
-      aria-label="MVT Insight"
-    >
-      MVT
-    </div>
+      style={{ width: size, height: size, objectFit: "contain", background: "transparent" }}
+    />
   );
 
   const TopBar = (

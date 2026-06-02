@@ -136,7 +136,7 @@ function Landing() {
       </section>
 
       {/* Legal */}
-      <section id="legal" className="scroll-mt-[200px] max-w-4xl mx-auto px-6 py-20">
+      <section id="legal" className="scroll-mt-[180px] max-w-4xl mx-auto px-6 py-20">
         <div className="rounded-xl border border-warning/40 bg-warning/5 p-6">
           <h3 className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-warning" /> {t("landing.legal.title")}</h3>
           <p className="text-sm text-muted-foreground">

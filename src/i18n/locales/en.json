@@ -104,7 +104,11 @@
     "payCard": "Pay with Card",
     "payCrypto": "Pay with Crypto",
     "cardPayments": "Card Payments",
-    "cryptoPayments": "Crypto Payments"
+    "cryptoPayments": "Crypto Payments",
+    "soon": "Coming soon",
+    "cryptoSoon": "Crypto payments coming soon",
+    "checkoutSuccess": "Payment confirmed! Your credits will be added in a few seconds.",
+    "checkoutProcessing": "Processing your payment..."
   },
 
   "analysis": {

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { getAnalyses, Analysis, riskColor, riskLabel } from "@/lib/mock-store";
 import { Button } from "@/components/ui/button";
@@ -19,15 +20,28 @@ import { MiniGauge } from "@/components/mini-gauge";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Spyware Forensic Analyzer" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    checkout: typeof search.checkout === "string" ? search.checkout : undefined,
+    session_id: typeof search.session_id === "string" ? search.session_id : undefined,
+  }),
   component: Dashboard,
 });
 
 function Dashboard() {
   const { t } = useTranslation();
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [items, setItems] = useState<Analysis[]>([]);
   useEffect(() => {
     setItems(getAnalyses());
   }, []);
+
+  useEffect(() => {
+    if (search.checkout === "success") {
+      toast.success(t("purchase.checkoutSuccess"));
+      navigate({ to: "/dashboard", search: {}, replace: true });
+    }
+  }, [search.checkout, navigate, t]);
 
   const stats = useMemo(() => {
     const total = items.length;

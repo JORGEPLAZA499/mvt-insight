@@ -17,6 +17,10 @@
     "brand": "Spyware Forensic",
     "subBrand": "Analizador",
     "sectionPrimary": "Principal",
+    "sectionAdmin": "Administración",
+    "adminHint": "Panel de control",
+    "anonAccount": "Cuenta anónima",
+    "creditsBadge": "{{count}} créditos",
     "nav": {
       "dashboard": "Panel",
       "newAnalysis": "Nuevo análisis",
@@ -25,9 +29,57 @@
       "dashboardHint": "Resumen",
       "uploadHint": "Subir artefactos",
       "reportsHint": "Resultados",
-      "historyHint": "Análisis previos"
+      "historyHint": "Análisis previos",
+      "admin": "Administración"
+    },
+    "admin": {
+      "clients": "Clientes",
+      "tokens": "Tokens",
+      "health": "Salud del sistema"
+    },
+    "quick": {
+      "title": "Acceso rápido",
+      "processing": "Procesando…",
+      "upload": "Subir ZIP/JSON",
+      "uploadHint": "Sube directamente los archivos MVT sin pasar por el asistente.",
+      "buyCredits": "Comprar créditos",
+      "notSupported": "No soportado: {{name}}",
+      "tooBig": "{{name}} supera 500 MB",
+      "filesLabel": "{{count}} archivos MVT",
+      "genericError": "No se pudo procesar."
+    },
+    "redeem": {
+      "title": "Comprar créditos",
+      "desc": "Introduce el token de créditos que te ha proporcionado el administrador.",
+      "label": "Código del token",
+      "close": "Cerrar",
+      "submit": "Canjear",
+      "success": "+{{added}} créditos. Saldo: {{balance}}",
+      "error": "No se pudo canjear el token"
     }
   },
+  "purchase": {
+    "close": "Cerrar",
+    "badge": "Servicio forense premium",
+    "title": "Análisis Forense Móvil",
+    "pricePerAnalysis": "{{credits}} créditos",
+    "perAnalysis": "/análisis",
+    "selectPackage": "Selecciona tu paquete",
+    "option": "{{credits}} créditos — {{analyses}} análisis — {{credits}} €",
+    "description": "Verificación técnica de indicios de spyware, malware y actividad sospechosa en dispositivos móviles mediante artefactos, indicadores IOC/STIX2 y herramientas forenses compatibles con MVT.",
+    "features": {
+      "evidence": "Revisión de evidencias",
+      "risk": "Clasificación de riesgo",
+      "visual": "Resultados visuales",
+      "report": "Informe PDF"
+    },
+    "consent": "Análisis bajo consentimiento del titular del dispositivo.",
+    "payCard": "Pagar con Tarjeta",
+    "payCrypto": "Pagar con Cripto",
+    "cardPayments": "Card Payments",
+    "cryptoPayments": "Crypto Payments"
+  },
+
   "analysis": {
     "tabs": {
       "user": "Para ti",

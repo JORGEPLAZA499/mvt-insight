@@ -60,11 +60,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     for (const f of incoming) {
       const lower = f.name.toLowerCase();
       if (!lower.endsWith(".json") && !lower.endsWith(".zip")) {
-        setQuickError(`No soportado: ${f.name}`);
+        setQuickError(t("shell.quick.notSupported", { name: f.name }));
         continue;
       }
       if (f.size > QUICK_MAX_SIZE) {
-        setQuickError(`${f.name} supera 500 MB`);
+        setQuickError(t("shell.quick.tooBig", { name: f.name }));
         continue;
       }
       ok.push(f);
@@ -73,7 +73,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     setQuickBusy(true);
     const id = crypto.randomUUID();
-    const sourceName = ok.length === 1 ? ok[0].name : `${ok.length} archivos MVT`;
+    const sourceName = ok.length === 1 ? ok[0].name : t("shell.quick.filesLabel", { count: ok.length });
+
     const totalSize = ok.reduce((s, f) => s + f.size, 0);
     const base: Analysis = {
       id,
@@ -90,7 +91,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       navigate({ to: "/analysis/$id", params: { id } });
     } catch (e: any) {
       upsertAnalysis({ ...base, status: "error", progress: 0, error: e?.message || "Error" });
-      setQuickError(e?.message || "No se pudo procesar.");
+      setQuickError(e?.message || t("shell.quick.genericError"));
+
     } finally {
       setQuickBusy(false);
       if (quickInputRef.current) quickInputRef.current.value = "";
@@ -104,9 +106,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const nav = inAdminMode
     ? [
-        { to: "/admin", label: "Clientes", icon: Users, hint: "", search: { tab: "clients" }, tabKey: "clients" },
-        { to: "/admin", label: "Tokens", icon: Ticket, hint: "", search: { tab: "tokens" }, tabKey: "tokens" },
-        { to: "/admin", label: "Salud del sistema", icon: Activity, hint: "", search: { tab: "health" }, tabKey: "health" },
+        { to: "/admin", label: t("shell.admin.clients"), icon: Users, hint: "", search: { tab: "clients" }, tabKey: "clients" },
+        { to: "/admin", label: t("shell.admin.tokens"), icon: Ticket, hint: "", search: { tab: "tokens" }, tabKey: "tokens" },
+        { to: "/admin", label: t("shell.admin.health"), icon: Activity, hint: "", search: { tab: "health" }, tabKey: "health" },
       ]
     : [
         { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },
@@ -114,9 +116,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
         { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
         ...(isAdmin
-          ? [{ to: "/admin", label: "Administración", icon: ShieldCheck, hint: "Panel de control" }]
+          ? [{ to: "/admin", label: t("shell.nav.admin"), icon: ShieldCheck, hint: t("shell.adminHint") }]
           : []),
       ] as any[];
+
 
   // Redeem credit token dialog
   const redeemFn = useServerFn(redeemCreditToken);
@@ -132,11 +135,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     setRedeemBusy(true);
     try {
       const r = await redeemFn({ data: { code: redeemCode.trim() } });
-      setRedeemSuccess(`+${r.credits_added} créditos. Saldo: ${r.new_balance}`);
+      setRedeemSuccess(t("shell.redeem.success", { added: r.credits_added, balance: r.new_balance }));
       setCredits(r.new_balance);
       setRedeemCode("");
     } catch (e: any) {
-      setRedeemError(e?.message ?? "No se pudo canjear el token");
+      setRedeemError(e?.message ?? t("shell.redeem.error"));
+
     } finally {
       setRedeemBusy(false);
     }
@@ -235,7 +239,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Nav */}
         <div className="relative flex-1 px-3 py-4 overflow-y-auto">
           <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
-            {inAdminMode ? "Administración" : t("shell.sectionPrimary")}
+            {inAdminMode ? t("shell.sectionAdmin") : t("shell.sectionPrimary")}
           </div>
           <nav className="space-y-1">
             {nav.map((n) => {
@@ -330,7 +334,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {!inAdminMode && (
             <div className="mt-5 px-2">
               <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
-                Acceso rápido
+                {t("shell.quick.title")}
               </div>
               <input
                 ref={quickInputRef}
@@ -351,7 +355,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Zap className="h-4 w-4" />
                 )}
                 <span className="flex-1 text-left font-medium">
-                  {quickBusy ? "Procesando…" : "Subir ZIP/JSON"}
+                  {quickBusy ? t("shell.quick.processing") : t("shell.quick.upload")}
                 </span>
                 <UploadCloud className="h-4 w-4 opacity-80" />
               </button>
@@ -360,12 +364,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 transition mt-2 cursor-pointer"
               >
                 <Coins className="h-4 w-4" />
-                <span className="flex-1 text-left font-medium">Comprar créditos</span>
+                <span className="flex-1 text-left font-medium">{t("shell.quick.buyCredits")}</span>
                 <Sparkles className="h-4 w-4 opacity-80" />
               </button>
               <p className="px-2 mt-1.5 text-[10px] text-muted-foreground/70 leading-tight">
-                Sube directamente los archivos MVT sin pasar por el asistente.
+                {t("shell.quick.uploadHint")}
               </p>
+
               {quickError && (
                 <p className="mt-2 px-2 text-[11px] text-destructive">{quickError}</p>
               )}
@@ -402,7 +407,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <div className="text-xs font-mono font-medium tracking-wider truncate" title={userCode ?? ""}>{emailShort}</div>
                 <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <span className="h-1 w-1 rounded-full bg-success" />
-                  Cuenta anónima
+                  {t("shell.anonAccount")}
+
                 </div>
               </div>
             </div>
@@ -436,7 +442,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {userCode && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
               <Coins className="h-4 w-4" />
-              <span>{credits} créditos</span>
+              <span>{t("shell.creditsBadge", { count: credits })}</span>
             </div>
           )}
           <LanguageSelector />
@@ -452,13 +458,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Dialog open={redeemOpen} onOpenChange={setRedeemOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Comprar créditos</DialogTitle>
+            <DialogTitle>{t("shell.redeem.title")}</DialogTitle>
             <DialogDescription>
-              Introduce el token de créditos que te ha proporcionado el administrador.
+              {t("shell.redeem.desc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="redeem-code">Código del token</Label>
+            <Label htmlFor="redeem-code">{t("shell.redeem.label")}</Label>
             <Input
               id="redeem-code"
               value={redeemCode}
@@ -470,10 +476,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             {redeemSuccess && <p className="text-xs text-success">{redeemSuccess}</p>}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRedeemOpen(false)}>Cerrar</Button>
+            <Button variant="outline" onClick={() => setRedeemOpen(false)}>{t("shell.redeem.close")}</Button>
             <Button onClick={onRedeem} disabled={redeemBusy || !redeemCode.trim()}>
-              {redeemBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Canjear"}
+              {redeemBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : t("shell.redeem.submit")}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>

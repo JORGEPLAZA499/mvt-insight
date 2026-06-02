@@ -87,7 +87,7 @@ export function PurchaseCard() {
 
           <button
             onClick={() => setPurchaseOpen(false)}
-            aria-label="Cerrar"
+            aria-label={t("purchase.close")}
             className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground transition z-10"
           >
             <X className="h-4 w-4" />
@@ -97,24 +97,24 @@ export function PurchaseCard() {
             <div>
               <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-primary/90 mb-3">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Servicio forense premium
+                {t("purchase.badge")}
               </div>
               <h3 className="text-2xl md:text-3xl font-semibold tracking-tight">
-                Análisis Forense Móvil
+                {t("purchase.title")}
               </h3>
               <div className="mt-3 flex items-baseline gap-2">
                 <span
                   className="text-4xl md:text-5xl font-bold tabular-nums bg-clip-text text-transparent"
                   style={{ backgroundImage: "var(--gradient-primary)" }}
                 >
-                  98 créditos
+                  {t("purchase.pricePerAnalysis", { credits: 98 })}
                 </span>
-                <span className="text-sm text-muted-foreground">/análisis</span>
+                <span className="text-sm text-muted-foreground">{t("purchase.perAnalysis")}</span>
               </div>
 
               <div className="mt-4">
                 <label className="block text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
-                  Selecciona tu paquete
+                  {t("purchase.selectPackage")}
                 </label>
                 <select
                   value={credits}
@@ -123,7 +123,7 @@ export function PurchaseCard() {
                 >
                   {CREDIT_OPTIONS.map((c) => (
                     <option key={c} value={c}>
-                      {c} créditos — {c / 98} análisis — {c} €
+                      {t("purchase.option", { credits: c, analyses: c / 98 })}
                     </option>
                   ))}
                 </select>
@@ -131,20 +131,18 @@ export function PurchaseCard() {
 
 
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground max-w-xl">
-                Verificación técnica de indicios de spyware, malware y actividad sospechosa en
-                dispositivos móviles mediante artefactos, indicadores IOC/STIX2 y herramientas
-                forenses compatibles con MVT.
+                {t("purchase.description")}
               </p>
 
               <ul className="mt-5 grid sm:grid-cols-2 gap-2 text-sm">
-                <Feature icon={ScanSearch} text="Revisión de evidencias" />
-                <Feature icon={Sparkles} text="Clasificación de riesgo" />
-                <Feature icon={ShieldCheck} text="Resultados visuales" />
-                <Feature icon={FileText} text="Informe PDF" />
+                <Feature icon={ScanSearch} text={t("purchase.features.evidence")} />
+                <Feature icon={Sparkles} text={t("purchase.features.risk")} />
+                <Feature icon={ShieldCheck} text={t("purchase.features.visual")} />
+                <Feature icon={FileText} text={t("purchase.features.report")} />
               </ul>
 
               <p className="mt-4 text-[11px] text-muted-foreground/80 italic">
-                Análisis bajo consentimiento del titular del dispositivo.
+                {t("purchase.consent")}
               </p>
             </div>
 
@@ -155,7 +153,7 @@ export function PurchaseCard() {
               >
                 <span className="relative flex items-center justify-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  Pagar con Tarjeta
+                  {t("purchase.payCard")}
                 </span>
                 <span
                   aria-hidden
@@ -172,16 +170,17 @@ export function PurchaseCard() {
               >
                 <span className="relative flex items-center justify-center gap-2">
                   <Bitcoin className="h-5 w-5 text-[color:var(--warning)]" />
-                  Pagar con Cripto
+                  {t("purchase.payCrypto")}
                 </span>
               </button>
 
               <div className="mt-2 grid grid-cols-2 gap-3">
-                <PayGroup title="Card Payments" items={cardBrands} />
-                <PayGroup title="Crypto Payments" items={cryptoBrands} />
+                <PayGroup title={t("purchase.cardPayments")} items={cardBrands} />
+                <PayGroup title={t("purchase.cryptoPayments")} items={cryptoBrands} />
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>

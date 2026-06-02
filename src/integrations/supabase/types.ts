@@ -44,6 +44,8 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          source: string
+          stripe_session_id: string | null
           token_id: string | null
         }
         Insert: {
@@ -51,6 +53,8 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
+          source?: string
+          stripe_session_id?: string | null
           token_id?: string | null
         }
         Update: {
@@ -58,6 +62,8 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          source?: string
+          stripe_session_id?: string | null
           token_id?: string | null
         }
         Relationships: []

@@ -20,6 +20,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalysisIdRouteImport } from './routes/analysis.$id'
 import { Route as ApiPublicScriptsFileRouteImport } from './routes/api/public/scripts/$file'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicCronPurgeInactiveRouteImport } from './routes/api/public/cron/purge-inactive'
 
 const UploadRoute = UploadRouteImport.update({
@@ -77,6 +78,12 @@ const ApiPublicScriptsFileRoute = ApiPublicScriptsFileRouteImport.update({
   path: '/api/public/scripts/$file',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicCronPurgeInactiveRoute =
   ApiPublicCronPurgeInactiveRouteImport.update({
     id: '/api/public/cron/purge-inactive',
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
 export interface FileRoutesByTo {
@@ -110,6 +118,7 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
 export interface FileRoutesById {
@@ -125,6 +134,7 @@ export interface FileRoutesById {
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
 export interface FileRouteTypes {
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/analysis/$id'
     | '/api/public/cron/purge-inactive'
+    | '/api/public/payments/webhook'
     | '/api/public/scripts/$file'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/analysis/$id'
     | '/api/public/cron/purge-inactive'
+    | '/api/public/payments/webhook'
     | '/api/public/scripts/$file'
   id:
     | '__root__'
@@ -169,6 +181,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/analysis/$id'
     | '/api/public/cron/purge-inactive'
+    | '/api/public/payments/webhook'
     | '/api/public/scripts/$file'
   fileRoutesById: FileRoutesById
 }
@@ -184,6 +197,7 @@ export interface RootRouteChildren {
   UploadRoute: typeof UploadRoute
   AnalysisIdRoute: typeof AnalysisIdRoute
   ApiPublicCronPurgeInactiveRoute: typeof ApiPublicCronPurgeInactiveRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicScriptsFileRoute: typeof ApiPublicScriptsFileRoute
 }
 
@@ -266,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicScriptsFileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/purge-inactive': {
       id: '/api/public/cron/purge-inactive'
       path: '/api/public/cron/purge-inactive'
@@ -288,6 +309,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadRoute: UploadRoute,
   AnalysisIdRoute: AnalysisIdRoute,
   ApiPublicCronPurgeInactiveRoute: ApiPublicCronPurgeInactiveRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicScriptsFileRoute: ApiPublicScriptsFileRoute,
 }
 export const routeTree = rootRouteImport

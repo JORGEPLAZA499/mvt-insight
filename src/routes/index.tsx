@@ -3,6 +3,7 @@ import { Shield, Lock, Activity, FileSearch, ArrowRight, CheckCircle2 } from "lu
 import { useTranslation, Trans } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/components/language-selector";
+import logoAsset from "@/assets/logo.png.asset.json";
 import i18n from "@/i18n";
 
 export const Route = createFileRoute("/")({
@@ -44,9 +45,7 @@ function Landing() {
       <header className="border-b border-border/60 backdrop-blur-md sticky top-0 z-50 bg-background/70">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center shadow-glow">
-              <Shield className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <img src={logoAsset.url} alt="" className="h-9 w-9 object-contain" />
             <span className="font-semibold tracking-tight">Spyware Forensic Analyzer</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">

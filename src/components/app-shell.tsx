@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getSession, setSession, getAnalyses, upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 import { LanguageSelector } from "@/components/language-selector";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 const QUICK_MAX_SIZE = 500 * 1024 * 1024;
 
@@ -137,12 +138,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="relative">
             <div
               aria-hidden
-              className="absolute inset-0 rounded-lg blur-md opacity-70 group-hover:opacity-100 transition-opacity"
-              style={{ background: "var(--gradient-primary, linear-gradient(135deg, var(--primary), var(--primary)))" }}
+              className="absolute inset-0 rounded-lg blur-md opacity-60 group-hover:opacity-90 transition-opacity"
+              style={{ background: "radial-gradient(circle, color-mix(in oklab, var(--primary) 50%, transparent), transparent 70%)" }}
             />
-            <div className="relative h-10 w-10 rounded-lg bg-gradient-primary grid place-items-center shadow-glow">
-              <Shield className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img
+              src={logoAsset.url}
+              alt="Spyware Forensic Analyzer"
+              className="relative h-10 w-10 object-contain"
+            />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold tracking-tight truncate">
@@ -340,7 +343,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="flex-1 min-w-0 h-screen overflow-y-auto">
         <div className="md:hidden border-b border-border px-4 py-3 flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
+          <img src={logoAsset.url} alt="" className="h-6 w-6 object-contain" />
           <span className="text-sm font-semibold">Spyware Forensic Analyzer</span>
         </div>
         <div className="hidden md:flex items-center justify-end border-b border-border/60 px-6 py-3 gap-4">

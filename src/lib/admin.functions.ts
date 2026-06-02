@@ -143,3 +143,23 @@ export const getSystemHealth = createServerFn({ method: "GET" })
       checkedAt: new Date().toISOString(),
     };
   });
+
+export const claimAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: existing, error: checkError } = await supabaseAdmin
+      .from("accounts")
+      .select("id")
+      .eq("user_code", "Admin")
+      .maybeSingle();
+    if (checkError) throw new Error(checkError.message);
+    if (existing) throw new Error("Ya existe una cuenta Admin");
+
+    const { error: updateError } = await supabaseAdmin
+      .from("accounts")
+      .update({ user_code: "Admin" })
+      .eq("id", context.userId);
+    if (updateError) throw new Error(updateError.message);
+
+    return { success: true };
+  });

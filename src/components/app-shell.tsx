@@ -148,6 +148,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     (async () => {
       const { data } = await supabase.auth.getUser();
       if (!active) return;
@@ -155,20 +156,35 @@ export function AppShell({ children }: { children: ReactNode }) {
         navigate({ to: "/login" });
         return;
       }
+      const userId = data.user.id;
       const { data: acc } = await supabase
         .from("accounts")
         .select("user_code, credits")
-        .eq("id", data.user.id)
+        .eq("id", userId)
         .maybeSingle();
       if (!active) return;
       setUserCode(acc?.user_code ?? null);
       setCredits(acc?.credits ?? 0);
       setHistoryCount(getAnalyses().length);
+
+      channel = supabase
+        .channel(`account-credits-${userId}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "accounts", filter: `id=eq.${userId}` },
+          (payload) => {
+            const next = (payload.new as { credits?: number } | null)?.credits;
+            if (typeof next === "number") setCredits(next);
+          }
+        )
+        .subscribe();
     })();
     return () => {
       active = false;
+      if (channel) supabase.removeChannel(channel);
     };
   }, [navigate, path]);
+
 
   const initial = userCode?.[0] ?? "U";
   const emailShort = userCode ?? "—";

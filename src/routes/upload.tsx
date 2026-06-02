@@ -100,7 +100,8 @@ function Upload() {
     };
   }, []);
 
-  const hasCredits = credits === null ? true : credits > 0;
+  const isLoadingCredits = credits === null;
+  const hasCredits = !isLoadingCredits && (credits ?? 0) > 0;
 
   const next = () => setStep((s) => (Math.min(TOTAL_STEPS, s + 1) as 1 | 2 | 3 | 4));
   const back = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4));
@@ -128,6 +129,7 @@ function Upload() {
           <StepDevice
             value={device}
             disabled={!hasCredits}
+            isLoading={isLoadingCredits}
             onSelect={(d) => {
               if (!hasCredits) return;
               setDevice(d);
@@ -157,10 +159,12 @@ function Upload() {
 function StepDevice({
   value,
   disabled = false,
+  isLoading = false,
   onSelect,
 }: {
   value: Device | null;
   disabled?: boolean;
+  isLoading?: boolean;
   onSelect: (d: Device) => void;
 }) {
   const { t } = useTranslation();
@@ -171,7 +175,7 @@ function StepDevice({
       </h1>
       <p className="text-sm text-muted-foreground mt-1">{t("upload.step1.subtitle")}</p>
 
-      {disabled && (
+      {disabled && !isLoading && (
         <div className="mt-5 rounded-xl border border-warning/40 bg-warning/10 p-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />

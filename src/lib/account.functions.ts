@@ -91,7 +91,11 @@ export const resolveLoginEmail = createServerFn({ method: "POST" })
     if (!row) {
       throw new Error("Código o contraseña incorrectos.");
     }
-    return { email: codeToEmail(row.user_code) };
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(row.id);
+    if (authError || !authUser.user?.email) {
+      throw new Error("Código o contraseña incorrectos.");
+    }
+    return { email: authUser.user.email };
   });
 
 export const touchLastLogin = createServerFn({ method: "POST" })

@@ -334,7 +334,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {!inAdminMode && (
             <div className="mt-5 px-2">
               <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
-                Acceso rápido
+                {t("shell.quick.title")}
               </div>
               <input
                 ref={quickInputRef}

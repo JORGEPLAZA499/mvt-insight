@@ -95,15 +95,25 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   const isAdmin = userCode === "Admin";
-  const nav = [
-    { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },
-    { to: "/upload", label: t("shell.nav.newAnalysis"), icon: UploadCloud, hint: t("shell.nav.uploadHint"), highlight: true },
-    { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
-    { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
-    ...(isAdmin
-      ? [{ to: "/admin", label: "Administración", icon: ShieldCheck, hint: "Panel de control" }]
-      : []),
-  ];
+  const isAdminRoute = path.startsWith("/admin");
+  const adminTab = (typeof search?.tab === "string" ? search.tab : "clients") as string;
+  const inAdminMode = isAdmin && isAdminRoute;
+
+  const nav = inAdminMode
+    ? [
+        { to: "/admin", label: "Clientes", icon: Users, hint: "", search: { tab: "clients" }, tabKey: "clients" },
+        { to: "/admin", label: "Tokens", icon: Ticket, hint: "", search: { tab: "tokens" }, tabKey: "tokens" },
+        { to: "/admin", label: "Salud del sistema", icon: Activity, hint: "", search: { tab: "health" }, tabKey: "health" },
+      ]
+    : [
+        { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },
+        { to: "/upload", label: t("shell.nav.newAnalysis"), icon: UploadCloud, hint: t("shell.nav.uploadHint"), highlight: true },
+        { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
+        { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
+        ...(isAdmin
+          ? [{ to: "/admin", label: "Administración", icon: ShieldCheck, hint: "Panel de control" }]
+          : []),
+      ] as any[];
 
   // Redeem credit token dialog
   const redeemFn = useServerFn(redeemCreditToken);

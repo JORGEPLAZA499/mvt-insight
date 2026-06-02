@@ -100,7 +100,7 @@ export function PurchaseCard() {
                   className="text-4xl md:text-5xl font-bold tabular-nums bg-clip-text text-transparent"
                   style={{ backgroundImage: "var(--gradient-primary)" }}
                 >
-                  98,73 €
+                  98 créditos
                 </span>
                 <span className="text-sm text-muted-foreground">/ análisis</span>
               </div>

@@ -35,8 +35,11 @@ export function usePurchaseCardOpen() {
   );
 }
 
+const CREDIT_OPTIONS = Array.from({ length: 10 }, (_, i) => (i + 1) * 98);
+
 export function PurchaseCard() {
   const open = usePurchaseCardOpen();
+  const [credits, setCredits] = useState<number>(98);
 
   useEffect(() => {
     const handler = () => setPurchaseOpen(true);

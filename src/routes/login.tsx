@@ -254,7 +254,7 @@ function Login() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center p-6 relative">
+      <div className="flex items-center justify-center p-6 relative min-h-screen">
         <div className="absolute top-4 right-4">
           <LanguageSelector />
         </div>

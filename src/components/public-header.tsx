@@ -14,10 +14,10 @@ export function PublicHeader({ anchorsToHome = false }: PublicHeaderProps) {
   const prefix = anchorsToHome ? "/" : "";
 
   return (
-    <header className="border-b border-border/60 backdrop-blur-md sticky top-0 z-50 bg-background/70">
+    <header className="border-b border-border/60 backdrop-blur-md sticky top-0 z-50 bg-background/70 md:py-2 lg:py-4">
       <div className="max-w-7xl mx-auto px-6 h-auto py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoAsset.url} alt="" className="h-[180px] w-auto object-contain" />
+          <img src={logoAsset.url} alt="" className="h-[80px] md:h-[100px] lg:h-[180px] w-auto object-contain" />
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm uppercase tracking-widest">
           <a href={`${prefix}#features`} className="relative text-muted-foreground hover:text-primary transition-colors duration-300 group">

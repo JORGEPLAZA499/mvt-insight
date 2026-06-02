@@ -120,7 +120,7 @@ function Landing() {
       </section>
 
       {/* How */}
-      <section id="how" className="border-t border-border bg-card/30">
+      <section id="how" className="scroll-mt-48 border-t border-border bg-card/30">
         <div className="max-w-7xl mx-auto px-6 py-24">
           <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">{t("landing.how.title")}</h2>
           <div className="mt-12 grid md:grid-cols-3 gap-6">

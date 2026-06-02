@@ -1,45 +1,36 @@
-# Mejoras de seguridad en el formulario de cuenta
+# Apertura automática del teclado virtual + protección contra keyloggers
 
-Añadir tres capas de seguridad a los campos de contraseña en `src/routes/login.tsx` (registro y login):
+## 1. Apertura automática (eliminar icono)
 
-## 1. Botón de ojo (mostrar/ocultar contraseña)
+`src/components/password-field.tsx`:
+- Eliminar el botón con icono `Keyboard`.
+- Abrir el teclado virtual con `onFocus` del input; cerrar solo desde el botón "✕" del propio teclado.
+- Input siempre `readOnly` cuando el VK está abierto.
+- Añadir `inputMode="none"`, `spellCheck={false}`, `autoCapitalize="off"`, `autoCorrect="off"`.
+- Bloquear `onCopy`, `onPaste`, `onCut`, `onDrop`, `onContextMenu`.
 
-- Icono `Eye` / `EyeOff` de `lucide-react` dentro del input, alineado a la derecha.
-- Alterna el `type` entre `password` y `text`.
-- Se aplica a los 3 campos: contraseña (login), contraseña nueva y confirmación (registro).
+## 2. Endurecimiento anti-keylogger
 
-## 2. Medidor de fortaleza con bloqueo
+**`src/components/virtual-keyboard.tsx`**:
+- Re-barajar automáticamente tras cada pulsación de tecla (no solo al abrir).
+- Mantener botón "Reordenar" y toggle de orden normal.
+- Sin feedback visual del carácter pulsado.
 
-Indicador visual debajo del campo "contraseña nueva" en el registro:
+**`src/lib/secure-string.ts`** (nuevo): utilidad `createSecureBuffer()` que guarda el valor XOR-eado con una clave aleatoria por instancia. API: `append(ch)`, `pop()`, `clear()`, `reveal()`, `length`. La contraseña en claro solo existe durante el `reveal()` justo antes del submit.
 
-- **Niveles**: Baja / Media / Alta / Muy alta — barra de color (rojo → ámbar → verde).
-- **Criterios** (suman puntos):
-  - Longitud ≥ 8 (obligatorio), ≥ 12, ≥ 16
-  - Mayúscula, minúscula, número (ya obligatorios), símbolo
-  - Sin secuencias triviales (`12345`, `abcd`, repeticiones)
-- **Bloqueo**: si el nivel calculado es **Baja**, el botón "Crear cuenta" queda deshabilitado y se muestra el motivo. Mínimo aceptado para registrar = **Media**.
-- La validación se duplica en el servidor (`registerAccount` en `src/lib/account.functions.ts`) para que no se pueda saltar desde el cliente.
+**`src/routes/login.tsx`**:
+- Reemplazar `useState<string>` de `password`/`confirm` por un wrapper basado en `SecureBuffer` (estado con `[buffer, version]` para re-renderizar).
+- Pasar al `PasswordField` un `value` enmascarado (longitud) y `onChange` que diff-ea y aplica `append`/`pop`/`clear` al buffer.
+- En `submit`: `reveal()` → enviar → `clear()` inmediato.
+- `useEffect` cleanup: `clear()` al desmontar.
+- El medidor de fortaleza recibe la contraseña revelada en cada render (necesario para puntuar) — aceptable porque vive solo en memoria del componente; alternativa: puntuar sobre el buffer XOR-eado descodificando temporalmente.
 
-## 3. Teclado virtual con orden cambiable
+## 3. UI / copy
 
-Nuevo componente `src/components/virtual-keyboard.tsx`:
+- Nota debajo del formulario: "Teclado virtual con orden aleatorio y contraseña ofuscada en memoria. Úsalo desde un equipo de confianza."
+- Sin cambios en backend ni en la BD.
 
-- Botón "Usar teclado virtual" junto a cada campo de contraseña. Al activarlo se despliega el teclado y el input físico queda en solo-lectura (evita keyloggers de hardware).
-- Layout en `popover` debajo del campo:
-  - Fila de números 0–9
-  - Letras a–z minúsculas
-  - Letras A–Z mayúsculas (toggle Shift)
-  - Símbolos comunes (toggle)
-  - Teclas: `⌫ Borrar`, `Espacio`, `🔀 Reordenar`, `Cerrar`
-- **Orden aleatorio**: al abrirlo las teclas se barajan (Fisher–Yates). Botón "Reordenar" vuelve a barajar en cualquier momento. Opción para volver al orden QWERTY estándar.
-- Cada pulsación añade el carácter al valor del campo controlado (mismo `onChange` que el teclado físico).
+## Archivos
 
-## Detalles técnicos
-
-- **Archivos modificados**: `src/routes/login.tsx`, `src/lib/account.functions.ts` (validación de fortaleza server-side).
-- **Archivos nuevos**: `src/components/virtual-keyboard.tsx`, `src/lib/password-strength.ts` (función pura `scorePassword` reutilizada en cliente y servidor).
-- **UI**: usa tokens semánticos de `src/styles.css` (`--destructive`, `--primary`, `--muted`) — sin colores hardcoded.
-- **Accesibilidad**: `aria-label` en el botón de ojo y en cada tecla virtual; `aria-live` en el medidor de fortaleza.
-- **Sin cambios en backend/DB**: la política se endurece en código, el esquema de Supabase no cambia.
-
-¿Procedo?
+- Modificados: `src/components/password-field.tsx`, `src/components/virtual-keyboard.tsx`, `src/routes/login.tsx`
+- Nuevos: `src/lib/secure-string.ts`

@@ -144,7 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <img
               src={logoAsset.url}
               alt="Spyware Forensic Analyzer"
-              className="relative h-[72px] w-[72px] object-contain"
+              className="relative h-[150px] w-[150px] object-contain"
             />
           </div>
           <div className="min-w-0">

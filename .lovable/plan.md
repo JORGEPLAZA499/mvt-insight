@@ -1,43 +1,31 @@
 ## Objetivo
 
-Reemplazar el `.zip` de Windows por un **instalador `.exe`** real. El cliente descarga un único archivo, hace doble clic, y el instalador se encarga de descomprimir, copiar a `Program Files`, crear acceso directo en el escritorio y menú Inicio, y registrar el desinstalador. Igual para macOS (`.dmg`) y Linux (`.AppImage`).
+Traducir al sistema i18n (`useTranslation`) toda la interfaz del **Dashboard** y de la página **Upload** — incluyendo títulos, subtítulos, badges, estados, tabla, empty state, y especialmente la descripción larga de cada uno de los sub-pasos del asistente (preámbulo, modo desarrollador, depuración USB, conectar, descarga app, protocolo forense, subir ZIP, etc.), que hoy están todos hardcodeados en español.
 
-## Cómo se hará
+## Alcance
 
-Cambiar el workflow de GitHub Actions (`.github/workflows/release.yml`) para usar **`electron-builder`** en lugar de `@electron/packager`. `electron-builder` sí puede generar instaladores nativos cuando corre en runners de GitHub (Windows, macOS, Linux reales), cosa que no podíamos hacer en el sandbox de Lovable.
+Solo cambios de presentación: extraer strings a `src/i18n/locales/es.json` y `en.json` y reemplazar los textos por `t("clave")` en componentes. No se toca lógica, rutas, ni el flujo de pasos.
 
-### Cambios concretos
+### Archivos a editar
 
-1. **`package.json`**
-   - Añadir `electron-builder` como devDependency.
-   - Añadir bloque `"build": { ... }` con la configuración de electron-builder:
-     - `appId`: `com.jorgeplaza.mvtinsight`
-     - `productName`: `MvtInsight`
-     - `win`: target `nsis` (instalador `.exe` clásico de Windows con asistente Siguiente → Siguiente → Instalar)
-     - `mac`: target `dmg`
-     - `linux`: target `AppImage` (un solo archivo ejecutable, sin descomprimir)
-     - `nsis`: `oneClick: false`, `allowToChangeInstallationDirectory: true`, `createDesktopShortcut: true`, `createStartMenuShortcut: true`
+1. **`src/i18n/locales/es.json`** y **`src/i18n/locales/en.json`** — añadir dos nuevas ramas:
+   - `dashboard.*` — header, CTA nuevo análisis, etiquetas de los 4 gauges, HUD pills (Pendientes / Procesando / Completados / Riesgo alto), título "Análisis recientes", link "Ver historial completo", cabeceras de tabla (Archivo, Plataforma, Estado, Riesgo, Detecciones), badges de estado (`pending`/`processing`/`completed`/`error`), empty state.
+   - `upload.*` — header (Atrás, "Paso X de Y"), `step1` (título y subtítulo + tarjetas Android/iPhone), `step2` (título, subtítulo, Mac/Windows/Linux), `step3` (bloqueo iPhone+Windows, encabezado "Sigue los pasos en orden", botones Anterior / Hecho siguiente / Ya tengo el ZIP), y `step3.substeps.*` para **cada sub-paso** con su título y cuerpo descriptivo enriquecido (preámbulo cable+USB, modo desarrollador con detalles por marca Samsung/Xiaomi/Pixel/Huawei, depuración USB, conectar y permitir, confiar iPhone, backup cifrado, mantener iPhone desbloqueado, descarga app desktop con notas y aviso "editor desconocido", protocolo forense A/B, subir ZIP), `step4` (título, dropzone, validaciones, consentimiento, botones).
 
-2. **`.github/workflows/release.yml`**
-   - Sustituir los pasos de `@electron/packager` + `zip/tar` por `npx electron-builder --win` / `--mac` / `--linux`.
-   - Subir al release los artefactos generados:
-     - `MvtInsight-Setup-x.x.x.exe` (Windows)
-     - `MvtInsight-x.x.x.dmg` (macOS)
-     - `MvtInsight-x.x.x.AppImage` (Linux)
+2. **`src/routes/dashboard.tsx`** — importar `useTranslation`, reemplazar todos los literales por `t(...)`. Los componentes internos `HudPill`, `StatusBadge`, `EmptyState` reciben sus labels ya traducidos por props (o llaman a `useTranslation` internamente).
 
-3. **`src/routes/upload.tsx`**
-   - Actualizar las URLs de descarga de los tres botones a los nuevos nombres de archivo (`.exe`, `.dmg`, `.AppImage`).
+3. **`src/routes/upload.tsx`** — importar `useTranslation` en `Upload`, `StepDevice`, `StepOS`, `StepRun`, `StepUpload`. Reescribir los `subSteps` para que sus `title` y `content` salgan del diccionario. Para los párrafos con `<strong>` embebidos, se usará `<Trans i18nKey="..." components={{ b: <strong className="text-foreground" /> }} />` de `react-i18next`, de modo que cada idioma pueda mantener énfasis y mantener el HTML semántico.
 
-### Experiencia del cliente final
+4. **`src/routes/upload.tsx`** — actualizar también la cadena del `<title>` en `head()` con un valor por defecto en español (el `<title>` SSR no puede usar el hook). Mantengo el comportamiento actual.
 
-- **Windows**: descarga `MvtInsight-Setup.exe` → doble clic → asistente de instalación → app instalada con acceso directo en escritorio. Windows SmartScreen mostrará un aviso "Editor desconocido" (normal sin certificado de firma de código, que cuesta ~200-400€/año); el usuario pulsa "Más información → Ejecutar de todos modos".
-- **macOS**: descarga `.dmg` → doble clic → arrastra app a Applications. Igualmente Gatekeeper avisará sin firma de Apple Developer (~99€/año).
-- **Linux**: descarga `.AppImage` → marca como ejecutable → doble clic. No requiere instalación.
+### Detalles técnicos
 
-### Después del cambio
+- Se usa `react-i18next` ya configurado (`src/i18n/index.ts`).
+- Para textos con marcado en línea: `Trans` con `components={{ b: <strong className="text-foreground" />, code: <code className="font-mono text-foreground" />, warn: <span className="block mt-1 text-warning" /> }}`.
+- Las listas (rutas exactas por marca, protocolo A/B) se modelan como arrays en el JSON y se renderizan con `t("...", { returnObjects: true }) as string[]`.
+- No cambia ninguna clase Tailwind ni el diseño visual.
 
-Hay que volver a lanzar el workflow "Build & Release Desktop App" desde Actions (como la última vez) para generar los nuevos instaladores. Los `.zip` antiguos quedarán reemplazados en el release "latest".
+### Fuera de alcance
 
-## Nota sobre firma de código
-
-Los instaladores funcionarán perfectamente pero **sin firma digital**, por lo que Windows/macOS mostrarán advertencias de seguridad la primera vez. Firmar requiere certificados de pago. ¿Quieres que lo dejemos así de momento, o prefieres que documente cómo añadir firma más adelante?
+- No se modifica la app Electron (`desktop/`), ni `history.tsx` / `reports.tsx` / `analysis.$id.tsx` (no fueron pedidos). Si los quieres también traducidos en esta misma tanda, dímelo y los añado.
+- No se cambia la lógica de detección de SO ni el plan anterior de simplificación del flujo (sigue pendiente de tu aprobación por separado).

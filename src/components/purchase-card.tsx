@@ -203,9 +203,36 @@ export function PurchaseCard() {
 
         </div>
       </div>
+
+      {checkoutOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setCheckoutOpen(false)}
+        >
+          <div
+            className="relative bg-card rounded-2xl border border-border shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setCheckoutOpen(false)}
+              aria-label={t("purchase.close")}
+              className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground transition z-10 bg-card"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="p-4 pt-12">
+              <StripeEmbeddedCheckoutInline
+                priceId={`credits_${credits}`}
+                returnUrl={returnUrl}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function Feature({ icon: Icon, text }: { icon: any; text: string }) {
   return (

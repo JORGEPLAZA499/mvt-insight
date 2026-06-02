@@ -153,11 +153,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       }
       const { data: acc } = await supabase
         .from("accounts")
-        .select("user_code")
+        .select("user_code, credits")
         .eq("id", data.user.id)
         .maybeSingle();
       if (!active) return;
       setUserCode(acc?.user_code ?? null);
+      setCredits(acc?.credits ?? 0);
       setHistoryCount(getAnalyses().length);
     })();
     return () => {

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as SetupAdminRouteImport } from './routes/setup-admin'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LegalRouteImport } from './routes/legal'
@@ -24,6 +25,11 @@ import { Route as ApiPublicCronPurgeInactiveRouteImport } from './routes/api/pub
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SetupAdminRoute = SetupAdminRouteImport.update({
+  id: '/setup-admin',
+  path: '/setup-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/legal': typeof LegalRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
+  '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/legal': typeof LegalRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
+  '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/legal': typeof LegalRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
+  '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/login'
     | '/reports'
+    | '/setup-admin'
     | '/upload'
     | '/analysis/$id'
     | '/api/public/cron/purge-inactive'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/login'
     | '/reports'
+    | '/setup-admin'
     | '/upload'
     | '/analysis/$id'
     | '/api/public/cron/purge-inactive'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/login'
     | '/reports'
+    | '/setup-admin'
     | '/upload'
     | '/analysis/$id'
     | '/api/public/cron/purge-inactive'
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   LegalRoute: typeof LegalRoute
   LoginRoute: typeof LoginRoute
   ReportsRoute: typeof ReportsRoute
+  SetupAdminRoute: typeof SetupAdminRoute
   UploadRoute: typeof UploadRoute
   AnalysisIdRoute: typeof AnalysisIdRoute
   ApiPublicCronPurgeInactiveRoute: typeof ApiPublicCronPurgeInactiveRoute
@@ -181,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/setup-admin': {
+      id: '/setup-admin'
+      path: '/setup-admin'
+      fullPath: '/setup-admin'
+      preLoaderRoute: typeof SetupAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -264,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalRoute: LegalRoute,
   LoginRoute: LoginRoute,
   ReportsRoute: ReportsRoute,
+  SetupAdminRoute: SetupAdminRoute,
   UploadRoute: UploadRoute,
   AnalysisIdRoute: AnalysisIdRoute,
   ApiPublicCronPurgeInactiveRoute: ApiPublicCronPurgeInactiveRoute,
@@ -272,3 +293,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

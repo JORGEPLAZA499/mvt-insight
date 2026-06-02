@@ -37,9 +37,7 @@ function Login() {
       <div className="hidden lg:flex relative bg-hero p-12 flex-col justify-between">
         <div className="absolute inset-0 grid-bg opacity-40" />
         <Link to="/" className="relative flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-gradient-primary grid place-items-center shadow-glow">
-            <Shield className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img src={logoAsset.url} alt="" className="h-10 w-10 object-contain" />
           <span className="font-semibold">Spyware Forensic Analyzer</span>
         </Link>
         <div className="relative max-w-md">

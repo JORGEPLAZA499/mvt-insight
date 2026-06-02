@@ -3,6 +3,7 @@ import { Shield, Lock, Activity, FileSearch, ArrowRight, CheckCircle2 } from "lu
 import { useTranslation, Trans } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/components/language-selector";
+import logoAsset from "@/assets/logo.png.asset.json";
 import i18n from "@/i18n";
 
 export const Route = createFileRoute("/")({

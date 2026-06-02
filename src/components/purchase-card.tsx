@@ -79,7 +79,7 @@ export function PurchaseCard() {
           />
 
           <button
-            onClick={() => setOpen(false)}
+            onClick={() => setPurchaseOpen(false)}
             aria-label="Cerrar"
             className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground transition"
           >

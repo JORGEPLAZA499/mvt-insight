@@ -351,7 +351,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <UploadCloud className="h-4 w-4 opacity-80" />
               </button>
               <button
-                onClick={() => { setRedeemOpen(true); setRedeemError(null); setRedeemSuccess(null); }}
+                onClick={async () => {
+                  if (path !== "/dashboard") {
+                    await navigate({ to: "/dashboard" });
+                  }
+                  setTimeout(() => openPurchaseCard(), 50);
+                }}
                 className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 transition mt-2"
               >
                 <Coins className="h-4 w-4" />

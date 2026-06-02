@@ -426,6 +426,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="hidden md:flex items-center justify-end border-b border-border/60 px-6 py-3 gap-4">
           <LanguageSelector />
         </div>
+        <PurchaseCard />
         {children}
       </main>
 

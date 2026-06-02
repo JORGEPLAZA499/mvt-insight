@@ -1,36 +1,62 @@
-## Objetivo
+# Plan: Pagos con Stripe (paquetes de créditos)
 
-Cuando un usuario con rol **Admin** entra a `/admin`, el sidebar y la página cambian:
+## Aclaración previa importante
+No puedo "copiar" las cuentas de pago del proyecto externo `rpjsoftware.com/eSIM` — cada proyecto en Lovable tiene sus propias conexiones aisladas y no tengo acceso a las credenciales de ese otro proyecto. Lo que sí puedo hacer es **dejar este proyecto listo para cobrar con Stripe**, usando la integración nativa de Lovable (sin necesidad de pegar API keys). Si después quieres unificar contabilidad con tu otra cuenta Stripe, lo gestionas desde el dashboard de Stripe (mismo email comercial, mismas cuentas bancarias).
 
-- El sidebar **NO** muestra: Panel, Nuevo análisis, Informes, Historial.
-- El sidebar **NO** muestra el bloque "Acceso rápido" (Subir ZIP/JSON, Comprar créditos).
-- El sidebar **SÍ** muestra como navegación principal: **Clientes**, **Tokens**, **Salud del sistema** (las tabs actuales).
-- La página `/admin` deja de mostrar la barra de Tabs interna; el contenido cambia según la sección elegida en el sidebar.
+Además, el `recommend_payment_provider` confirma que para "Spyware Forensic Analyzer" el proveedor correcto es **Stripe** (Paddle no es elegible automáticamente para este tipo de servicio forense). Por eso descartamos Paddle.
 
-Para el resto de usuarios (no admin) y para el admin cuando está fuera de `/admin` (p. ej. en `/dashboard`), el sidebar sigue **idéntico a hoy**. No se toca nada más del proyecto.
+## Qué se va a construir
 
-## Cambios
+### 1. Habilitar Stripe Payments
+Activar la integración nativa `enable_stripe_payments`. Esto crea automáticamente un entorno **test** (sandbox) para probar sin dinero real. Para cobrar en **live** necesitarás reclamar la cuenta Stripe que se crea (verificación KYC y datos bancarios). Tú rellenas un formulario corto (email, nombre, negocio) cuando se ejecute.
 
-### 1. `src/components/app-shell.tsx`
-- Detectar `isAdminRoute = path.startsWith("/admin")` y `isAdmin = userCode === "Admin"`.
-- Si `isAdmin && isAdminRoute`:
-  - Sustituir el array `nav` por las tres entradas admin, apuntando a query params:
-    - Clientes → `/admin?tab=clients` (icon `Users`)
-    - Tokens → `/admin?tab=tokens` (icon `Ticket`)
-    - Salud del sistema → `/admin?tab=health` (icon `Activity`)
-  - Marcar activo según el `tab` actual (leído con `useRouterState` → `location.search`), con `clients` como default.
-  - Ocultar el bloque "Acceso rápido" completo (input file, botón Subir ZIP/JSON, botón Comprar créditos, texto de ayuda, errores).
-  - Cambiar el label de sección de `shell.sectionPrimary` a `Administración`.
-- El resto del shell (logo, tarjeta de usuario, logout, selector de idioma, header móvil) se mantiene.
+### 2. Política de impuestos
+Antes de crear productos preguntaré qué nivel de gestión fiscal quieres:
+- **Compliance total** (+3,5% por transacción): Stripe calcula, recauda, declara y paga IVA/VAT en ~80 países por ti. Recomendado para servicio digital vendido internacionalmente.
+- **Solo cálculo** (+0,5%): Stripe calcula y cobra el IVA correcto; tú declaras.
+- **Sin automatización**: tú te encargas de todo.
 
-### 2. `src/routes/admin.tsx`
-- Declarar `validateSearch` en `createFileRoute` para el parámetro `tab: "clients" | "tokens" | "health"` (default `clients`).
-- Reemplazar el bloque `<Tabs>` + `<TabsList>` + `<TabsContent>` por un switch sobre `Route.useSearch().tab` que renderiza `<ClientsTab />`, `<TokensTab />` o `<HealthTab />`.
-- Mantener el header "Administración / Panel de control" y la verificación de acceso actual sin cambios.
-- `ClientsTab`, `TokensTab`, `HealthTab` se quedan tal cual.
+### 3. Catálogo de paquetes de créditos
+Crear los productos en Stripe con `batch_create_product`. Propuesta inicial (1 análisis = 98 créditos), confirmamos contigo los precios exactos:
 
-## Notas técnicas
+| Paquete | Créditos | Análisis | Precio sugerido |
+|---|---|---|---|
+| Starter | 98 | 1 | 9,90 € |
+| Pro | 490 | 5 | 44,90 € |
+| Business | 980 | 10 | 84,90 € |
+| Enterprise | 4 900 | 50 | 399 € |
 
-- Uso de query param (`?tab=...`) en lugar de subrutas para evitar tener que crear `/admin/clients`, `/admin/tokens`, `/admin/health` y regenerar `routeTree.gen.ts` con más ficheros. El estado se comparte con el sidebar de forma type-safe vía `validateSearch`.
-- No se introducen tablas, migraciones ni cambios de backend.
-- No se modifica el comportamiento del shell para usuarios no admin ni cuando el admin navega por `/dashboard`, `/upload`, `/reports`, `/history`.
+(Si en tu proyecto eSIM tienes otra estructura/precios y quieres replicar, dímelos y los uso tal cual.)
+
+### 4. Flujo de compra integrado en la tarjeta existente
+Conectar el `purchase-card.tsx` actual (selector desplegable de paquetes) a Stripe:
+- Click en "Comprar" → server function crea una **Stripe Checkout Session** con el paquete seleccionado y `success_url` / `cancel_url` apuntando a `/dashboard`.
+- Redirección a Checkout hospedado por Stripe.
+- Tras pago OK → vuelta al dashboard con toast de confirmación.
+
+### 5. Webhook de confirmación y recarga de créditos
+Endpoint público `src/routes/api/public/webhooks/stripe.ts` que:
+- Verifica la firma `stripe-signature` con el webhook secret.
+- En `checkout.session.completed`: identifica al `account_id` (metadata de la sesión), suma los créditos correspondientes en la tabla `accounts` y registra la operación en `credit_recharges`.
+- Idempotente (no duplica recargas si Stripe reintenta el evento).
+
+### 6. Internacionalización
+Añadir claves en `es.json` / `en.json` para los mensajes del flujo de checkout, errores de pago y confirmaciones (siguiendo el namespace `purchase.*` ya existente).
+
+## Detalles técnicos
+
+- **Stack**: TanStack Start server functions (`createServerFn`) para crear sesiones de checkout; ruta `/api/public/webhooks/stripe` para el webhook (sin auth, validada por firma HMAC).
+- **DB**: reutiliza tablas existentes `accounts.credits` (UPDATE) y `credit_recharges` (INSERT vía `supabaseAdmin`). Añadir migración para columna `stripe_session_id` única en `credit_recharges` para garantizar idempotencia.
+- **Mapeo paquete → créditos**: en metadata de cada Product Stripe (`metadata.credits`).
+- **Seguridad**: webhook verifica firma con `STRIPE_WEBHOOK_SECRET` antes de tocar nada; todas las escrituras usan `supabaseAdmin` solo dentro del handler verificado.
+- **Lo que NO toco**: `purchase-card.tsx` mantiene su diseño actual, solo se cablea el `onClick` del botón de compra.
+
+## Orden de ejecución
+1. Habilitar Stripe Payments (formulario tuyo).
+2. Confirmar política fiscal + precios de paquetes.
+3. Crear productos en Stripe.
+4. Implementar checkout + webhook + migración DB.
+5. Probar en modo test con tarjeta `4242 4242 4242 4242`.
+6. Reclamar cuenta Stripe y pasar a live cuando estés listo.
+
+¿Apruebas el plan?

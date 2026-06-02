@@ -224,12 +224,6 @@
             "Al terminar, la app te dirá dónde se ha guardado el ZIP y te traerá de vuelta aquí para subirlo."
           ],
 
-          "unsignedSummary": "¿Sale un aviso de «editor desconocido» al abrirla?",
-          "unsigned": {
-            "normal": "Es normal: la app aún no tiene firma comercial (cuesta varios cientos al año). No es un virus, su código es abierto.",
-            "windows": "<b>Windows:</b> pulsa «Más información» → «Ejecutar de todos modos».",
-            "mac": "<b>macOS:</b> clic derecho sobre la app → «Abrir» → confirma."
-          }
         },
         "protocol": {
           "title": "Protocolo forense recomendado (máxima privacidad)",

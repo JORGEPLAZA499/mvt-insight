@@ -159,10 +159,6 @@ function Login() {
     }
   };
 
-  const registerBlocked =
-    !password ||
-    password !== confirm ||
-    scorePassword(password).level === "low";
 
   const copyCode = async () => {
     if (!issuedCode) return;

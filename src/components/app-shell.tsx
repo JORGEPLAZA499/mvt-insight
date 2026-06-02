@@ -144,7 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <img
               src={logoAsset.url}
               alt="Spyware Forensic Analyzer"
-              className="relative h-12 w-12 object-contain"
+              className="relative h-[72px] w-[72px] object-contain"
             />
           </div>
           <div className="min-w-0">
@@ -343,7 +343,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="flex-1 min-w-0 h-screen overflow-y-auto">
         <div className="md:hidden border-b border-border px-4 py-3 flex items-center gap-2">
-          <img src={logoAsset.url} alt="" className="h-8 w-8 object-contain" />
+          <img src={logoAsset.url} alt="" className="h-[48px] w-[48px] object-contain" />
           <span className="text-sm font-semibold">Spyware Forensic Analyzer</span>
         </div>
         <div className="hidden md:flex items-center justify-end border-b border-border/60 px-6 py-3 gap-4">

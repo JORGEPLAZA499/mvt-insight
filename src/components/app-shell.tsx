@@ -60,11 +60,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     for (const f of incoming) {
       const lower = f.name.toLowerCase();
       if (!lower.endsWith(".json") && !lower.endsWith(".zip")) {
-        setQuickError(`No soportado: ${f.name}`);
+        setQuickError(t("shell.quick.notSupported", { name: f.name }));
         continue;
       }
       if (f.size > QUICK_MAX_SIZE) {
-        setQuickError(`${f.name} supera 500 MB`);
+        setQuickError(t("shell.quick.tooBig", { name: f.name }));
         continue;
       }
       ok.push(f);
@@ -73,7 +73,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     setQuickBusy(true);
     const id = crypto.randomUUID();
-    const sourceName = ok.length === 1 ? ok[0].name : `${ok.length} archivos MVT`;
+    const sourceName = ok.length === 1 ? ok[0].name : t("shell.quick.filesLabel", { count: ok.length });
+
     const totalSize = ok.reduce((s, f) => s + f.size, 0);
     const base: Analysis = {
       id,

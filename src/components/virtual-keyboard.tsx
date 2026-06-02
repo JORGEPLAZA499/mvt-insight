@@ -78,7 +78,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
     >
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-          Teclado virtual {shuffled ? "(orden aleatorio)" : "(QWERTY)"}
+          Teclado virtual
         </span>
         <div className="flex gap-1">
           <button

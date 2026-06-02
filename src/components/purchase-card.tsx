@@ -103,9 +103,9 @@ export function PurchaseCard() {
                   className="text-4xl md:text-5xl font-bold tabular-nums bg-clip-text text-transparent"
                   style={{ backgroundImage: "var(--gradient-primary)" }}
                 >
-                  {credits} créditos
+                  98 créditos
                 </span>
-                <span className="text-sm text-muted-foreground">= {credits} €</span>
+                <span className="text-sm text-muted-foreground">/análisis</span>
               </div>
 
               <div className="mt-4">

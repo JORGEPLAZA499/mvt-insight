@@ -148,18 +148,107 @@ function Feature({ icon: Icon, text }: { icon: any; text: string }) {
   );
 }
 
-function PayGroup({ title, items }: { title: string; items: string[] }) {
+type BrandItem = { key: string; node: React.ReactNode };
+
+const cardBrands: BrandItem[] = [
+  {
+    key: "mc",
+    node: (
+      <div className="h-7 w-10 rounded-md bg-white grid place-items-center shadow-sm">
+        <svg viewBox="0 0 32 20" className="h-4">
+          <circle cx="12" cy="10" r="7" fill="#EB001B" />
+          <circle cx="20" cy="10" r="7" fill="#F79E1B" fillOpacity="0.9" />
+          <path d="M16 5.2a7 7 0 0 0 0 9.6 7 7 0 0 0 0-9.6Z" fill="#FF5F00" />
+        </svg>
+      </div>
+    ),
+  },
+  {
+    key: "visa",
+    node: (
+      <div className="h-7 w-10 rounded-md bg-white grid place-items-center shadow-sm">
+        <span className="text-[10px] font-black italic tracking-tight text-[#1A1F71]">VISA</span>
+      </div>
+    ),
+  },
+  {
+    key: "amex",
+    node: (
+      <div className="h-7 w-10 rounded-md bg-[#1F72CD] grid place-items-center shadow-sm">
+        <span className="text-[8px] font-black tracking-tight text-white">AMEX</span>
+      </div>
+    ),
+  },
+  {
+    key: "applepay",
+    node: (
+      <div className="h-7 w-10 rounded-md bg-black border border-white/10 grid place-items-center shadow-sm">
+        <span className="text-[9px] font-semibold text-white tracking-tight"> Pay</span>
+      </div>
+    ),
+  },
+  {
+    key: "gpay",
+    node: (
+      <div className="h-7 w-10 rounded-md bg-white grid place-items-center shadow-sm">
+        <span className="text-[8px] font-medium tracking-tight">
+          <span className="text-[#4285F4]">G</span>
+          <span className="text-[#EA4335]">o</span>
+          <span className="text-[#FBBC04]">o</span>
+          <span className="text-[#4285F4]">g</span>
+          <span className="text-[#34A853]">l</span>
+          <span className="text-[#EA4335]">e</span>
+          <span className="text-foreground/70"> Pay</span>
+        </span>
+      </div>
+    ),
+  },
+];
+
+const cryptoBrands: BrandItem[] = [
+  { key: "btc", node: <CryptoCircle bg="#F7931A" label="₿" /> },
+  {
+    key: "eth",
+    node: (
+      <CryptoCircle bg="#627EEA">
+        <svg viewBox="0 0 32 32" className="h-4 w-4">
+          <path fill="#fff" d="M16 4 9 16.3l7 4.1 7-4.1z" opacity=".9" />
+          <path fill="#fff" d="m16 21.6-7-4.1L16 28l7-10.5z" opacity=".7" />
+        </svg>
+      </CryptoCircle>
+    ),
+  },
+  { key: "usdt", node: <CryptoCircle bg="#26A17B" label="₮" /> },
+  { key: "trx", node: <CryptoCircle bg="#EF0027" label="T" /> },
+  { key: "bnb", node: <CryptoCircle bg="#F3BA2F" label="◆" /> },
+];
+
+function CryptoCircle({
+  bg,
+  label,
+  children,
+}: {
+  bg: string;
+  label?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div
+      className="h-7 w-7 rounded-full grid place-items-center shadow-sm text-white font-bold text-xs"
+      style={{ background: bg }}
+    >
+      {children ?? label}
+    </div>
+  );
+}
+
+function PayGroup({ title, items }: { title: string; items: BrandItem[] }) {
   return (
     <div>
       <div className="text-[10px] italic text-muted-foreground mb-1.5 text-center">{title}</div>
-      <div className="flex flex-wrap gap-1 justify-center">
+      <div className="flex flex-wrap gap-1.5 justify-center items-center">
         {items.map((it) => (
-          <span
-            key={it}
-            className="text-[9px] font-bold tracking-wider px-1.5 py-1 rounded-md bg-muted/70 border border-border text-foreground/80"
-          >
-            {it}
-          </span>
+          <div key={it.key}>{it.node}</div>
         ))}
       </div>
     </div>

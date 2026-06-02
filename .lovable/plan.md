@@ -1,73 +1,59 @@
-## Objetivo
+# Plan: Registro real con código de usuario y auto-eliminación
 
-Que cada vez que el usuario abra la app desktop:
-1. Consulte automáticamente si hay una nueva versión en GitHub Releases.
-2. Si existe, muestre una ventana modal **bloqueante** que no se puede cerrar.
-3. El único botón ("Actualizar ahora") descarga e instala la nueva versión, luego reinicia la app.
-4. Si no hay update, la app arranca normal.
+## Resumen del flujo
 
-## Cambios
+1. Usuario pulsa **Crear cuenta** → sistema genera código `XXX-XXX-XXX` (9 alfanuméricos A-Z/0-9, sin O/0/I/1 ambiguos).
+2. Usuario define contraseña (mín 8, mayúscula + minúscula + número).
+3. Backend crea la cuenta y muestra pantalla de confirmación:
+   > "Cuenta activada. Guarda en un lugar seguro tu código de usuario: **K7M-2P9-XQ4**. Si lo pierdes, nadie —ni siquiera la organización— podrá acceder al panel."
+4. Login = código de usuario + contraseña (sin email, sin recuperación).
+5. Si la cuenta no registra acceso durante **10 días**, se elimina automáticamente.
 
-### 1. `desktop/package.json`
-- Añadir dependencia `electron-updater`.
-- Añadir bloque `publish` apuntando a GitHub Releases:
-  ```json
-  "build": {
-    ...
-    "publish": [{
-      "provider": "github",
-      "owner": "<usuario-github>",
-      "repo": "<nombre-repo>"
-    }]
-  }
-  ```
-- Añadir script `release:win`: `vite build && electron-builder --win --publish always` (sube artefactos + `latest.yml` al release).
+## Cambios técnicos
 
-### 2. `desktop/electron/main.cjs`
-- Importar `autoUpdater` de `electron-updater` y configurar logging.
-- Al `app.whenReady()`, **antes** de crear la ventana principal:
-  - Crear ventana de "buscando actualización" pequeña (400x200, sin botones de cerrar).
-  - Llamar `autoUpdater.checkForUpdates()`.
-  - Si `update-not-available` → cerrar esa ventana y arrancar la app normal (`createWindow()`).
-  - Si `update-available` → cambiar el contenido del modal a "Hay una actualización vX.Y.Z disponible" + botón único "Actualizar ahora". Bloquear `close` con `e.preventDefault()` para que no se pueda cerrar con Alt+F4 ni la X.
-  - Al pulsar el botón → `autoUpdater.downloadUpdate()`, mostrar progreso (`download-progress` event).
-  - En `update-downloaded` → `autoUpdater.quitAndInstall()` (reinicia con la nueva versión instalada).
-  - Si hay error de red al consultar → mostrar "No se pudo verificar actualizaciones" con botón "Reintentar" y "Continuar sin actualizar" (única excepción permitida para no dejar la app inservible offline).
+### 1. Activar Lovable Cloud
+Necesario para base de datos, auth y cron job.
 
-### 3. `desktop/electron/updater.html` (nuevo)
-- HTML simple cargado por la ventana modal, con estados: "Buscando…", "Actualización disponible", "Descargando X%", "Instalando…".
-- Comunica con el main vía `ipcRenderer` (preload mínimo).
+### 2. Esquema de base de datos
+- Tabla `accounts`:
+  - `id uuid` (PK, = `auth.users.id`)
+  - `user_code text unique not null` (formato `XXX-XXX-XXX`)
+  - `password_hash text not null` (bcrypt vía pgcrypto)
+  - `created_at timestamptz`
+  - `last_login_at timestamptz` (se actualiza en cada login exitoso)
+- RLS activada; tabla solo accesible vía server functions con `supabaseAdmin`.
+- Índice único en `user_code`.
 
-### 4. `desktop/electron/preload-updater.cjs` (nuevo)
-- Expone al updater.html: `onState`, `onProgress`, `startUpdate`.
+### 3. Server functions (TanStack `createServerFn`)
+- `registerAccount()` → genera código único (reintenta si colisiona), valida contraseña, hashea con bcrypt, inserta fila, devuelve el código en texto plano **una sola vez**.
+- `loginWithCode({ code, password })` → busca por `user_code`, verifica hash, actualiza `last_login_at`, emite sesión (cookie httpOnly firmada con `SESSION_SECRET`).
+- `logout()` → limpia sesión.
+- `getCurrentAccount()` → devuelve datos del usuario actual.
 
-### 5. `.github/workflows/release.yml`
-- Verificar que ya existe (aparece en el árbol del proyecto). Ajustar/confirmar:
-  - Se ejecuta en `push` de tag `v*`.
-  - Corre `cd desktop && npm ci && npm run release:win` con `GH_TOKEN` (token automático de GitHub Actions) para que `electron-builder` publique el `.exe` + `latest.yml` en el Release.
+### 4. Auto-eliminación a 10 días
+- Endpoint público protegido: `/api/public/cron/purge-inactive` que ejecuta `DELETE FROM accounts WHERE last_login_at < now() - interval '10 days'`. Protegido con header secreto `CRON_SECRET`.
+- pg_cron diario invocando ese endpoint vía `net.http_post`.
 
-### 6. Flujo de release (documentar en `desktop/README.md`)
-1. Cambiar `version` en `desktop/package.json` (ej. `1.0.1`).
-2. Commit + tag `v1.0.1` + push.
-3. GitHub Actions construye y publica automáticamente el instalador.
-4. Los usuarios al abrir su app instalada verán el modal de actualización.
+### 5. Cambios de UI
+- Reemplazar `src/routes/login.tsx`:
+  - Modo **registro**: solo campo contraseña + confirmar. Al éxito → pantalla destacada con el código generado, botón "Copiar" y checkbox "He guardado mi código" para continuar.
+  - Modo **login**: campo código (con máscara `___-___-___`) + contraseña.
+- Eliminar campo email del flujo.
+- Validación cliente con Zod (formato código + política de contraseña con feedback en vivo).
+- Actualizar `src/lib/mock-store.ts` `getSession/setSession` para usar la sesión real del servidor (o reemplazar por hook `useAccount`).
+- Textos i18n ES/EN para los nuevos mensajes (privacidad, código irrecuperable, aviso de 10 días).
 
-## Detalles técnicos
+### 6. Aviso visible
+Tras login y en el dashboard, banner discreto: "Tu cuenta se eliminará si no inicias sesión durante 10 días."
 
-- **Comparación de versiones**: `electron-updater` lo hace solo, leyendo `version` de `package.json` vs. `latest.yml` del release.
-- **Modal verdaderamente bloqueante**: `BrowserWindow` con `closable: false`, `minimizable: false`, `resizable: false`, `frame: false` (sin barra de título con X), y handler `window.on('close', e => e.preventDefault())` como cinturón y tirantes.
-- **Sin firma de código**: el `.exe` no estará firmado → Windows SmartScreen mostrará warning "Aplicación no reconocida" la primera vez. Las auto-actualizaciones siguientes funcionan igual (es el mismo publisher hash). Se puede añadir firma más adelante sin cambiar el código.
-- **Primera instalación**: los usuarios actuales necesitan descargar manualmente la primera versión que incluya `electron-updater` (1.0.1). A partir de ahí, todas las siguientes se actualizan solas.
-- **Offline**: si no hay conexión, no podemos verificar updates. Permitimos "Continuar sin actualizar" solo en ese caso (error de red), no cuando hay update confirmado.
+## Notas de seguridad
+- Código generado con `crypto.randomBytes` y alfabeto sin ambigüedades.
+- Contraseña hasheada server-side (bcrypt, cost 12), nunca almacenada en claro.
+- Sesión en cookie httpOnly + Secure + SameSite=Lax.
+- Rate limiting básico en `loginWithCode` (in-memory por IP, advertencia: no apto para producción a gran escala — se puede mejorar después con tabla en DB).
+- El código solo se muestra una vez; no existe endpoint para recuperarlo.
 
 ## Fuera de alcance
-
-- Firma de código (certificado Windows).
-- Builds para macOS / Linux con auto-update (solo Windows en esta iteración; se puede añadir luego con el mismo patrón).
-- Cambios en la web pública.
-- UI custom muy elaborada del modal (será funcional y limpia, no animada).
-
-## Lo que necesito confirmar antes de implementar
-
-1. **Owner y repo de GitHub** donde están las releases (ej. `jorgeplaza/mvt-insight`). Lo necesito exacto para `package.json` → `publish`.
-2. Si el workflow `.github/workflows/release.yml` ya existente cubre el build del desktop, lo ajusto; si no, lo creo desde cero.
+- Recuperación de cuenta (intencionalmente imposible).
+- 2FA (se puede añadir después).
+- Migración de las cuentas mock existentes en localStorage (se descartan).

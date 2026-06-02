@@ -134,7 +134,7 @@ export function PurchaseCard() {
                 </span>
                 <span
                   aria-hidden
-                  className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"
+                  className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"
                   style={{
                     background:
                       "linear-gradient(90deg, transparent, color-mix(in oklab, white 35%, transparent), transparent)",

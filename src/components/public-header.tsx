@@ -15,11 +15,11 @@ export function PublicHeader({ anchorsToHome = false }: PublicHeaderProps) {
 
   return (
     <header className="border-b border-border/60 backdrop-blur-md sticky top-0 z-50 bg-background/70">
-      <div className="max-w-7xl mx-auto px-6 h-auto py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 h-auto py-2 md:py-3 lg:py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoAsset.url} alt="" className="h-[180px] w-auto object-contain" />
+          <img src={logoAsset.url} alt="" className="h-[80px] md:h-[100px] lg:h-[180px] w-auto object-contain" />
         </Link>
-        <nav className="hidden md:flex items-center gap-8 text-sm uppercase tracking-widest">
+        <nav className="hidden md:flex items-center gap-8 text-xs md:text-[11px] lg:text-sm uppercase tracking-widest">
           <a href={`${prefix}#features`} className="relative text-muted-foreground hover:text-primary transition-colors duration-300 group">
             <span className="drop-shadow-[0_0_6px_rgba(0,0,0,0)] group-hover:drop-shadow-[0_0_8px_var(--primary)] transition-all duration-300">
               {t("landing.nav.features")}

@@ -87,6 +87,14 @@ function AdminPanel() {
   );
 }
 
+function AdminSectionContent() {
+  const { tab } = Route.useSearch();
+  if (tab === "tokens") return <TokensTab />;
+  if (tab === "health") return <HealthTab />;
+  return <ClientsTab />;
+}
+
+
 function ClientsTab() {
   const fetchAccounts = useServerFn(listAccounts);
   const [rows, setRows] = useState<any[]>([]);

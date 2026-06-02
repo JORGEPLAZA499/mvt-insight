@@ -327,7 +327,7 @@ function Login() {
                   required
                   autoComplete="new-password"
                   value={confirm}
-                  onChange={setConfirm}
+                  onChange={(v) => { setConfirm(v); syncBuffer(confirmBuf, v); }}
                   placeholder="••••••••"
                 />
                 {confirm && confirm !== password && (

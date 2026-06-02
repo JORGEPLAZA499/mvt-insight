@@ -60,6 +60,12 @@ function Landing() {
               </span>
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300 shadow-[0_0_8px_var(--primary)]" />
             </a>
+            <a href="#legal" className="relative text-muted-foreground hover:text-primary transition-colors duration-300 group">
+              <span className="drop-shadow-[0_0_6px_rgba(0,0,0,0)] group-hover:drop-shadow-[0_0_8px_var(--primary)] transition-all duration-300">
+                {t("landing.nav.legal")}
+              </span>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300 shadow-[0_0_8px_var(--primary)]" />
+            </a>
           </nav>
           <div className="flex items-center gap-2">
             <LanguageSelector />
@@ -129,18 +135,20 @@ function Landing() {
         </div>
       </section>
 
+      {/* Legal */}
+      <section id="legal" className="scroll-mt-48 max-w-4xl mx-auto px-6 py-20">
+        <div className="rounded-xl border border-warning/40 bg-warning/5 p-6">
+          <h3 className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-warning" /> {t("landing.legal.title")}</h3>
+          <p className="text-sm text-muted-foreground">
+            {t("landing.legal.body")}
+          </p>
+        </div>
+      </section>
+
       <footer className="border-t border-border">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="rounded-xl border border-warning/40 bg-warning/5 p-6 mb-8">
-            <h3 className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-warning" /> {t("landing.legal.title")}</h3>
-            <p className="text-sm text-muted-foreground">
-              {t("landing.legal.body")}
-            </p>
-          </div>
-          <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>{t("landing.footer.copy", { year: new Date().getFullYear() })}</span>
-            <span>{t("landing.footer.engine")}</span>
-          </div>
+        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>{t("landing.footer.copy", { year: new Date().getFullYear() })}</span>
+          <span>{t("landing.footer.engine")}</span>
         </div>
       </footer>
     </div>

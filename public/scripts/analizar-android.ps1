@@ -199,7 +199,7 @@ while ($true) {
   Write-Host "Log completo:    $logFile"
   Write-Host "Subelo en la plataforma."
 
-  Start-Process "https://mvt-insight.lovable.app/upload"
+  Start-Process "https://spyware.rpjsoftware.com/upload"
 }
 catch {
   Write-Host ""

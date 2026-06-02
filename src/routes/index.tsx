@@ -47,10 +47,25 @@ function Landing() {
           <Link to="/" className="flex items-center gap-2">
             <img src={logoAsset.url} alt="" className="h-[150px] w-auto object-contain" />
           </Link>
-          <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-            <a href="#features" className="hover:text-foreground">{t("landing.nav.features")}</a>
-            <a href="#how" className="hover:text-foreground">{t("landing.nav.how")}</a>
-            <a href="#legal" className="hover:text-foreground">{t("landing.nav.legal")}</a>
+          <nav className="hidden md:flex items-center gap-8 text-sm uppercase tracking-widest">
+            <a href="#features" className="relative text-muted-foreground hover:text-primary transition-colors duration-300 group">
+              <span className="drop-shadow-[0_0_6px_rgba(0,0,0,0)] group-hover:drop-shadow-[0_0_8px_var(--primary)] transition-all duration-300">
+                {t("landing.nav.features")}
+              </span>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300 shadow-[0_0_8px_var(--primary)]" />
+            </a>
+            <a href="#how" className="relative text-muted-foreground hover:text-primary transition-colors duration-300 group">
+              <span className="drop-shadow-[0_0_6px_rgba(0,0,0,0)] group-hover:drop-shadow-[0_0_8px_var(--primary)] transition-all duration-300">
+                {t("landing.nav.how")}
+              </span>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300 shadow-[0_0_8px_var(--primary)]" />
+            </a>
+            <a href="#legal" className="relative text-muted-foreground hover:text-primary transition-colors duration-300 group">
+              <span className="drop-shadow-[0_0_6px_rgba(0,0,0,0)] group-hover:drop-shadow-[0_0_8px_var(--primary)] transition-all duration-300">
+                {t("landing.nav.legal")}
+              </span>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300 shadow-[0_0_8px_var(--primary)]" />
+            </a>
           </nav>
           <div className="flex items-center gap-2">
             <LanguageSelector />

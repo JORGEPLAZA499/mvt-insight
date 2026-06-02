@@ -12,6 +12,9 @@ import {
   Loader2,
   Coins,
   ShieldCheck,
+  Users,
+  Ticket,
+  Activity,
 } from "lucide-react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -38,6 +41,7 @@ const QUICK_MAX_SIZE = 500 * 1024 * 1024;
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const navigate = useNavigate();
   const [userCode, setUserCode] = useState<string | null>(null);
   const [historyCount, setHistoryCount] = useState(0);
@@ -91,15 +95,25 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   const isAdmin = userCode === "Admin";
-  const nav = [
-    { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },
-    { to: "/upload", label: t("shell.nav.newAnalysis"), icon: UploadCloud, hint: t("shell.nav.uploadHint"), highlight: true },
-    { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
-    { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
-    ...(isAdmin
-      ? [{ to: "/admin", label: "Administración", icon: ShieldCheck, hint: "Panel de control" }]
-      : []),
-  ];
+  const isAdminRoute = path.startsWith("/admin");
+  const adminTab = (typeof search?.tab === "string" ? search.tab : "clients") as string;
+  const inAdminMode = isAdmin && isAdminRoute;
+
+  const nav = inAdminMode
+    ? [
+        { to: "/admin", label: "Clientes", icon: Users, hint: "", search: { tab: "clients" }, tabKey: "clients" },
+        { to: "/admin", label: "Tokens", icon: Ticket, hint: "", search: { tab: "tokens" }, tabKey: "tokens" },
+        { to: "/admin", label: "Salud del sistema", icon: Activity, hint: "", search: { tab: "health" }, tabKey: "health" },
+      ]
+    : [
+        { to: "/dashboard", label: t("shell.nav.dashboard"), icon: LayoutDashboard, hint: t("shell.nav.dashboardHint") },
+        { to: "/upload", label: t("shell.nav.newAnalysis"), icon: UploadCloud, hint: t("shell.nav.uploadHint"), highlight: true },
+        { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
+        { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
+        ...(isAdmin
+          ? [{ to: "/admin", label: "Administración", icon: ShieldCheck, hint: "Panel de control" }]
+          : []),
+      ] as any[];
 
   // Redeem credit token dialog
   const redeemFn = useServerFn(redeemCreditToken);
@@ -216,22 +230,25 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Nav */}
         <div className="relative flex-1 px-3 py-4 overflow-y-auto">
           <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
-            {t("shell.sectionPrimary")}
+            {inAdminMode ? "Administración" : t("shell.sectionPrimary")}
           </div>
           <nav className="space-y-1">
             {nav.map((n) => {
-              const active = path.startsWith(n.to);
+              const active = inAdminMode
+                ? (n as any).tabKey === adminTab
+                : path.startsWith(n.to);
               const Icon = n.icon;
               const badge =
-                n.to === "/history" && historyCount > 0
+                !inAdminMode && n.to === "/history" && historyCount > 0
                   ? String(historyCount)
-                  : n.highlight && !active
+                  : !inAdminMode && (n as any).highlight && !active
                     ? "new"
                     : null;
               return (
                 <Link
-                  key={n.to}
+                  key={`${n.to}-${(n as any).tabKey ?? ""}`}
                   to={n.to}
+                  search={(n as any).search}
                   className={`relative group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
                     active
                       ? "text-foreground"
@@ -305,49 +322,52 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           {/* Quick upload */}
-          <div className="mt-5 px-2">
-            <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
-              Acceso rápido
-            </div>
-            <input
-              ref={quickInputRef}
-              type="file"
-              multiple
-              accept=".json,.zip"
-              className="hidden"
-              onChange={(e) => handleQuickUpload(e.target.files)}
-            />
-            <button
-              onClick={() => quickInputRef.current?.click()}
-              disabled={quickBusy}
-              className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 disabled:opacity-70 disabled:cursor-not-allowed transition"
-            >
-              {quickBusy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Zap className="h-4 w-4" />
+          {!inAdminMode && (
+            <div className="mt-5 px-2">
+              <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
+                Acceso rápido
+              </div>
+              <input
+                ref={quickInputRef}
+                type="file"
+                multiple
+                accept=".json,.zip"
+                className="hidden"
+                onChange={(e) => handleQuickUpload(e.target.files)}
+              />
+              <button
+                onClick={() => quickInputRef.current?.click()}
+                disabled={quickBusy}
+                className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 disabled:opacity-70 disabled:cursor-not-allowed transition"
+              >
+                {quickBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Zap className="h-4 w-4" />
+                )}
+                <span className="flex-1 text-left font-medium">
+                  {quickBusy ? "Procesando…" : "Subir ZIP/JSON"}
+                </span>
+                <UploadCloud className="h-4 w-4 opacity-80" />
+              </button>
+              <button
+                onClick={() => { setRedeemOpen(true); setRedeemError(null); setRedeemSuccess(null); }}
+                className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 transition mt-2"
+              >
+                <Coins className="h-4 w-4" />
+                <span className="flex-1 text-left font-medium">Comprar créditos</span>
+                <Sparkles className="h-4 w-4 opacity-80" />
+              </button>
+              <p className="px-2 mt-1.5 text-[10px] text-muted-foreground/70 leading-tight">
+                Sube directamente los archivos MVT sin pasar por el asistente.
+              </p>
+              {quickError && (
+                <p className="mt-2 px-2 text-[11px] text-destructive">{quickError}</p>
               )}
-              <span className="flex-1 text-left font-medium">
-                {quickBusy ? "Procesando…" : "Subir ZIP/JSON"}
-              </span>
-              <UploadCloud className="h-4 w-4 opacity-80" />
-            </button>
-            <button
-              onClick={() => { setRedeemOpen(true); setRedeemError(null); setRedeemSuccess(null); }}
-              className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 transition mt-2"
-            >
-              <Coins className="h-4 w-4" />
-              <span className="flex-1 text-left font-medium">Comprar créditos</span>
-              <Sparkles className="h-4 w-4 opacity-80" />
-            </button>
-            <p className="px-2 mt-1.5 text-[10px] text-muted-foreground/70 leading-tight">
-              Sube directamente los archivos MVT sin pasar por el asistente.
-            </p>
-            {quickError && (
-              <p className="mt-2 px-2 text-[11px] text-destructive">{quickError}</p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
+
 
         {/* User card + logout */}
         <div className="relative p-3">

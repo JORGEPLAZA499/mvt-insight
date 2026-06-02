@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Copy, RefreshCw, Users, Ticket, Activity } from "lucide-react";
+import { Loader2, Copy, RefreshCw } from "lucide-react";
 import {
   listAccounts,
   generateCreditToken,
@@ -16,8 +15,16 @@ import {
   getSystemHealth,
 } from "@/lib/admin.functions";
 
+type AdminTab = "clients" | "tokens" | "health";
+
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Panel de control" }] }),
+  validateSearch: (search: Record<string, unknown>): { tab: AdminTab } => {
+    const t = search.tab;
+    return {
+      tab: t === "tokens" || t === "health" ? t : "clients",
+    };
+  },
   component: AdminPanel,
 });
 
@@ -73,33 +80,20 @@ function AdminPanel() {
           </p>
         </div>
 
-        <Tabs defaultValue="clients">
-          <TabsList>
-            <TabsTrigger value="clients" className="gap-2">
-              <Users className="h-4 w-4" /> Clientes
-            </TabsTrigger>
-            <TabsTrigger value="tokens" className="gap-2">
-              <Ticket className="h-4 w-4" /> Tokens
-            </TabsTrigger>
-            <TabsTrigger value="health" className="gap-2">
-              <Activity className="h-4 w-4" /> Salud del sistema
-            </TabsTrigger>
-          </TabsList>
+        <AdminSectionContent />
 
-          <TabsContent value="clients" className="mt-6">
-            <ClientsTab />
-          </TabsContent>
-          <TabsContent value="tokens" className="mt-6">
-            <TokensTab />
-          </TabsContent>
-          <TabsContent value="health" className="mt-6">
-            <HealthTab />
-          </TabsContent>
-        </Tabs>
       </div>
     </AppShell>
   );
 }
+
+function AdminSectionContent() {
+  const { tab } = Route.useSearch();
+  if (tab === "tokens") return <TokensTab />;
+  if (tab === "health") return <HealthTab />;
+  return <ClientsTab />;
+}
+
 
 function ClientsTab() {
   const fetchAccounts = useServerFn(listAccounts);

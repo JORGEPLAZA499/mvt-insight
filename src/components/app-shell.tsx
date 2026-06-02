@@ -138,12 +138,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="relative">
             <div
               aria-hidden
-              className="absolute inset-0 rounded-lg blur-md opacity-70 group-hover:opacity-100 transition-opacity"
-              style={{ background: "var(--gradient-primary, linear-gradient(135deg, var(--primary), var(--primary)))" }}
+              className="absolute inset-0 rounded-lg blur-md opacity-60 group-hover:opacity-90 transition-opacity"
+              style={{ background: "radial-gradient(circle, color-mix(in oklab, var(--primary) 50%, transparent), transparent 70%)" }}
             />
-            <div className="relative h-10 w-10 rounded-lg bg-gradient-primary grid place-items-center shadow-glow">
-              <Shield className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img
+              src={logoAsset.url}
+              alt="Spyware Forensic Analyzer"
+              className="relative h-10 w-10 object-contain"
+            />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold tracking-tight truncate">

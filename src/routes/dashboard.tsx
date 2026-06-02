@@ -68,11 +68,6 @@ function Dashboard() {
             </h1>
             <p className="text-sm text-muted-foreground mt-1">{t("dashboard.subtitle")}</p>
           </div>
-          <Button asChild className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
-            <Link to="/upload">
-              <UploadCloud className="h-4 w-4 mr-2" /> {t("dashboard.ctaNew")}
-            </Link>
-          </Button>
         </div>
 
         {/* Hero gauges */}

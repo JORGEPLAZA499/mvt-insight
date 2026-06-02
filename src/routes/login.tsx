@@ -259,13 +259,12 @@ function Login() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="pwd">Contraseña</Label>
-                <Input
+                <PasswordField
                   id="pwd"
-                  type="password"
                   required
                   autoComplete="current-password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={setPassword}
                   placeholder="••••••••"
                 />
               </div>

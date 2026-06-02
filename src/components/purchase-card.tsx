@@ -1,5 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useTranslation } from "react-i18next";
 import { CreditCard, Bitcoin, ShieldCheck, Sparkles, X, FileText, ScanSearch } from "lucide-react";
+
 
 export const PURCHASE_EVENT = "open-purchase-card";
 

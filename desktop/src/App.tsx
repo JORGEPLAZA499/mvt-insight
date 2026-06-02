@@ -66,6 +66,26 @@ export function App() {
     }
   };
 
+  const Logo = ({ size = 72 }: { size?: number }) => (
+    <div
+      className={size >= 72 ? "brand-logo" : "brand-logo-sm"}
+      style={{
+        width: size,
+        height: size,
+        background: "linear-gradient(135deg, var(--primary), var(--primary-glow))",
+        color: "var(--primary-fg)",
+        display: "grid",
+        placeItems: "center",
+        fontWeight: 800,
+        fontSize: size * 0.32,
+        letterSpacing: "0.04em",
+      }}
+      aria-label="MVT Insight"
+    >
+      MVT
+    </div>
+  );
+
   const TopBar = (
     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
       <LanguageSelector />
@@ -77,6 +97,7 @@ export function App() {
       <div className="app">
         {TopBar}
         <div className="header">
+          <Logo size={72} />
           <h1>{tr("app.title", "MVT Insight Desktop")}</h1>
           <p>{tr("app.subtitle", "Análisis forense de indicios de spyware")}</p>
         </div>
@@ -84,7 +105,7 @@ export function App() {
           <button className="choice" onClick={() => start("android")}>
             <div className="icon">📱</div>
             <div className="title">{tr("welcome.android.title", "Android")}</div>
-            <div className="sub">{tr("welcome.android.sub", "Samsung, Xiaomi, Pixel…")}</div>
+            <div className="sub">{tr("welcome.android.sub", "Sistema operativo Android")}</div>
           </button>
           <button className="choice" onClick={() => start("ios")} disabled>
             <div className="icon">📲</div>

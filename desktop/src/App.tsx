@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./components/LanguageSelector";
+import logoUrl from "./assets/logo.png";
 
 type Device = "android" | "ios";
 type Screen = "welcome" | "running" | "done";

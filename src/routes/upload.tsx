@@ -450,7 +450,7 @@ function StepRun({
 
           <div className="grid sm:grid-cols-3 gap-2">
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-Setup-1.0.2.exe`}
+              href={`${RELEASES_BASE_URL}/MvtInsight-Setup-1.0.3.exe`}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "windows"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
@@ -461,7 +461,7 @@ function StepRun({
               Windows
             </a>
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-1.0.2-arm64.dmg`}
+              href={`${RELEASES_BASE_URL}/MvtInsight-1.0.3-arm64.dmg`}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "mac"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
@@ -472,7 +472,7 @@ function StepRun({
               macOS
             </a>
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-1.0.2.AppImage`}
+              href={`${RELEASES_BASE_URL}/MvtInsight-1.0.3.AppImage`}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "linux"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"

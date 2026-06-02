@@ -140,3 +140,5 @@
 .usb-pulse { transform-origin: center; animation: usb-pulse 1.6s ease-in-out infinite; transform-box: fill-box; }
 .usb-float { animation: usb-float 3s ease-in-out infinite; }
 .usb-float-delay { animation: usb-float 3s ease-in-out infinite; animation-delay: 1.5s; }
+
+html { scroll-behavior: smooth; }

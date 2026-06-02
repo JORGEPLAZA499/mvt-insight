@@ -1,4 +1,5 @@
-// Proceso principal de Electron — crea la ventana y ejecuta AndroidQF/MVT por debajo.
+// Proceso principal de Electron — gatea el arranque con auto-actualización obligatoria,
+// luego crea la ventana principal y ejecuta AndroidQF/MVT por debajo.
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -6,10 +7,23 @@ const os = require("os");
 const https = require("https");
 const { spawn } = require("child_process");
 const { pipeline } = require("stream/promises");
+const { autoUpdater } = require("electron-updater");
 
 const isDev = !app.isPackaged;
 
-function createWindow() {
+// Logging del updater (útil para soporte). En dev, redirige a consola.
+autoUpdater.logger = {
+  info: (m) => console.log("[updater]", m),
+  warn: (m) => console.warn("[updater]", m),
+  error: (m) => console.error("[updater]", m),
+  debug: (m) => console.log("[updater:debug]", m),
+};
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = false;
+
+/* ---------- Ventana principal ---------- */
+
+function createMainWindow() {
   const win = new BrowserWindow({
     width: 980,
     height: 720,
@@ -31,10 +45,185 @@ function createWindow() {
   if (isDev) win.webContents.openDevTools({ mode: "detach" });
 }
 
+/* ---------- Modal de actualización (bloqueante) ---------- */
+
+let updaterWindow = null;
+let updateMandatory = false; // true cuando ya sabemos que hay update disponible
+let updaterAllowClose = false;
+
+function createUpdaterWindow() {
+  updaterWindow = new BrowserWindow({
+    width: 440,
+    height: 240,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    closable: false,
+    frame: false,
+    alwaysOnTop: true,
+    backgroundColor: "#0b0b12",
+    webPreferences: {
+      preload: path.join(__dirname, "preload-updater.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  updaterWindow.loadFile(path.join(__dirname, "updater.html"));
+
+  // Bloquea cualquier intento de cerrar mientras la actualización sea obligatoria.
+  updaterWindow.on("close", (e) => {
+    if (!updaterAllowClose && updateMandatory) {
+      e.preventDefault();
+    }
+  });
+
+  return updaterWindow;
+}
+
+function sendUpdaterState(state) {
+  if (updaterWindow && !updaterWindow.isDestroyed()) {
+    updaterWindow.webContents.send("updater:state", state);
+  }
+}
+
+function closeUpdaterWindow() {
+  updaterAllowClose = true;
+  if (updaterWindow && !updaterWindow.isDestroyed()) {
+    updaterWindow.destroy();
+  }
+  updaterWindow = null;
+}
+
+/* ---------- Flujo de actualización ---------- */
+
+function checkForUpdates() {
+  // Espera a que el HTML cargue antes de enviar el primer estado.
+  updaterWindow.webContents.once("did-finish-load", () => {
+    sendUpdaterState({
+      title: "Buscando actualizaciones…",
+      message: "Comprobando si hay una nueva versión disponible.",
+      showSpinner: true,
+    });
+
+    autoUpdater.checkForUpdates().catch((err) => {
+      // Capturado también por el evento "error", pero por si acaso.
+      console.error("[updater] checkForUpdates rejected:", err);
+    });
+  });
+}
+
+autoUpdater.on("update-available", (info) => {
+  updateMandatory = true;
+  sendUpdaterState({
+    title: "Actualización disponible",
+    message: "Para continuar usando MVT Insight debes instalar la última versión.",
+    version: `Versión ${info.version}`,
+    showSpinner: false,
+    primaryLabel: "Actualizar ahora",
+    primaryAction: "startUpdate",
+  });
+});
+
+autoUpdater.on("update-not-available", () => {
+  closeUpdaterWindow();
+  createMainWindow();
+});
+
+autoUpdater.on("download-progress", (p) => {
+  sendUpdaterState({
+    title: "Descargando actualización…",
+    message: `${Math.round(p.percent)}% — ${formatBytes(p.transferred)} de ${formatBytes(p.total)}`,
+    showSpinner: false,
+    progress: p.percent,
+  });
+});
+
+autoUpdater.on("update-downloaded", () => {
+  sendUpdaterState({
+    title: "Instalando…",
+    message: "La app se reiniciará automáticamente en unos segundos.",
+    showSpinner: true,
+  });
+  // Pequeño delay para que se lea el mensaje, luego instala y reinicia.
+  setTimeout(() => {
+    updaterAllowClose = true;
+    autoUpdater.quitAndInstall(true, true);
+  }, 1200);
+});
+
+autoUpdater.on("error", (err) => {
+  console.error("[updater] error:", err);
+  // Error de red o servidor: NO bloqueamos al usuario, pero le avisamos.
+  updateMandatory = false;
+  sendUpdaterState({
+    title: "No se pudo comprobar actualizaciones",
+    message: "Revisa tu conexión a internet. Puedes reintentar o continuar.",
+    showSpinner: false,
+    primaryLabel: "Reintentar",
+    primaryAction: "retry",
+    showSecondary: true,
+  });
+});
+
+ipcMain.on("updater:start", () => {
+  sendUpdaterState({
+    title: "Descargando actualización…",
+    message: "Preparando la descarga.",
+    showSpinner: true,
+    progress: 0,
+  });
+  autoUpdater.downloadUpdate().catch((err) => {
+    console.error("[updater] downloadUpdate failed:", err);
+    sendUpdaterState({
+      title: "Error al descargar",
+      message: err.message || "No se pudo descargar la actualización.",
+      showSpinner: false,
+      primaryLabel: "Reintentar",
+      primaryAction: "startUpdate",
+    });
+  });
+});
+
+ipcMain.on("updater:retry", () => {
+  sendUpdaterState({
+    title: "Buscando actualizaciones…",
+    message: "Reintentando…",
+    showSpinner: true,
+  });
+  autoUpdater.checkForUpdates().catch(() => {});
+});
+
+ipcMain.on("updater:skip", () => {
+  // Solo permitido cuando NO hay update confirmado (escenario offline).
+  if (!updateMandatory) {
+    closeUpdaterWindow();
+    createMainWindow();
+  }
+});
+
+function formatBytes(b) {
+  if (!b) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(b) / Math.log(k));
+  return (b / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
+}
+
+/* ---------- Arranque ---------- */
+
 app.whenReady().then(() => {
-  createWindow();
+  if (isDev) {
+    // En desarrollo no hay metadatos publicados; saltamos el updater.
+    createMainWindow();
+  } else {
+    createUpdaterWindow();
+    checkForUpdates();
+  }
+
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
 });
 
@@ -42,7 +231,7 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-/* ---------- Helpers ---------- */
+/* ---------- Helpers AndroidQF ---------- */
 
 const ANDROIDQF_RELEASES = {
   win32: "https://github.com/mvt-project/androidqf/releases/latest/download/androidqf_windows_amd64.exe",

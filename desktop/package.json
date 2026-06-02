@@ -1,6 +1,6 @@
 {
   "name": "mvt-insight-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MVT Insight — App de escritorio para recolectar datos forenses de Android/iOS y subirlos a mvt-insight.lovable.app",
   "main": "electron/main.cjs",
   "private": true,
@@ -13,9 +13,9 @@
     "dev": "vite",
     "build": "vite build",
     "electron:dev": "vite build && electron .",
-    "dist:win": "vite build && electron-builder --win --publish never",
-    "dist:mac": "vite build && electron-builder --mac --publish never",
-    "dist:linux": "vite build && electron-builder --linux --publish never"
+    "dist:win": "vite build && electron-builder --win --publish always",
+    "dist:mac": "vite build && electron-builder --mac --publish always",
+    "dist:linux": "vite build && electron-builder --linux --publish always"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
@@ -25,6 +25,7 @@
     "vite": "^7.0.0"
   },
   "dependencies": {
+    "electron-updater": "^6.8.3",
     "i18next": "^23.15.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -42,9 +43,19 @@
       "dist/**/*",
       "package.json"
     ],
+    "publish": [
+      {
+        "provider": "github"
+      }
+    ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "artifactName": "MvtInsight-Setup-${version}.${ext}"
     },
@@ -58,14 +69,25 @@
     },
     "mac": {
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "artifactName": "MvtInsight-${version}-${arch}.${ext}",
       "category": "public.app-category.utilities"
     },
     "linux": {
       "target": [
-        { "target": "AppImage", "arch": ["x64"] }
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "artifactName": "MvtInsight-${version}.${ext}",
       "category": "Utility"

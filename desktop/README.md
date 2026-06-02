@@ -1,20 +1,22 @@
 # MVT Insight Desktop
 
-App de escritorio (Electron + React) que reemplaza al lanzador `.ps1` / `.sh` con una interfaz visual: botones, barras de progreso y respuestas automáticas a las preguntas de AndroidQF.
+App de escritorio (Electron + React) con auto-actualización obligatoria desde GitHub Releases.
 
 ## Estructura
 
 ```
 desktop/
 ├── electron/
-│   ├── main.cjs      Proceso principal (ventana + spawn de AndroidQF/MVT)
-│   └── preload.cjs   Bridge seguro contexto-aislado entre Node y React
+│   ├── main.cjs              Proceso principal + flujo de auto-update
+│   ├── preload.cjs           Bridge React ↔ Node
+│   ├── updater.html          UI del modal de actualización
+│   └── preload-updater.cjs   Bridge del modal de actualización
 ├── src/
-│   ├── main.tsx      Entry React
-│   ├── App.tsx       3 pantallas: bienvenida, ejecución, listo
-│   └── styles.css    Tema oscuro (mismo lenguaje visual que la web)
+│   ├── main.tsx
+│   ├── App.tsx
+│   └── styles.css
 ├── index.html
-├── vite.config.ts    base: './' (obligatorio para Electron)
+├── vite.config.ts
 └── package.json
 ```
 
@@ -23,61 +25,46 @@ desktop/
 ```bash
 cd desktop
 npm install
-npm run electron:dev    # compila la UI con Vite y abre Electron
+npm run electron:dev    # En dev se salta el chequeo de updates
 ```
 
-> **Windows PowerShell 5.1** (el que trae Windows por defecto) NO soporta `&&`.
-> Ejecuta los comandos en líneas separadas, o usa `;`, o instala PowerShell 7
-> (`https://aka.ms/PSWindows`) que sí acepta `&&` y `||` como bash.
->
-> ```powershell
-> # ❌ No funciona en PowerShell 5.1
-> npm install && npm run package:win
->
-> # ✅ Alternativas válidas
-> npm install; npm run package:win
-> npm install; if ($?) { npm run package:win }   # equivalente a &&
-> ```
+## Publicar una nueva versión
 
-## Empaquetado
+1. Sube `version` en `desktop/package.json` (ej. `1.0.2`).
+2. Commit y crea el tag correspondiente:
+   ```bash
+   git tag v1.0.2
+   git push origin v1.0.2
+   ```
+3. GitHub Actions construye los instaladores (Windows / macOS / Linux) y publica
+   automáticamente el Release con los archivos `.exe`, `.dmg`, `.AppImage` **y**
+   los metadatos `latest.yml`, `latest-mac.yml`, `latest-linux.yml` que
+   `electron-updater` necesita.
+4. La próxima vez que cada usuario abra su app instalada, verá el modal
+   bloqueante "Actualización disponible" y deberá pulsar **Actualizar ahora**
+   para continuar.
 
-```bash
-npm run package:win     # → desktop/release/MvtInsight-win32-x64/
-npm run package:mac     # → desktop/release/MvtInsight-darwin-x64/
-npm run package:linux   # → desktop/release/MvtInsight-linux-x64/
-```
+> El owner/repo se detecta automáticamente del remoto de Git durante el build
+> en GitHub Actions, no hay que configurarlo en `package.json`.
 
-Comprime cada carpeta resultante (`.zip` o `.tar.gz`) y súbela como
-release en GitHub. La web (`/upload`) ya enlaza a estas URLs:
+## Flujo de auto-actualización
 
-- `https://mvt-insight.lovable.app/downloads/MvtInsight-windows-x64.zip`
-- `https://mvt-insight.lovable.app/downloads/MvtInsight-macos-x64.zip`
-- `https://mvt-insight.lovable.app/downloads/MvtInsight-linux-x64.tar.gz`
+1. Al abrir la app (solo en builds empaquetados, no en dev), se muestra un
+   modal "Buscando actualizaciones…" antes de cargar la UI principal.
+2. Si hay versión nueva → modal bloqueante con un único botón "Actualizar
+   ahora". No se puede cerrar, minimizar ni saltar.
+3. Al pulsarlo se descarga el instalador con barra de progreso, luego se
+   instala y la app se reinicia sola en la versión nueva.
+4. Si no hay versión nueva → arranca la app normal.
+5. Si falla la consulta (sin internet) → opción de Reintentar o Continuar
+   sin actualizar (única excepción al bloqueo).
 
-> **Nota:** este sandbox no puede generar instaladores `.exe`/`.dmg`
-> firmados. Para producción habría que usar GitHub Actions (con runners
-> de cada SO) más un certificado de firma de código.
+## Notas
 
-## Cómo funciona el flujo Android
-
-1. Descarga el binario oficial **AndroidQF** desde el release de GitHub
-   (`mvt-project/androidqf`) a `~/Downloads/mvt-insight/`.
-2. Lo ejecuta con `child_process.spawn` y captura su `stdout`.
-3. Cuando AndroidQF imprime una pregunta (`Would you like to take a backup?`,
-   `Download: ...`, `Upload to VirusTotal?`, `Remove?`), el proceso escribe
-   automáticamente las respuestas óptimas en `stdin`:
-   - **Everything** (backup completo)
-   - **All** (incluye APKs del sistema)
-   - **No** (no VirusTotal)
-   - **No** (conservar APKs)
-4. Las líneas `Failed to pull log file` aparecen solo en el panel
-   colapsable "Ver detalles técnicos", no asustan al usuario.
-5. Al terminar, busca el ZIP más reciente en la carpeta y lo muestra junto
-   con dos botones: **Subir al informe** (abre el navegador) y **Abrir carpeta**.
-
-## Pendiente (Fase 2)
-
-- Flujo iOS completo en macOS (libimobiledevice + MVT).
-- Detección automática de adb instalado vs. descarga de platform-tools.
-- Auto-actualización con `electron-updater`.
-- Firma de código y notarización para evitar avisos de SmartScreen/Gatekeeper.
+- **Sin firma de código**: Windows SmartScreen mostrará un aviso la primera
+  vez que el usuario instala. Las auto-actualizaciones siguientes funcionan
+  igual. Para producción se recomienda firmar el `.exe` (no incluido).
+- **Primera actualización**: solo los usuarios que ya tengan instalada una
+  versión con `electron-updater` (≥ 1.0.1) recibirán updates automáticos.
+  Usuarios con versiones previas deben descargar el nuevo instalador
+  manualmente la primera vez.

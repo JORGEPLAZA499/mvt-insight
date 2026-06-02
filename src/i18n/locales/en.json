@@ -213,16 +213,17 @@
         },
         "download": {
           "title": "Download the desktop app",
-          "intro": "Download the <b>MVT Insight Desktop</b> app for your system. The app does the entire analysis with one click: it downloads the tools, talks to the phone, and saves a ZIP ready to upload here. <b>No black window, no commands.</b>",
+          "intro": "Your phone is already plugged in via USB. Now download the <b>MVT Insight Desktop</b> app on your computer: with one click it will download the tools, talk to the phone that's already connected, and save a ZIP ready to upload here. <b>No black window, no commands.</b>",
           "appName": "MVT Insight Desktop",
           "version": "Version 1.0 · Analysis with visual UI and progress bars",
           "recommended": "Recommended for you: <b>{{os}}</b> (auto-detected) ·",
           "seeAll": "See all versions on GitHub",
           "instructions": [
-            "Unzip the downloaded file and <b>double-click</b> <code>MvtInsight</code>.",
-            "Click <b>\"Start analysis\"</b> inside the app. You'll see progress bars for each phase (download, connect, collect).",
-            "When it finishes, the app will show you where the ZIP is and bring you back here to upload it."
+            "Unzip the downloaded file and <b>double-click</b> <code>MvtInsight</code> to open the app.",
+            "With the phone <b>still connected via USB and unlocked</b>, click <b>\"Start analysis\"</b> inside the app. You'll see progress bars for each phase (downloading tools and collecting data from the phone).",
+            "When it finishes, the app will show you where the ZIP was saved and bring you back here to upload it."
           ],
+
           "unsignedSummary": "Getting an \"unknown publisher\" warning when opening it?",
           "unsigned": {
             "normal": "That's normal: the app isn't commercially signed yet (it costs several hundred a year). It's not a virus — the source code is open.",

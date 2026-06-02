@@ -213,16 +213,17 @@
         },
         "download": {
           "title": "Descarga la app de escritorio",
-          "intro": "Descarga la app <b>MVT Insight Desktop</b> para tu sistema. La app hace todo el análisis con un solo botón: descarga las herramientas, conecta con el móvil y guarda el ZIP listo para subir aquí. <b>Sin ventana negra ni comandos.</b>",
+          "intro": "Ya tienes el móvil conectado por USB. Ahora descarga la app <b>MVT Insight Desktop</b> en tu computador: con un solo botón descargará las herramientas, hablará con el móvil que ya tienes enchufado y guardará un ZIP listo para subir aquí. <b>Sin ventana negra ni comandos.</b>",
           "appName": "MVT Insight Desktop",
           "version": "Versión 1.0 · Análisis con interfaz visual y barras de progreso",
           "recommended": "Recomendado para ti: <b>{{os}}</b> (detectado automáticamente) ·",
           "seeAll": "Ver todas las versiones en GitHub",
           "instructions": [
-            "Descomprime el archivo descargado y haz <b>doble clic</b> en <code>MvtInsight</code>.",
-            "Pulsa <b>«Iniciar análisis»</b> dentro de la app. Verás barras de progreso para cada fase (descarga, conexión, recolección).",
-            "Al terminar, la app te dirá dónde está el ZIP y te traerá de vuelta aquí para subirlo."
+            "Descomprime el archivo descargado y haz <b>doble clic</b> en <code>MvtInsight</code> para abrir la app.",
+            "Con el móvil <b>aún conectado por USB y desbloqueado</b>, pulsa <b>«Iniciar análisis»</b> dentro de la app. Verás barras de progreso para cada fase (descarga de herramientas y recolección de datos del móvil).",
+            "Al terminar, la app te dirá dónde se ha guardado el ZIP y te traerá de vuelta aquí para subirlo."
           ],
+
           "unsignedSummary": "¿Sale un aviso de «editor desconocido» al abrirla?",
           "unsigned": {
             "normal": "Es normal: la app aún no tiene firma comercial (cuesta varios cientos al año). No es un virus, su código es abierto.",

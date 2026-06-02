@@ -230,22 +230,25 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Nav */}
         <div className="relative flex-1 px-3 py-4 overflow-y-auto">
           <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
-            {t("shell.sectionPrimary")}
+            {inAdminMode ? "Administración" : t("shell.sectionPrimary")}
           </div>
           <nav className="space-y-1">
             {nav.map((n) => {
-              const active = path.startsWith(n.to);
+              const active = inAdminMode
+                ? (n as any).tabKey === adminTab
+                : path.startsWith(n.to);
               const Icon = n.icon;
               const badge =
-                n.to === "/history" && historyCount > 0
+                !inAdminMode && n.to === "/history" && historyCount > 0
                   ? String(historyCount)
-                  : n.highlight && !active
+                  : !inAdminMode && (n as any).highlight && !active
                     ? "new"
                     : null;
               return (
                 <Link
-                  key={n.to}
+                  key={`${n.to}-${(n as any).tabKey ?? ""}`}
                   to={n.to}
+                  search={(n as any).search}
                   className={`relative group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
                     active
                       ? "text-foreground"

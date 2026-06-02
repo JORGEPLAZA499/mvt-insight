@@ -1,4 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Shield,
   LayoutDashboard,
@@ -10,6 +11,7 @@ import {
   Zap,
   Loader2,
   Coins,
+  ShieldCheck,
 } from "lucide-react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -18,6 +20,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 import { LanguageSelector } from "@/components/language-selector";
 import logoAsset from "@/assets/logo.png.asset.json";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { redeemCreditToken } from "@/lib/credits.functions";
 
 const QUICK_MAX_SIZE = 500 * 1024 * 1024;
 

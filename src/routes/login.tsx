@@ -54,7 +54,8 @@ function Login() {
   const resolveEmail = useServerFn(resolveLoginEmail);
   const touch = useServerFn(touchLastLogin);
 
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const search = Route.useSearch();
+  const [mode, setMode] = useState<"login" | "register">(search.mode ?? "login");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");

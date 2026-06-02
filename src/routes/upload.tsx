@@ -206,19 +206,6 @@ function StepRun({
     );
   }
 
-  const preambleStep = {
-    title: t("upload.step3.substeps.preamble.title"),
-    content: (
-      <>
-        <p className="mt-2 text-sm text-muted-foreground">
-          <Trans i18nKey="upload.step3.substeps.preamble.body" components={transComponents} />
-        </p>
-        <div className="mt-4 rounded-xl border border-border bg-card/40 p-4">
-          <UsbConnect />
-        </div>
-      </>
-    ),
-  };
 
   const protocolStep = {
     title: t("upload.step3.substeps.protocol.title"),
@@ -278,7 +265,6 @@ function StepRun({
   const subSteps: { title: string; content: React.ReactNode }[] =
     device === "android"
       ? [
-          preambleStep,
           {
             title: t("upload.step3.substeps.dev.title"),
             content: (
@@ -332,7 +318,7 @@ function StepRun({
           },
         ]
       : [
-          preambleStep,
+          
           {
             title: t("upload.step3.substeps.iosTrust.title"),
             content: (
@@ -371,7 +357,7 @@ function StepRun({
           },
         ];
 
-  subSteps.push({
+  const downloadStep = {
     title: t("upload.step3.substeps.download.title"),
     content: (
       <>
@@ -460,9 +446,9 @@ function StepRun({
 
       </>
     ),
-  });
+  };
 
-  subSteps.push(protocolStep);
+  subSteps.unshift(downloadStep, protocolStep);
 
   subSteps.push({
     title: t("upload.step3.substeps.upload.title"),

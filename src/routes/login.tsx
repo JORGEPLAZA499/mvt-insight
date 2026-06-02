@@ -392,6 +392,7 @@ function Login() {
               setError(null);
               setPassword("");
               setConfirm("");
+              setRegisterStep(1);
             }}
             className="mt-6 text-xs text-muted-foreground hover:text-foreground"
           >

@@ -133,6 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     try {
       const r = await redeemFn({ data: { code: redeemCode.trim() } });
       setRedeemSuccess(`+${r.credits_added} créditos. Saldo: ${r.new_balance}`);
+      setCredits(r.new_balance);
       setRedeemCode("");
     } catch (e: any) {
       setRedeemError(e?.message ?? "No se pudo canjear el token");

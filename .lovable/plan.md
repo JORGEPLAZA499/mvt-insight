@@ -1,62 +1,90 @@
-# Plan: Pagos con Stripe (paquetes de créditos)
+# Plan: Stripe checkout para los 10 paquetes de créditos
 
-## Aclaración previa importante
-No puedo "copiar" las cuentas de pago del proyecto externo `rpjsoftware.com/eSIM` — cada proyecto en Lovable tiene sus propias conexiones aisladas y no tengo acceso a las credenciales de ese otro proyecto. Lo que sí puedo hacer es **dejar este proyecto listo para cobrar con Stripe**, usando la integración nativa de Lovable (sin necesidad de pegar API keys). Si después quieres unificar contabilidad con tu otra cuenta Stripe, lo gestionas desde el dashboard de Stripe (mismo email comercial, mismas cuentas bancarias).
+## Datos confirmados
+- **Proveedor**: Stripe Payments gestionado por Lovable (ya habilitado en el turno anterior).
+- **IVA**: Compliance total (+3,5%) — `managed_payments: { enabled: true }` en cada sesión, `tax_code = txcd_10103001` (SaaS / servicios electrónicos forenses).
+- **Moneda**: EUR.
+- **Catálogo** (extraído del selector `CREDIT_OPTIONS` y del i18n `{{credits}} €`):
 
-Además, el `recommend_payment_provider` confirma que para "Spyware Forensic Analyzer" el proveedor correcto es **Stripe** (Paddle no es elegible automáticamente para este tipo de servicio forense). Por eso descartamos Paddle.
-
-## Qué se va a construir
-
-### 1. Habilitar Stripe Payments
-Activar la integración nativa `enable_stripe_payments`. Esto crea automáticamente un entorno **test** (sandbox) para probar sin dinero real. Para cobrar en **live** necesitarás reclamar la cuenta Stripe que se crea (verificación KYC y datos bancarios). Tú rellenas un formulario corto (email, nombre, negocio) cuando se ejecute.
-
-### 2. Política de impuestos
-Antes de crear productos preguntaré qué nivel de gestión fiscal quieres:
-- **Compliance total** (+3,5% por transacción): Stripe calcula, recauda, declara y paga IVA/VAT en ~80 países por ti. Recomendado para servicio digital vendido internacionalmente.
-- **Solo cálculo** (+0,5%): Stripe calcula y cobra el IVA correcto; tú declaras.
-- **Sin automatización**: tú te encargas de todo.
-
-### 3. Catálogo de paquetes de créditos
-Crear los productos en Stripe con `batch_create_product`. Propuesta inicial (1 análisis = 98 créditos), confirmamos contigo los precios exactos:
-
-| Paquete | Créditos | Análisis | Precio sugerido |
+| ID Stripe | Créditos | Análisis | Precio |
 |---|---|---|---|
-| Starter | 98 | 1 | 9,90 € |
-| Pro | 490 | 5 | 44,90 € |
-| Business | 980 | 10 | 84,90 € |
-| Enterprise | 4 900 | 50 | 399 € |
+| `credits_98`  | 98  | 1  | 98 € |
+| `credits_196` | 196 | 2  | 196 € |
+| `credits_294` | 294 | 3  | 294 € |
+| `credits_392` | 392 | 4  | 392 € |
+| `credits_490` | 490 | 5  | 490 € |
+| `credits_588` | 588 | 6  | 588 € |
+| `credits_686` | 686 | 7  | 686 € |
+| `credits_784` | 784 | 8  | 784 € |
+| `credits_882` | 882 | 9  | 882 € |
+| `credits_980` | 980 | 10 | 980 € |
 
-(Si en tu proyecto eSIM tienes otra estructura/precios y quieres replicar, dímelos y los uso tal cual.)
+Cada producto guarda `metadata.credits` con el número exacto, para que el webhook sepa cuánto sumar.
 
-### 4. Flujo de compra integrado en la tarjeta existente
-Conectar el `purchase-card.tsx` actual (selector desplegable de paquetes) a Stripe:
-- Click en "Comprar" → server function crea una **Stripe Checkout Session** con el paquete seleccionado y `success_url` / `cancel_url` apuntando a `/dashboard`.
-- Redirección a Checkout hospedado por Stripe.
-- Tras pago OK → vuelta al dashboard con toast de confirmación.
+## Qué construyo
 
-### 5. Webhook de confirmación y recarga de créditos
-Endpoint público `src/routes/api/public/webhooks/stripe.ts` que:
-- Verifica la firma `stripe-signature` con el webhook secret.
-- En `checkout.session.completed`: identifica al `account_id` (metadata de la sesión), suma los créditos correspondientes en la tabla `accounts` y registra la operación en `credit_recharges`.
-- Idempotente (no duplica recargas si Stripe reintenta el evento).
+### 1. Productos en Stripe
+Una llamada a `batch_create_product` con los 10 productos, todos con:
+- `currency: "eur"`, `amount` en céntimos (9800, 19600, …, 98000)
+- `quantity_min/max = 1` (paquete único, no por unidades)
+- `tax_code: "txcd_10103001"`
 
-### 6. Internacionalización
-Añadir claves en `es.json` / `en.json` para los mensajes del flujo de checkout, errores de pago y confirmaciones (siguiendo el namespace `purchase.*` ya existente).
+Después, un setup único que añade `metadata.credits` a cada producto vía `stripe.products.update` (la herramienta `batch_create_product` no acepta metadata).
 
-## Detalles técnicos
+### 2. Migración DB
+Añadir a `credit_recharges`:
+- columna `stripe_session_id text unique` (idempotencia del webhook)
+- columna `source text default 'token'` (`'token'` vs `'stripe'`)
+- GRANT correcto a `service_role` (ya lo tiene por defecto en este proyecto, verifico).
 
-- **Stack**: TanStack Start server functions (`createServerFn`) para crear sesiones de checkout; ruta `/api/public/webhooks/stripe` para el webhook (sin auth, validada por firma HMAC).
-- **DB**: reutiliza tablas existentes `accounts.credits` (UPDATE) y `credit_recharges` (INSERT vía `supabaseAdmin`). Añadir migración para columna `stripe_session_id` única en `credit_recharges` para garantizar idempotencia.
-- **Mapeo paquete → créditos**: en metadata de cada Product Stripe (`metadata.credits`).
-- **Seguridad**: webhook verifica firma con `STRIPE_WEBHOOK_SECRET` antes de tocar nada; todas las escrituras usan `supabaseAdmin` solo dentro del handler verificado.
-- **Lo que NO toco**: `purchase-card.tsx` mantiene su diseño actual, solo se cablea el `onClick` del botón de compra.
+### 3. Server functions (`src/lib/payments.functions.ts`)
+- `createCreditsCheckout({ priceId, environment })` con `requireSupabaseAuth`:
+  - Resuelve el `lookup_key` → `price.id` real.
+  - `resolveOrCreateCustomer` con `metadata.userId = auth.uid()`.
+  - Crea sesión Stripe Embedded: `mode: "payment"`, `ui_mode: "embedded_page"`, `managed_payments: { enabled: true }`, `metadata: { userId, credits, accountId }`, `payment_intent_data: { description: product.name }`, `return_url` → `/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}`.
+  - Devuelve `{ clientSecret }` o `{ error }` con `getStripeErrorMessage`.
 
-## Orden de ejecución
-1. Habilitar Stripe Payments (formulario tuyo).
-2. Confirmar política fiscal + precios de paquetes.
-3. Crear productos en Stripe.
-4. Implementar checkout + webhook + migración DB.
-5. Probar en modo test con tarjeta `4242 4242 4242 4242`.
-6. Reclamar cuenta Stripe y pasar a live cuando estés listo.
+### 4. Webhook (`src/routes/api/public/payments/webhook.ts`)
+Ruta EXACTA exigida por Lovable. Verifica firma con `verifyWebhook(req, env)`. En `checkout.session.completed`:
+1. Lee `session.metadata.userId`, `session.metadata.credits`, `session.id`.
+2. `INSERT` idempotente en `credit_recharges` (`ON CONFLICT (stripe_session_id) DO NOTHING`); si ya existe, salir.
+3. `UPDATE accounts SET credits = credits + N WHERE id = userId` con `supabaseAdmin`.
+4. Responder 200.
 
-¿Apruebas el plan?
+### 5. Cableado en la tarjeta de compra
+`src/components/purchase-card.tsx`:
+- Mantener todo el diseño actual (selector desplegable, glow, branding de cards/crypto).
+- Botón **"Pagar con tarjeta"** → abre overlay con `<StripeEmbeddedCheckout priceId={\`credits_${credits}\`} />` usando `useStripeCheckout` hook.
+- Botón **"Pagar con cripto"** → por ahora deshabilitado con tooltip "Próximamente" (no incluido en este alcance, lo añadimos después con BTCPay/NowPayments si quieres).
+
+### 6. Página de retorno
+Ya existe `/dashboard`. Detectar `?checkout=success` y mostrar toast traducido + invalidar la query de créditos del shell para que el contador se actualice automáticamente.
+
+### 7. Utilitarios obligatorios
+- `src/lib/stripe.server.ts` con `createStripeClient`, `getConnectionApiKey`, `getStripeErrorMessage`, `verifyWebhook` (copy literal del knowledge — pasa por gateway, NO usa Stripe SDK directo).
+- `src/lib/stripe.ts` cliente con `getStripe()` y `getStripeEnvironment()` derivando entorno de `VITE_PAYMENTS_CLIENT_TOKEN`.
+- `<PaymentTestModeBanner />` en `__root.tsx` para avisar en preview que estás en modo test.
+- Instalar `stripe@22.0.2`, `@stripe/stripe-js@9.2.0`, `@stripe/react-stripe-js@6.2.0`.
+
+### 8. i18n
+Añadir al namespace `purchase.*` y nuevo `checkout.*` en `es.json` / `en.json`:
+- mensajes de éxito ("Pago confirmado — {{credits}} créditos añadidos"),
+- errores (genérico + el mensaje crudo de Stripe),
+- estados de carga del overlay,
+- aviso de "Cripto próximamente".
+
+## Lo que NO toco
+- Diseño visual de `purchase-card.tsx` (mismo selector desplegable, mismas marcas, mismas dimensiones).
+- Sistema de tokens manuales (canje de códigos en admin) — sigue funcionando en paralelo a Stripe.
+- Lógica de "página /upload bloqueada si créditos < 98" — sigue igual; al sumar créditos por Stripe el bloqueo se desbloquea automáticamente.
+
+## Tras aprobar
+1. `batch_create_product` (10 productos EUR).
+2. `stripe.products.update` con `metadata.credits` para cada uno.
+3. Migración SQL (`stripe_session_id`, `source`).
+4. Instalar deps + crear `stripe.server.ts`, `stripe.ts`, `payments.functions.ts`, webhook, `PaymentTestModeBanner`, hook `useStripeCheckout`.
+5. Cablear `purchase-card.tsx` y `/dashboard`.
+6. i18n.
+7. Test en preview con `4242 4242 4242 4242` y verificación del webhook con `server-function-logs`.
+
+¿Apruebas?

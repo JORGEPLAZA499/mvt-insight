@@ -87,7 +87,7 @@ export function App() {
       <div className="app">
         {TopBar}
         <div className="header">
-          <Logo size={72} />
+          <Logo size={150} />
           <h1>{tr("app.title", "MVT Insight Desktop")}</h1>
           <p>{tr("app.subtitle", "Análisis forense de indicios de spyware")}</p>
         </div>

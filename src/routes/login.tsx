@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LanguageSelector } from "@/components/language-selector";
+import { PasswordField } from "@/components/password-field";
+import { PasswordStrengthMeter } from "@/components/password-strength-meter";
+import { scorePassword } from "@/lib/password-strength";
 import logoAsset from "@/assets/logo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -105,6 +108,10 @@ function Login() {
       setError(pwdErr);
       return;
     }
+    if (scorePassword(password).level === "low") {
+      setError("La contraseña es demasiado débil. Mejora la seguridad antes de continuar.");
+      return;
+    }
     if (password !== confirm) {
       setError("Las contraseñas no coinciden.");
       return;
@@ -121,6 +128,11 @@ function Login() {
       setBusy(false);
     }
   };
+
+  const registerBlocked =
+    !password ||
+    password !== confirm ||
+    scorePassword(password).level === "low";
 
   const copyCode = async () => {
     if (!issuedCode) return;
@@ -247,13 +259,12 @@ function Login() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="pwd">Contraseña</Label>
-                <Input
+                <PasswordField
                   id="pwd"
-                  type="password"
                   required
                   autoComplete="current-password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={setPassword}
                   placeholder="••••••••"
                 />
               </div>
@@ -270,27 +281,29 @@ function Login() {
             <form onSubmit={submitRegister} className="mt-8 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="pwd">Contraseña</Label>
-                <Input
+                <PasswordField
                   id="pwd"
-                  type="password"
                   required
                   autoComplete="new-password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={setPassword}
                   placeholder="Mín 8 · May + min + número"
                 />
+                <PasswordStrengthMeter password={password} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="pwd2">Repite la contraseña</Label>
-                <Input
+                <PasswordField
                   id="pwd2"
-                  type="password"
                   required
                   autoComplete="new-password"
                   value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
+                  onChange={setConfirm}
                   placeholder="••••••••"
                 />
+                {confirm && confirm !== password && (
+                  <p className="text-[11px] text-destructive">Las contraseñas no coinciden.</p>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 Al crear la cuenta el sistema generará un código único{" "}
@@ -300,7 +313,7 @@ function Login() {
               {error && <p className="text-xs text-destructive">{error}</p>}
               <Button
                 type="submit"
-                disabled={busy}
+                disabled={busy || registerBlocked}
                 className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
               >
                 {busy ? "Creando…" : "Crear cuenta"}

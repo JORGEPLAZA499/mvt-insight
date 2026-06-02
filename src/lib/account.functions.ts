@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { scorePassword } from "@/lib/password-strength";
 
 // Alfabeto sin caracteres ambiguos (sin O/0/I/1)
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -26,7 +27,10 @@ const passwordSchema = z
   .max(128)
   .regex(/[a-z]/, "Debe incluir una minúscula")
   .regex(/[A-Z]/, "Debe incluir una mayúscula")
-  .regex(/[0-9]/, "Debe incluir un número");
+  .regex(/[0-9]/, "Debe incluir un número")
+  .refine((p) => scorePassword(p).level !== "low", {
+    message: "La contraseña es demasiado débil",
+  });
 
 export const registerAccount = createServerFn({ method: "POST" })
   .inputValidator((input: { password: string }) =>

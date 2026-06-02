@@ -105,7 +105,7 @@ function Landing() {
       </section>
 
       {/* Features */}
-      <section id="features" className="max-w-7xl mx-auto px-6 py-24">
+      <section id="features" className="scroll-mt-48 max-w-7xl mx-auto px-6 py-24">
         <div className="grid md:grid-cols-3 gap-6">
           {features.map((f) => (
             <div key={f.key} className="rounded-xl border border-border bg-card p-6 shadow-card hover:border-primary/40 transition-colors">

@@ -107,18 +107,18 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1 mb-1">
+      <div className="grid grid-cols-10 gap-1 mb-1">
         {digits.map((d) => keyBtn(d, () => press(d)))}
       </div>
 
       {!showSymbols ? (
-        <div className="flex flex-wrap gap-1">
+        <div className="grid grid-cols-13 gap-1" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
           {letters.map((l) =>
             keyBtn(shift ? l.toUpperCase() : l, () => press(l)),
           )}
         </div>
       ) : (
-        <div className="flex flex-wrap gap-1">
+        <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
           {symbols.map((s) => keyBtn(s, () => onChange(value + s)))}
         </div>
       )}

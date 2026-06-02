@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LanguageSelector } from "@/components/language-selector";
+import logoAsset from "@/assets/logo.png.asset.json";
 import { setSession } from "@/lib/mock-store";
 import i18n from "@/i18n";
 

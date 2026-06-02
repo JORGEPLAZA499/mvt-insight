@@ -222,8 +222,7 @@
             "Unzip the downloaded file and <b>double-click</b> <code>MvtInsight</code> to open the app.",
             "With the phone <b>still connected via USB and unlocked</b>, click <b>\"Start analysis\"</b> inside the app. You'll see progress bars for each phase (downloading tools and collecting data from the phone).",
             "When it finishes, the app will show you where the ZIP was saved and bring you back here to upload it."
-          ],
-
+          ]
         },
         "protocol": {
           "title": "Recommended forensic protocol (maximum privacy)",

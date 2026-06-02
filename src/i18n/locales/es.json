@@ -222,8 +222,7 @@
             "Descomprime el archivo descargado y haz <b>doble clic</b> en <code>MvtInsight</code> para abrir la app.",
             "Con el móvil <b>aún conectado por USB y desbloqueado</b>, pulsa <b>«Iniciar análisis»</b> dentro de la app. Verás barras de progreso para cada fase (descarga de herramientas y recolección de datos del móvil).",
             "Al terminar, la app te dirá dónde se ha guardado el ZIP y te traerá de vuelta aquí para subirlo."
-          ],
-
+          ]
         },
         "protocol": {
           "title": "Protocolo forense recomendado (máxima privacidad)",

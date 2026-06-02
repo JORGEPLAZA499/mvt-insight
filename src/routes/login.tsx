@@ -315,7 +315,7 @@ function Login() {
                   required
                   autoComplete="new-password"
                   value={password}
-                  onChange={setPassword}
+                  onChange={(v) => { setPassword(v); syncBuffer(pwdBuf, v); }}
                   placeholder="Mín 8 · May + min + número"
                 />
                 <PasswordStrengthMeter password={password} />

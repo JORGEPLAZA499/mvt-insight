@@ -427,7 +427,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           <LanguageSelector />
         </div>
         <PurchaseCard />
-        {children}
+        {usePurchaseCardOpen() ? (
+          <div className="flex-1" />
+        ) : (
+          children
+        )}
       </main>
 
       <Dialog open={redeemOpen} onOpenChange={setRedeemOpen}>

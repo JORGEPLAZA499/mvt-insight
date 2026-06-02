@@ -147,14 +147,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="relative h-[210px] w-[210px] object-contain"
             />
           </div>
-          <div className="min-w-0 text-center">
-            <div className="text-sm font-semibold tracking-tight truncate">
-              {t("shell.brand")}
-            </div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">
-              {t("shell.subBrand")}
-            </div>
-          </div>
         </Link>
 
         <div

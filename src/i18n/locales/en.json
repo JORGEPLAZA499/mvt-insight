@@ -100,5 +100,169 @@
     "toggleToRegister": "Don't have an account? Sign up",
     "toggleToLogin": "Already have an account? Log in",
     "demoNote": "Demo: any email and password signs you in. Real authentication will be wired to the backend."
+  },
+  "dashboard": {
+    "eyebrow": "Forensic Command Center",
+    "title": "Dashboard",
+    "subtitle": "Overview of your forensic analyses.",
+    "ctaNew": "New analysis",
+    "gauges": {
+      "threat": "Global threat level",
+      "threatSub": "{{count}} analyses evaluated",
+      "total": "Total analyses",
+      "completed": "Completed",
+      "matches": "IOC matches"
+    },
+    "hud": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed",
+      "highRisk": "High risk"
+    },
+    "recent": {
+      "title": "Recent analyses",
+      "viewAll": "View full history →"
+    },
+    "table": {
+      "file": "File",
+      "platform": "Platform",
+      "status": "Status",
+      "risk": "Risk",
+      "detections": "Detections",
+      "view": "View"
+    },
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed",
+      "error": "Error"
+    },
+    "empty": {
+      "title": "No analyses yet",
+      "desc": "Upload your first MVT artifact to get started.",
+      "cta": "Upload files"
+    }
+  },
+  "upload": {
+    "metaTitle": "New analysis — Spyware Forensic Analyzer",
+    "back": "Back",
+    "stepCounter": "Step {{step}} of {{total}}",
+    "step1": {
+      "title": "Which device do you want to analyze?",
+      "subtitle": "Pick the mobile operating system.",
+      "android": { "title": "Android", "sub": "Samsung, Xiaomi, Pixel…" },
+      "ios": { "title": "iPhone", "sub": "iOS 14 or newer" }
+    },
+    "step2": {
+      "title": "Which computer will you use?",
+      "subtitle": "You need a computer with a USB cable to connect the phone.",
+      "mac": "Mac",
+      "windows": "Windows",
+      "linux": "Linux"
+    },
+    "step3": {
+      "blocked": {
+        "title": "iPhone requires a Mac",
+        "body": "To analyze an iPhone you need to make the backup from a Mac (or from Windows with iTunes and then process it on Mac/Linux). Switch computer to continue.",
+        "cta": "← Choose another computer"
+      },
+      "header": {
+        "title": "Follow the steps in order",
+        "subtitle": "One step at a time. Don't skip any or the analysis won't work."
+      },
+      "progress": "Step {{current}} of {{total}}",
+      "prev": "Previous",
+      "next": "Done, next →",
+      "done": "I have the ZIP",
+      "substeps": {
+        "preamble": {
+          "title": "Get the cable and phone ready",
+          "body": "Have a <b>USB cable</b> handy (preferably the original one, that transfers data and not just charges). Keep the phone <b>unlocked with the screen on</b> during the whole process."
+        },
+        "dev": {
+          "title": "Enable developer mode on the phone",
+          "body": "Open <b>Settings</b> → <b>About phone</b> and tap <b>7 times</b> on \"Build number\". You'll see a message: \"You are now a developer\".",
+          "routesSummary": "Exact path by brand",
+          "routes": [
+            "<b>Samsung:</b> Settings → About phone → Software information → tap \"Build number\" 7 times.",
+            "<b>Xiaomi/Redmi:</b> Settings → About phone → tap \"MIUI version\" 7 times.",
+            "<b>Pixel/Stock Android:</b> Settings → About phone → tap \"Build number\" 7 times.",
+            "<b>Huawei/Honor:</b> Settings → System → About phone → tap \"Build number\" 7 times."
+          ]
+        },
+        "usb": {
+          "title": "Enable USB Debugging",
+          "body": "Go back to <b>Settings</b> → <b>System</b> → <b>Developer options</b> and turn on <b>\"USB Debugging\"</b>. Confirm when prompted."
+        },
+        "connect": {
+          "title": "Now connect the phone to the computer with the USB cable",
+          "body": "Use the <b>original cable</b> if you can (some cables only charge, they don't transfer data). On the phone you'll see a prompt: <b>\"Allow USB debugging?\"</b>. Tick <b>\"Always allow from this computer\"</b> and tap OK."
+        },
+        "iosTrust": {
+          "title": "Trust the computer from the iPhone",
+          "body": "Connect the iPhone via USB, <b>unlock it</b> and, when the <b>\"Trust this computer?\"</b> prompt appears, tap <b>Trust</b> and enter the iPhone passcode."
+        },
+        "iosBackup": {
+          "title": "Create an encrypted iPhone backup",
+          "body": "Open <b>Finder</b> (macOS Catalina or later) or <b>iTunes</b>, select the iPhone, tick <b>\"Encrypt local backup\"</b> and set a password.",
+          "warn": "⚠ Write down the password: you'll need it later."
+        },
+        "iosKeep": {
+          "title": "Keep the iPhone connected and unlocked",
+          "body": "During the whole analysis the iPhone must be <b>connected via USB</b> and <b>unlocked</b>. If it locks, unlock it again."
+        },
+        "download": {
+          "title": "Download the desktop app",
+          "intro": "Download the <b>MVT Insight Desktop</b> app for your system. The app does the entire analysis with one click: it downloads the tools, talks to the phone, and saves a ZIP ready to upload here. <b>No black window, no commands.</b>",
+          "appName": "MVT Insight Desktop",
+          "version": "Version 1.0 · Analysis with visual UI and progress bars",
+          "recommended": "Recommended for you: <b>{{os}}</b> (auto-detected) ·",
+          "seeAll": "See all versions on GitHub",
+          "instructions": [
+            "Unzip the downloaded file and <b>double-click</b> <code>MvtInsight</code>.",
+            "Click <b>\"Start analysis\"</b> inside the app. You'll see progress bars for each phase (download, connect, collect).",
+            "When it finishes, the app will show you where the ZIP is and bring you back here to upload it."
+          ],
+          "unsignedSummary": "Getting an \"unknown publisher\" warning when opening it?",
+          "unsigned": {
+            "normal": "That's normal: the app isn't commercially signed yet (it costs several hundred a year). It's not a virus — the source code is open.",
+            "windows": "<b>Windows:</b> click \"More info\" → \"Run anyway\".",
+            "mac": "<b>macOS:</b> right-click the app → \"Open\" → confirm."
+          }
+        },
+        "protocol": {
+          "title": "Recommended forensic protocol (maximum privacy)",
+          "intro": "If you suspect the phone is really compromised, follow this protocol to prevent the spyware from \"noticing\" you're analyzing it or leaking data during the process:",
+          "a": {
+            "title": "Offline PC",
+            "body": "Use a disconnected computer (network cable unplugged and Wi-Fi off, or in airplane mode). Before that, run the desktop app <b>once with Internet</b> so it downloads the tools; then you can disconnect."
+          },
+          "b": {
+            "title": "Phone in airplane mode",
+            "body": "Enable airplane mode on the phone to cut its Internet. Keep the USB active (on Android, USB debugging still works even with no network)."
+          }
+        },
+        "upload": {
+          "title": "Upload the ZIP generated by the app",
+          "body": "When the app finishes, it will show an <b>\"Upload to report\"</b> button and the path to the file <code>mvt-results-YYYYMMDD.zip</code> (usually in <b>Downloads</b>). Click the button below to upload it and view the report."
+        }
+      }
+    },
+    "step4": {
+      "title": "Upload the results ZIP",
+      "subtitle": "Drag the <code>.zip</code> generated by the script (or the loose <code>.json</code> files).",
+      "dropLine1": "Drag here or click",
+      "dropLine2": ".json or .zip · max. 500 MB",
+      "errors": {
+        "unsupported": "Unsupported file: {{name}}. Only .json or .zip generated by MVT.",
+        "tooBig": "File {{name}} exceeds the 500 MB limit.",
+        "generic": "Could not process the files."
+      },
+      "filesLabel": "{{count}} MVT files",
+      "consent": "I'm the device owner or I have <b>explicit consent</b>. Files are processed locally in my browser.",
+      "local": "100% local",
+      "processing": "Processing…",
+      "analyze": "Analyze"
+    }
   }
 }

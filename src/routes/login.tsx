@@ -100,8 +100,10 @@ function Login() {
   const submitLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const normalized = code.trim().toUpperCase();
-    if (!CODE_RE.test(normalized)) {
+    const trimmed = code.trim();
+    const isWord = /^[A-Za-z]{2,20}$/.test(trimmed);
+    const normalized = isWord ? trimmed.toUpperCase() : trimmed.toUpperCase();
+    if (!isWord && !CODE_RE.test(normalized)) {
       setError("El código debe tener el formato XXX-XXX-XXX.");
       return;
     }

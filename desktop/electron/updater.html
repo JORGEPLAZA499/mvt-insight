@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Actualización MVT Insight</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: #0b0b12; color: #e6e6f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+    .wrap {
+      height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px 28px; text-align: center;
+    }
+    h1 { font-size: 16px; font-weight: 600; margin: 0 0 8px; }
+    p  { font-size: 13px; margin: 4px 0; color: #b8b8c8; line-height: 1.45; }
+    .version { color: #8b8ba8; font-size: 12px; margin-top: 2px; }
+    .bar {
+      width: 100%; height: 8px; border-radius: 4px;
+      background: #1c1c2a; margin-top: 14px; overflow: hidden;
+    }
+    .bar > div {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      transition: width 0.2s ease;
+    }
+    .actions { margin-top: 18px; display: flex; gap: 8px; -webkit-app-region: no-drag; }
+    button {
+      padding: 8px 16px; border-radius: 6px; border: 0;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      background: #6366f1; color: white;
+    }
+    button:hover { background: #4f46e5; }
+    button.secondary { background: #2a2a3a; color: #c8c8d8; }
+    button.secondary:hover { background: #34344a; }
+    .spinner {
+      width: 24px; height: 24px; margin-bottom: 12px;
+      border: 2px solid #2a2a3a; border-top-color: #6366f1;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="spinner" class="spinner"></div>
+    <h1 id="title">Buscando actualizaciones…</h1>
+    <p id="message">Comprobando si hay una nueva versión disponible.</p>
+    <div id="versionLine" class="version hidden"></div>
+    <div id="barWrap" class="bar hidden"><div id="bar"></div></div>
+    <div id="actions" class="actions hidden">
+      <button id="btnPrimary">Actualizar ahora</button>
+      <button id="btnSecondary" class="secondary hidden">Continuar sin actualizar</button>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const setState = (state) => {
+      const { title, message, version, showSpinner, progress, primaryLabel, primaryAction, showSecondary } = state;
+      $('title').textContent = title;
+      $('message').textContent = message;
+      $('spinner').classList.toggle('hidden', !showSpinner);
+
+      if (version) {
+        $('versionLine').textContent = version;
+        $('versionLine').classList.remove('hidden');
+      } else {
+        $('versionLine').classList.add('hidden');
+      }
+
+      if (typeof progress === 'number') {
+        $('barWrap').classList.remove('hidden');
+        $('bar').style.width = Math.min(100, Math.max(0, progress)) + '%';
+      } else {
+        $('barWrap').classList.add('hidden');
+      }
+
+      if (primaryLabel) {
+        $('actions').classList.remove('hidden');
+        $('btnPrimary').textContent = primaryLabel;
+        $('btnPrimary').onclick = () => window.updater[primaryAction]();
+      } else {
+        $('actions').classList.add('hidden');
+      }
+
+      $('btnSecondary').classList.toggle('hidden', !showSecondary);
+      if (showSecondary) {
+        $('btnSecondary').onclick = () => window.updater.skip();
+      }
+    };
+
+    window.updater.onState((state) => setState(state));
+  </script>
+</body>
+</html>

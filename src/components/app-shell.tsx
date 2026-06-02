@@ -355,7 +355,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Zap className="h-4 w-4" />
                 )}
                 <span className="flex-1 text-left font-medium">
-                  {quickBusy ? "Procesando…" : "Subir ZIP/JSON"}
+                  {quickBusy ? t("shell.quick.processing") : t("shell.quick.upload")}
                 </span>
                 <UploadCloud className="h-4 w-4 opacity-80" />
               </button>
@@ -364,12 +364,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 transition mt-2 cursor-pointer"
               >
                 <Coins className="h-4 w-4" />
-                <span className="flex-1 text-left font-medium">Comprar créditos</span>
+                <span className="flex-1 text-left font-medium">{t("shell.quick.buyCredits")}</span>
                 <Sparkles className="h-4 w-4 opacity-80" />
               </button>
               <p className="px-2 mt-1.5 text-[10px] text-muted-foreground/70 leading-tight">
-                Sube directamente los archivos MVT sin pasar por el asistente.
+                {t("shell.quick.uploadHint")}
               </p>
+
               {quickError && (
                 <p className="mt-2 px-2 text-[11px] text-destructive">{quickError}</p>
               )}

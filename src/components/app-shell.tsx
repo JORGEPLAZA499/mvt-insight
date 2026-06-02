@@ -133,7 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Brand */}
         <Link
           to="/dashboard"
-          className="relative flex flex-col items-center gap-1 px-5 py-5 group"
+          className="relative flex flex-col items-center px-2 py-1 group"
         >
           <div className="relative">
             <div

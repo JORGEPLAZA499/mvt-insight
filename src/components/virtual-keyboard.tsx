@@ -51,8 +51,12 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
 
   const press = (ch: string) => {
     onChange(value + (shift ? ch.toUpperCase() : ch));
+    if (shuffled) setSeed((s) => s + 1);
   };
-  const backspace = () => onChange(value.slice(0, -1));
+  const backspace = () => {
+    onChange(value.slice(0, -1));
+    if (shuffled) setSeed((s) => s + 1);
+  };
 
   const keyBtn = (label: string, onClick: () => void, extra = "") => (
     <button

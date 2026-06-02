@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle2, Copy, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { LanguageSelector } from "@/components/language-selector";
 import { PasswordField } from "@/components/password-field";
 import { PasswordStrengthMeter } from "@/components/password-strength-meter";
 import { scorePassword } from "@/lib/password-strength";
+import { createSecureBuffer } from "@/lib/secure-string";
 import logoAsset from "@/assets/logo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -65,6 +66,27 @@ function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Buffers ofuscados en memoria — espejo del estado para poder wipear al desmontar/enviar
+  const pwdBuf = useRef(createSecureBuffer());
+  const confirmBuf = useRef(createSecureBuffer());
+
+  const syncBuffer = (
+    buf: React.MutableRefObject<ReturnType<typeof createSecureBuffer>>,
+    next: string,
+  ) => {
+    buf.current.clear();
+    buf.current.append(next);
+  };
+
+  useEffect(() => {
+    const p = pwdBuf.current;
+    const c = confirmBuf.current;
+    return () => {
+      p.clear();
+      c.clear();
+    };
+  }, []);
+
   // Estado post-registro
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
@@ -92,6 +114,8 @@ function Login() {
         throw new Error("Código o contraseña incorrectos.");
       }
       await touch({ data: { userId: data.user.id } });
+      pwdBuf.current.clear();
+      setPassword("");
       navigate({ to: "/dashboard" });
     } catch (err: any) {
       setError(err?.message || "No se pudo iniciar sesión.");
@@ -121,6 +145,11 @@ function Login() {
       const { code: newCode, email } = await register({ data: { password } });
       // Inicia sesión automáticamente para que el usuario quede autenticado
       await supabase.auth.signInWithPassword({ email, password });
+      // Wipe de buffers tras enviar
+      pwdBuf.current.clear();
+      confirmBuf.current.clear();
+      setPassword("");
+      setConfirm("");
       setIssuedCode(newCode);
     } catch (err: any) {
       setError(err?.message || "No se pudo crear la cuenta.");
@@ -264,7 +293,7 @@ function Login() {
                   required
                   autoComplete="current-password"
                   value={password}
-                  onChange={setPassword}
+                  onChange={(v) => { setPassword(v); syncBuffer(pwdBuf, v); }}
                   placeholder="••••••••"
                 />
               </div>
@@ -286,7 +315,7 @@ function Login() {
                   required
                   autoComplete="new-password"
                   value={password}
-                  onChange={setPassword}
+                  onChange={(v) => { setPassword(v); syncBuffer(pwdBuf, v); }}
                   placeholder="Mín 8 · May + min + número"
                 />
                 <PasswordStrengthMeter password={password} />
@@ -298,7 +327,7 @@ function Login() {
                   required
                   autoComplete="new-password"
                   value={confirm}
-                  onChange={setConfirm}
+                  onChange={(v) => { setConfirm(v); syncBuffer(confirmBuf, v); }}
                   placeholder="••••••••"
                 />
                 {confirm && confirm !== password && (
@@ -338,6 +367,10 @@ function Login() {
           <p className="mt-6 text-[11px] text-muted-foreground leading-relaxed">
             Privacidad por diseño: no pedimos email ni datos personales. Si no inicias
             sesión durante <b>10 días</b>, la cuenta se elimina automáticamente.
+          </p>
+          <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+            Teclado virtual con orden aleatorio que se reordena tras cada tecla y
+            contraseña ofuscada en memoria. Úsalo desde un equipo de confianza.
           </p>
         </div>
       </div>

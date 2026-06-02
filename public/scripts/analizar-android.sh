@@ -226,10 +226,10 @@ fi
 echo ""
 echo "Listo. Archivo:  $ZIP_FILE"
 echo "Log completo:    $LOG_FILE"
-echo "Subelo en: https://mvt-insight.lovable.app/upload"
+echo "Subelo en: https://spyware.rpjsoftware.com/upload"
 
 if command -v open >/dev/null 2>&1; then
-  open "https://mvt-insight.lovable.app/upload" >/dev/null 2>&1 || true
+  open "https://spyware.rpjsoftware.com/upload" >/dev/null 2>&1 || true
 elif command -v xdg-open >/dev/null 2>&1; then
-  xdg-open "https://mvt-insight.lovable.app/upload" >/dev/null 2>&1 || true
+  xdg-open "https://spyware.rpjsoftware.com/upload" >/dev/null 2>&1 || true
 fi

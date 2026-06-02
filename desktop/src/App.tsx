@@ -184,7 +184,7 @@ export function App() {
           {zipPath}
         </div>
         <div className="row">
-          <button className="btn" onClick={() => window.mvt?.openExternal("https://mvt-insight.lovable.app/upload")}>
+          <button className="btn" onClick={() => window.mvt?.openExternal("https://spyware.rpjsoftware.com/upload")}>
             {tr("done.upload", "Subir al informe →")}
           </button>
           <button className="btn btn-secondary" onClick={() => zipPath && window.mvt?.openFolder(zipPath)}>

@@ -1,14 +1,14 @@
 {
   "name": "mvt-insight-desktop",
-  "version": "1.0.1",
-  "description": "MVT Insight — App de escritorio para recolectar datos forenses de Android/iOS y subirlos a mvt-insight.lovable.app",
+  "version": "1.0.2",
+  "description": "MVT Insight — App de escritorio para recolectar datos forenses de Android/iOS y subirlos a spyware.rpjsoftware.com",
   "main": "electron/main.cjs",
   "private": true,
   "author": {
     "name": "Jorge Plaza",
-    "email": "soporte@mvt-insight.lovable.app"
+    "email": "soporte@spyware.rpjsoftware.com"
   },
-  "homepage": "https://mvt-insight.lovable.app",
+  "homepage": "https://spyware.rpjsoftware.com",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

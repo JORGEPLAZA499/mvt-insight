@@ -66,6 +66,26 @@ export function App() {
     }
   };
 
+  const Logo = ({ size = 72 }: { size?: number }) => (
+    <div
+      className={size >= 72 ? "brand-logo" : "brand-logo-sm"}
+      style={{
+        width: size,
+        height: size,
+        background: "linear-gradient(135deg, var(--primary), var(--primary-glow))",
+        color: "var(--primary-fg)",
+        display: "grid",
+        placeItems: "center",
+        fontWeight: 800,
+        fontSize: size * 0.32,
+        letterSpacing: "0.04em",
+      }}
+      aria-label="MVT Insight"
+    >
+      MVT
+    </div>
+  );
+
   const TopBar = (
     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
       <LanguageSelector />

@@ -42,7 +42,7 @@ export function PublicHeader({ anchorsToHome = false }: PublicHeaderProps) {
         <div className="flex items-center gap-2">
           <LanguageSelector />
           <Button asChild variant="ghost" size="sm"><Link to="/login">{t("landing.nav.login")}</Link></Button>
-          <Button asChild size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"><Link to="/login">{t("landing.nav.start")}</Link></Button>
+          <Button asChild size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"><Link to="/login" search={{ mode: "register" }}>{t("landing.nav.start")}</Link></Button>
         </div>
       </div>
     </header>

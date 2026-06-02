@@ -47,9 +47,9 @@ export function PurchaseCard() {
   if (!open) return null;
 
   return (
-    <div className="mt-8 animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div
-        className="relative overflow-hidden rounded-2xl border border-primary/30 p-px shadow-glow"
+        className="relative overflow-hidden rounded-2xl border border-primary/30 p-px shadow-glow max-w-4xl w-full"
         style={{
           background:
             "linear-gradient(135deg, color-mix(in oklab, var(--primary) 60%, transparent), color-mix(in oklab, var(--accent) 40%, transparent), transparent)",
@@ -81,7 +81,7 @@ export function PurchaseCard() {
           <button
             onClick={() => setPurchaseOpen(false)}
             aria-label="Cerrar"
-            className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground transition"
+            className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground transition z-10"
           >
             <X className="h-4 w-4" />
           </button>
@@ -125,7 +125,7 @@ export function PurchaseCard() {
 
             <div className="md:w-[260px] w-full flex flex-col gap-3">
               <button
-                className="group relative w-full overflow-hidden rounded-xl px-4 py-3.5 font-semibold text-primary-foreground shadow-glow transition hover:scale-[1.02] active:scale-[0.99]"
+                className="group relative w-full overflow-hidden rounded-xl px-4 py-3.5 font-semibold text-primary-foreground shadow-glow transition hover:scale-[1.02] active:scale-[0.99] cursor-pointer"
                 style={{ background: "var(--gradient-primary)" }}
               >
                 <span className="relative flex items-center justify-center gap-2">
@@ -143,7 +143,7 @@ export function PurchaseCard() {
               </button>
 
               <button
-                className="group relative w-full overflow-hidden rounded-xl px-4 py-3.5 font-semibold border border-border bg-background/60 backdrop-blur hover:border-primary/50 hover:bg-background/80 transition hover:scale-[1.02] active:scale-[0.99]"
+                className="group relative w-full overflow-hidden rounded-xl px-4 py-3.5 font-semibold border border-border bg-background/60 backdrop-blur hover:border-primary/50 hover:bg-background/80 transition hover:scale-[1.02] active:scale-[0.99] cursor-pointer"
               >
                 <span className="relative flex items-center justify-center gap-2">
                   <Bitcoin className="h-5 w-5 text-[color:var(--warning)]" />

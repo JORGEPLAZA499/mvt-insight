@@ -1,9 +1,18 @@
+## Objetivo
+
+Hacer que el footer quede siempre pegado al fondo de la ventana en `/legal` (y en cualquier página que use el mismo patrón), eliminando el hueco vacío entre el contenido y el pie cuando hay poco contenido. En `/` no debe haber cambios visibles porque el contenido ya llena la pantalla.
+
 ## Cambios
 
-1. **Reemplazar el archivo del logo** (`src/assets/logo.png.asset.json`) subiendo la nueva imagen `Logo_SPYWARE.png` vía `lovable-assets` y reescribiendo el pointer JSON. Como tanto la app web (`src/`) como la app de escritorio (`desktop/src/`) usan este mismo asset, ambas tomarán el nuevo logo automáticamente.
+**`src/routes/legal.tsx`**
+- Contenedor raíz: cambiar `min-h-screen` por `min-h-screen flex flex-col`.
+- `<main>`: añadir `flex-1` para que ocupe todo el espacio disponible y empuje el footer al fondo.
 
-2. **Desktop (`desktop/src/App.tsx`)**: cambiar el tamaño del logo en la pantalla de bienvenida de `size={72}` a `size={150}`.
+**`src/routes/index.tsx`**
+- Aplicar el mismo patrón por consistencia (`flex flex-col` en el contenedor raíz). El `<main>` no existe como wrapper único en index, así que envolveré el contenido entre `<PublicHeader />` y `<PublicFooter />` en un `<main className="flex-1">` para mantener el patrón uniforme y semántico.
 
-3. **Header de la web (`src/components/app-shell.tsx`, línea ~346)**: aumentar el logo del header de `h-[48px] w-[48px]` a `h-[150px] w-[150px]`.
+## Resultado
 
-Los demás logos grandes (index, login, sidebar) se mantienen como están (72px) salvo que indiques lo contrario.
+- `/legal`: el footer se ancla al borde inferior de la ventana sin importar lo corto que sea el contenido.
+- `/`: sin cambios visuales (el contenido ya supera la altura de la ventana), pero con la misma estructura semántica.
+- Altura del footer sigue siendo fija 64 px (`h-16`), idéntica en ambas rutas.

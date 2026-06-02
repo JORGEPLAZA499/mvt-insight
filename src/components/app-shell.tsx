@@ -12,6 +12,9 @@ import {
   Loader2,
   Coins,
   ShieldCheck,
+  Users,
+  Ticket,
+  Activity,
 } from "lucide-react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";

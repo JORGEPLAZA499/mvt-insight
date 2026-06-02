@@ -285,7 +285,7 @@ function Login() {
                   onChange={(e) => setCode(formatCodeInput(e.target.value))}
                   placeholder="XXX-XXX-XXX"
                   className="font-mono tracking-[0.2em] uppercase"
-                  maxLength={11}
+                  maxLength={20}
                 />
               </div>
               <div className="space-y-2">

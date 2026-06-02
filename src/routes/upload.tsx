@@ -458,27 +458,6 @@ function StepRun({
           ))}
         </ol>
 
-        <details className="mt-4 text-xs">
-          <summary className="cursor-pointer text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            {t("upload.step3.substeps.download.unsignedSummary")}
-          </summary>
-          <div className="mt-2 p-3 rounded-md bg-card border border-border text-muted-foreground space-y-1.5">
-            <p>{t("upload.step3.substeps.download.unsigned.normal")}</p>
-            <p>
-              <Trans
-                i18nKey="upload.step3.substeps.download.unsigned.windows"
-                components={transComponents}
-              />
-            </p>
-            <p>
-              <Trans
-                i18nKey="upload.step3.substeps.download.unsigned.mac"
-                components={transComponents}
-              />
-            </p>
-          </div>
-        </details>
       </>
     ),
   });

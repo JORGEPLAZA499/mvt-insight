@@ -224,12 +224,6 @@
             "When it finishes, the app will show you where the ZIP was saved and bring you back here to upload it."
           ],
 
-          "unsignedSummary": "Getting an \"unknown publisher\" warning when opening it?",
-          "unsigned": {
-            "normal": "That's normal: the app isn't commercially signed yet (it costs several hundred a year). It's not a virus — the source code is open.",
-            "windows": "<b>Windows:</b> click \"More info\" → \"Run anyway\".",
-            "mac": "<b>macOS:</b> right-click the app → \"Open\" → confirm."
-          }
         },
         "protocol": {
           "title": "Recommended forensic protocol (maximum privacy)",

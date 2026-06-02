@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { scorePassword } from "@/lib/password-strength";
 
 // Alfabeto sin caracteres ambiguos (sin O/0/I/1)
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

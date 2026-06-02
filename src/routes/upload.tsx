@@ -129,6 +129,7 @@ function Upload() {
           <StepDevice
             value={device}
             disabled={!hasCredits}
+            isLoading={isLoadingCredits}
             onSelect={(d) => {
               if (!hasCredits) return;
               setDevice(d);

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { AppShell } from "@/components/app-shell";
@@ -22,6 +22,7 @@ import {
 import { upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 import { UsbConnect } from "@/components/usb-connect";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),
@@ -55,10 +56,51 @@ function Upload() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [device, setDevice] = useState<Device | null>(null);
   const [os, setOs] = useState<OS>("mac");
+  const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
     setOs(detectOS());
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) {
+        if (active) setCredits(0);
+        return;
+      }
+      const { data: acc } = await supabase
+        .from("accounts")
+        .select("credits")
+        .eq("id", userId)
+        .maybeSingle();
+      if (!active) return;
+      setCredits(acc?.credits ?? 0);
+
+      channel = supabase
+        .channel(`upload-credits-${userId}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "accounts", filter: `id=eq.${userId}` },
+          (payload) => {
+            const next = (payload.new as { credits?: number } | null)?.credits;
+            if (active && typeof next === "number") setCredits(next);
+          },
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      active = false;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const hasCredits = credits === null ? true : credits > 0;
 
   const next = () => setStep((s) => (Math.min(TOTAL_STEPS, s + 1) as 1 | 2 | 3 | 4));
   const back = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4));
@@ -85,7 +127,9 @@ function Upload() {
         {step === 1 && (
           <StepDevice
             value={device}
+            disabled={!hasCredits}
             onSelect={(d) => {
+              if (!hasCredits) return;
               setDevice(d);
               next();
             }}

@@ -86,12 +86,6 @@ function Landing() {
                 <a href="#how">{t("landing.hero.ctaSecondary")}</a>
               </Button>
             </div>
-            <p className="mt-6 text-xs text-muted-foreground max-w-xl">
-              <Trans
-                i18nKey="landing.hero.disclaimer"
-                components={[<strong key="0" className="text-foreground" />]}
-              />
-            </p>
           </div>
         </div>
       </section>

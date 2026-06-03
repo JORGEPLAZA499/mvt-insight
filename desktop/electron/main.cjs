@@ -418,8 +418,47 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
           send("mvt:phase", { phase: 1, label: "Descargando AndroidQF", progress: p })
         );
         if (platform !== "win32") fs.chmodSync(binPath, 0o755);
+        // Tras descargar, Windows Defender suele bloquear el .exe unos segundos.
+        // Esperamos un poco para reducir EBUSY al hacer spawn.
+        if (platform === "win32") {
+          send("mvt:log", "⏳ Esperando a que Windows libere el ejecutable…");
+          await new Promise((r) => setTimeout(r, 3000));
+        }
       }
       send("mvt:phase", { phase: 1, label: "AndroidQF listo", progress: 1 });
+
+      // En Windows, si quedó un androidqf.exe colgado de un intento previo,
+      // lo cerramos para evitar EBUSY al volver a ejecutarlo.
+      if (platform === "win32") {
+        await new Promise((resolve) => {
+          const k = spawn("taskkill", ["/F", "/IM", "androidqf.exe", "/T"], { windowsHide: true });
+          k.on("close", () => resolve());
+          k.on("error", () => resolve());
+        });
+      }
+
+      // Comprueba que el archivo se pueda abrir (no esté bloqueado por antivirus).
+      const waitUntilReadable = async (file, attempts = 10, delayMs = 1000) => {
+        for (let i = 0; i < attempts; i++) {
+          try {
+            const fd = fs.openSync(file, "r");
+            fs.closeSync(fd);
+            return true;
+          } catch (e) {
+            send("mvt:log", `⏳ Binario aún bloqueado (${e.code || e.message}). Reintentando…`);
+            await new Promise((r) => setTimeout(r, delayMs));
+          }
+        }
+        return false;
+      };
+      const readable = await waitUntilReadable(binPath);
+      if (!readable) {
+        throw new Error(
+          "Windows tiene el archivo androidqf.exe bloqueado (probablemente Windows Defender). " +
+          "Espera unos segundos y vuelve a intentarlo, o añade la carpeta " +
+          "C:\\Users\\<tu-usuario>\\Downloads\\mvt-insight a las exclusiones del antivirus."
+        );
+      }
 
 
       // 2. Conectar y autorizar
@@ -429,7 +468,29 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       // 3. Ejecutar AndroidQF respondiendo automáticamente a sus prompts
       send("mvt:phase", { phase: 3, label: "Recolectando datos del dispositivo", progress: 0 });
 
-      const child = spawn(binPath, [], { cwd: dir, windowsHide: true });
+      // Reintenta spawn ante EBUSY (antivirus aún escaneando el .exe).
+      const spawnWithRetry = async () => {
+        let lastErr;
+        for (let i = 0; i < 5; i++) {
+          try {
+            const c = spawn(binPath, [], { cwd: dir, windowsHide: true });
+            await new Promise((resolve, reject) => {
+              const onErr = (e) => { c.removeListener("spawn", onSpawn); reject(e); };
+              const onSpawn = () => { c.removeListener("error", onErr); resolve(); };
+              c.once("error", onErr);
+              c.once("spawn", onSpawn);
+            });
+            return c;
+          } catch (e) {
+            lastErr = e;
+            if (e.code !== "EBUSY" && e.code !== "UNKNOWN" && e.code !== "EPERM") throw e;
+            send("mvt:log", `⏳ spawn ${e.code}, reintentando en 2s…`);
+            await new Promise((r) => setTimeout(r, 2000));
+          }
+        }
+        throw lastErr;
+      };
+      const child = await spawnWithRetry();
       let buffer = "";
 
       // Respuestas predefinidas (Everything / All / No / No)

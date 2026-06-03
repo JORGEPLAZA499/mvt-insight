@@ -51,10 +51,43 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (!window.mvt) return;
+    window.mvt.getVersion().then(setAppVersion).catch(() => {});
+    const off = window.mvt.onUpdaterStatus((s) => {
+      setUpdateState((prev) => ({ ...prev, ...s } as typeof prev));
+    });
+    return () => off();
+  }, []);
+
+  useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
 
-  const start = async (d: Device) => {
+  const checkUpdates = async () => {
+    if (!window.mvt) return;
+    setUpdateState({ state: "checking" });
+    const r = await window.mvt.checkForUpdates();
+    if (r.error) {
+      setUpdateState({ state: "error", error: r.error });
+    } else if (r.updateAvailable) {
+      setUpdateState({ state: "available", version: r.latestVersion });
+    } else {
+      setUpdateState({ state: "up-to-date", version: r.currentVersion });
+    }
+  };
+
+  const installUpdate = async () => {
+    if (!window.mvt) return;
+    setUpdateState({ state: "downloading", percent: 0 });
+    const r = await window.mvt.downloadUpdate();
+    if (!r.ok) setUpdateState({ state: "error", error: r.error });
+  };
+
+  const restartAndInstall = async () => {
+    await window.mvt?.quitAndInstall();
+  };
+
+
     setDevice(d);
     setScreen("running");
     setLogs([]);

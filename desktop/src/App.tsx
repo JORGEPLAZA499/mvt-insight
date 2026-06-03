@@ -196,7 +196,7 @@ export function App() {
   // screen === "done"
   return (
     <div className="app">
-      {TopBar}
+      {TopBarWithLogo}
       <div className="header">
         <h1>{tr("done.title", "✓ Análisis completado")}</h1>
         <p>{tr("done.subtitle", "Los datos se han guardado en tu carpeta de Descargas.")}</p>

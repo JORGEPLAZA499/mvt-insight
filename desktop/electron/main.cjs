@@ -426,6 +426,8 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         rows: 30,
         env: process.env,
       });
+      currentChild = child;
+
 
       // Auto-responder a los prompts interactivos de AndroidQF (librería survey).
       // Teclas ANSI: ↓ = "\x1b[B", ↑ = "\x1b[A", Enter = "\r".

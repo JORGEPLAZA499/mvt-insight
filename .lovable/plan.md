@@ -1,24 +1,30 @@
-## Objetivo
-Dejar un solo workflow de GitHub Actions (`release.yml`) que haga tag + build + publish en un mismo flujo, eliminando el workflow duplicado "Auto Tag on Version Bump" que está rompiendo el pipeline.
+# Fix: Cambiar a `node-pty` oficial (Opción A)
 
-## Problema actual
-- Existen 2 workflows: uno crea el tag (`Auto Tag on Version Bump`) y otro compila/publica (`Build & Release Desktop App`).
-- Los tags creados con `GITHUB_TOKEN` **no disparan otros workflows** (limitación de GitHub Actions para evitar bucles).
-- Resultado: las versiones 1.0.7 → 1.0.13 fueron tagueadas pero nunca compiladas, por eso el último release publicado sigue siendo 1.0.9.
+## Cambios
 
-## Pasos
-1. Listar `.github/workflows/` para identificar el archivo del workflow duplicado (probablemente `auto-tag.yml` o similar).
-2. Eliminar ese archivo.
-3. Verificar que `release.yml` queda intacto (ya contiene job `tag` + job `build` correctamente encadenados con `needs: [tag]`).
-4. Bumpear `desktop/package.json` de `1.0.13` → `1.0.14` para forzar una corrida de prueba del workflow unificado.
+### 1. `desktop/package.json`
+- Quitar `"@homebridge/node-pty-prebuilt-multiarch": "^0.11.14"`
+- Agregar `"node-pty": "^1.0.0"` (trae prebuilds para Electron 33 ABI 130)
+- Actualizar `asarUnpack`:
+  - de: `"node_modules/@homebridge/node-pty-prebuilt-multiarch/**/*"`
+  - a: `"node_modules/node-pty/**/*"`
+- Mantener `npmRebuild: false` y `buildDependenciesFromSource: false` (los prebuilds de Electron vienen listos, no hace falta recompilar)
+- Bump versión: `1.0.15` → `1.0.16`
+
+### 2. `desktop/electron/main.cjs`
+- Reemplazar el `require("@homebridge/node-pty-prebuilt-multiarch")` por `require("node-pty")`
+- API es idéntica (`pty.spawn(...)`), no hay que tocar lógica.
+
+### 3. Workflow
+- No requiere cambios. El push a `desktop/package.json` dispara el build de los 3 OS y publica `v1.0.16` como Release con los 3 instaladores.
 
 ## Resultado esperado
-- Al hacer push a `main`, `release.yml` corre solo:
-  - Job `tag`: lee `desktop/package.json`, crea tag `v1.0.14`.
-  - Job `build`: compila Windows/macOS/Linux en paralelo y publica el release.
-- La web `upload.tsx` (que ya lee `releases/latest` vía API de GitHub) automáticamente servirá los enlaces a `MvtInsight-Setup-1.0.14.exe` sin redeploy.
 
-## Notas
-- No toco código del frontend.
-- No toco `release.yml` (ya está bien diseñado).
-- El bump a 1.0.14 es opcional; si preferís verificar primero que el duplicado se eliminó y bumpear vos mismo después, decímelo.
+- Build verde en Windows/macOS/Linux sin tocar Python ni node-gyp.
+- `MvtInsight-Setup-1.0.16.exe` arranca y ya no muestra el error de `NODE_MODULE_VERSION`.
+- "Collecting data" continúa hasta generar el ZIP forense.
+
+## Notas técnicas
+
+- `node-pty` v1.x publica prebuilds para Node 18/20/22 y Electron 28/29/30/31/32/33 en npm — `electron-builder` los detecta automáticamente.
+- Tamaño del instalador queda igual (sólo cambia el binario nativo dentro de `node_modules/node-pty/build/Release/`).

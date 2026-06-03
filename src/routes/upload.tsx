@@ -458,40 +458,56 @@ function StepRun({
         <p className="text-sm text-muted-foreground">
           {t("upload.step3.substeps.protocol.intro")}
         </p>
-        <ol className="mt-3 space-y-3 text-sm">
-          <li className="flex gap-3">
-            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">
-              A
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 font-medium text-foreground">
-                <WifiOff className="h-3.5 w-3.5" /> {t("upload.step3.substeps.protocol.a.title")}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {[
+            {
+              letter: "A",
+              icon: WifiOff,
+              titleKey: "upload.step3.substeps.protocol.a.title",
+              bodyKey: "upload.step3.substeps.protocol.a.body",
+              accent: "from-cyan-500/15 via-cyan-500/5 to-transparent",
+              ring: "group-hover:ring-cyan-400/40",
+              iconBg: "bg-cyan-500/10 text-cyan-300 ring-1 ring-cyan-400/20",
+            },
+            {
+              letter: "B",
+              icon: Smartphone,
+              titleKey: "upload.step3.substeps.protocol.b.title",
+              bodyKey: "upload.step3.substeps.protocol.b.body",
+              accent: "from-violet-500/15 via-violet-500/5 to-transparent",
+              ring: "group-hover:ring-violet-400/40",
+              iconBg: "bg-violet-500/10 text-violet-300 ring-1 ring-violet-400/20",
+            },
+          ].map(({ letter, icon: Icon, titleKey, bodyKey, accent, ring, iconBg }) => (
+            <div
+              key={letter}
+              className={`group relative overflow-hidden rounded-xl border border-border/60 bg-card/40 p-4 ring-1 ring-transparent backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-border hover:shadow-lg hover:shadow-primary/5 ${ring}`}
+            >
+              <div
+                className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accent} opacity-60 transition-opacity duration-300 group-hover:opacity-100`}
+              />
+              <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-foreground/[0.03] blur-2xl transition-all duration-500 group-hover:scale-150" />
+              <div className="relative flex items-start gap-3">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${iconBg}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-border/70 bg-background/70 px-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {letter}
+                    </span>
+                    <h4 className="text-sm font-semibold text-foreground">
+                      {t(titleKey)}
+                    </h4>
+                  </div>
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                    <Trans i18nKey={bodyKey} components={transComponents} />
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                <Trans
-                  i18nKey="upload.step3.substeps.protocol.a.body"
-                  components={transComponents}
-                />
-              </p>
             </div>
-          </li>
-          <li className="flex gap-3">
-            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">
-              B
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 font-medium text-foreground">
-                <Smartphone className="h-3.5 w-3.5" /> {t("upload.step3.substeps.protocol.b.title")}
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                <Trans
-                  i18nKey="upload.step3.substeps.protocol.b.body"
-                  components={transComponents}
-                />
-              </p>
-            </div>
-          </li>
-        </ol>
+          ))}
+        </div>
       </>
     ),
   };

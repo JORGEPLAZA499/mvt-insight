@@ -523,9 +523,9 @@ function StepRun({
       ? [
           preambleStep,
           downloadStep,
+          protocolStep,
           devStep,
           usbStep,
-          protocolStep,
           connectStep,
           runStep,
           uploadStep,

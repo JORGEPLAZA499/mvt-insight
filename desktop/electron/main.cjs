@@ -19,7 +19,21 @@ autoUpdater.logger = {
   debug: (m) => console.log("[updater:debug]", m),
 };
 autoUpdater.autoDownload = false;
-autoUpdater.autoInstallOnAppQuit = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+/* ---------- Instancia única ---------- */
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    const win = mainWindow || updaterWindow;
+    if (win && !win.isDestroyed()) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
+}
 
 /* ---------- Ventana principal ---------- */
 
@@ -92,8 +106,12 @@ function createMainWindow() {
 let updaterWindow = null;
 let updateMandatory = false; // true cuando ya sabemos que hay update disponible
 let updaterAllowClose = false;
+let updaterReady = false;
+let pendingUpdaterState = null;
 
 function createUpdaterWindow() {
+  updaterReady = false;
+  pendingUpdaterState = null;
   updaterWindow = new BrowserWindow({
     width: 440,
     height: 240,
@@ -114,6 +132,15 @@ function createUpdaterWindow() {
 
   updaterWindow.loadFile(path.join(__dirname, "updater.html"));
 
+  // Cuando el HTML termine de cargar, drenamos el último estado pendiente.
+  updaterWindow.webContents.once("did-finish-load", () => {
+    updaterReady = true;
+    if (pendingUpdaterState) {
+      updaterWindow.webContents.send("updater:state", pendingUpdaterState);
+      pendingUpdaterState = null;
+    }
+  });
+
   // Bloquea cualquier intento de cerrar mientras la actualización sea obligatoria.
   updaterWindow.on("close", (e) => {
     if (!updaterAllowClose && updateMandatory) {
@@ -125,9 +152,13 @@ function createUpdaterWindow() {
 }
 
 function sendUpdaterState(state) {
-  if (updaterWindow && !updaterWindow.isDestroyed()) {
-    updaterWindow.webContents.send("updater:state", state);
+  if (!updaterWindow || updaterWindow.isDestroyed()) return;
+  if (!updaterReady) {
+    // Aún no ha cargado: guarda y se enviará en did-finish-load.
+    pendingUpdaterState = state;
+    return;
   }
+  updaterWindow.webContents.send("updater:state", state);
 }
 
 function closeUpdaterWindow() {
@@ -136,23 +167,20 @@ function closeUpdaterWindow() {
     updaterWindow.destroy();
   }
   updaterWindow = null;
+  updaterReady = false;
+  pendingUpdaterState = null;
 }
 
 /* ---------- Flujo de actualización ---------- */
 
 function checkForUpdates() {
-  // Espera a que el HTML cargue antes de enviar el primer estado.
-  updaterWindow.webContents.once("did-finish-load", () => {
-    sendUpdaterState({
-      title: "Buscando actualizaciones…",
-      message: "Comprobando si hay una nueva versión disponible.",
-      showSpinner: true,
-    });
-
-    autoUpdater.checkForUpdates().catch((err) => {
-      // Capturado también por el evento "error", pero por si acaso.
-      console.error("[updater] checkForUpdates rejected:", err);
-    });
+  sendUpdaterState({
+    title: "Buscando actualizaciones…",
+    message: "Comprobando si hay una nueva versión disponible.",
+    showSpinner: true,
+  });
+  autoUpdater.checkForUpdates().catch((err) => {
+    console.error("[updater] checkForUpdates rejected:", err);
   });
 }
 
@@ -190,11 +218,12 @@ autoUpdater.on("update-downloaded", () => {
     message: "La app se reiniciará automáticamente en unos segundos.",
     showSpinner: true,
   });
-  // Pequeño delay para que se lea el mensaje, luego instala y reinicia.
+  // Pequeño delay para que se lea el mensaje, luego cierra y reinicia.
+  // isSilent=false, isForceRunAfter=true → respeta el cierre limpio.
   setTimeout(() => {
     updaterAllowClose = true;
-    autoUpdater.quitAndInstall(true, true);
-  }, 1200);
+    autoUpdater.quitAndInstall(false, true);
+  }, 1500);
 });
 
 autoUpdater.on("error", (err) => {
@@ -346,12 +375,16 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       // 3. Ejecutar AndroidQF respondiendo automáticamente a sus prompts
       send("mvt:phase", { phase: 3, label: "Recolectando datos del dispositivo", progress: 0 });
 
-      const child = spawn(binPath, [], { cwd: dir });
+      const child = spawn(binPath, [], { cwd: dir, windowsHide: true });
       let buffer = "";
 
       // Respuestas predefinidas (Everything / All / No / No)
       const answers = ["1\n", "1\n", "n\n", "n\n"];
       let answerIdx = 0;
+
+      // Evita que un EPIPE inesperado tumbe el proceso de Electron.
+      child.on("error", (e) => send("mvt:log", `[err] spawn: ${e.message}`));
+      child.stdin.on("error", (e) => console.warn("[androidqf stdin]", e.message));
 
       child.stdout.on("data", (data) => {
         const text = data.toString();
@@ -366,7 +399,11 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
 
         // Detectar prompts y enviar la respuesta correspondiente
         if (/\?\s*$/.test(text) && answerIdx < answers.length) {
-          child.stdin.write(answers[answerIdx++]);
+          try {
+            child.stdin.write(answers[answerIdx++]);
+          } catch (e) {
+            console.warn("[androidqf stdin.write]", e.message);
+          }
         }
       });
 

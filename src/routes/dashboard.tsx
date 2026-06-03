@@ -71,6 +71,7 @@ function Dashboard() {
 
   return (
     <AppShell>
+      <PaymentSuccessModal open={successOpen} onClose={() => setSuccessOpen(false)} />
       <div className="p-6 md:p-10 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8 animate-fade-in">

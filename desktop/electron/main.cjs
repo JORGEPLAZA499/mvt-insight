@@ -295,8 +295,28 @@ async function download(url, dest, onProgress) {
 
 /* ---------- IPC handlers ---------- */
 
+let currentChild = null;
+let cancelled = false;
+
+ipcMain.handle("mvt:cancel", async () => {
+  cancelled = true;
+  if (currentChild) {
+    try { currentChild.kill(); } catch {}
+  }
+  if (process.platform === "win32") {
+    await new Promise((resolve) => {
+      const k = spawn("taskkill", ["/F", "/IM", "androidqf.exe", "/T"], { windowsHide: true });
+      k.on("close", () => resolve());
+      k.on("error", () => resolve());
+    });
+  }
+  return { ok: true };
+});
+
 ipcMain.handle("mvt:start", async (event, { device }) => {
   const send = (channel, payload) => event.sender.send(channel, payload);
+  cancelled = false;
+
 
   try {
     const dir = workDir();
@@ -406,6 +426,8 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         rows: 30,
         env: process.env,
       });
+      currentChild = child;
+
 
       // Auto-responder a los prompts interactivos de AndroidQF (librería survey).
       // Teclas ANSI: ↓ = "\x1b[B", ↑ = "\x1b[A", Enter = "\r".
@@ -481,7 +503,12 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       const exitCode = await new Promise((resolve) => {
         child.onExit(({ exitCode: code }) => resolve(code ?? 0));
       });
+      currentChild = null;
+      if (cancelled) {
+        return { ok: false, error: "cancelled" };
+      }
       if (exitCode !== 0) throw new Error(`AndroidQF terminó con código ${exitCode}`);
+
 
       // 4. Buscar el ZIP generado o, si no existe, comprimir la carpeta de
       //    acquisition que AndroidQF deja en disco.
@@ -519,9 +546,13 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
     // iOS solo en macOS — pendiente Fase 2
     throw new Error("El flujo iOS estará disponible en la próxima versión.");
   } catch (err) {
+    if (cancelled) return { ok: false, error: "cancelled" };
     send("mvt:log", `❌ ${err.message}`);
     return { ok: false, error: err.message };
+  } finally {
+    currentChild = null;
   }
+
 });
 
 ipcMain.handle("mvt:openFolder", async (_e, p) => {

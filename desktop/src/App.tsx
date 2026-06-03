@@ -82,6 +82,28 @@ export function App() {
     </div>
   );
 
+  const TopBarWithLogo = (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+      <img
+        src={logoUrl}
+        alt="Spyware Forensic Analyzer"
+        style={{ height: 40, objectFit: "contain", background: "transparent" }}
+      />
+      <LanguageSelector />
+    </div>
+  );
+
+  const handleCancel = async () => {
+    const msg = tr("running.cancelConfirm", "¿Cancelar el análisis en curso?");
+    if (!window.confirm(msg)) return;
+    try { await window.mvt?.cancel(); } catch {}
+    setScreen("welcome");
+    setError(null);
+    setPhase({ num: 0, label: "", progress: 0 });
+    setLogs([]);
+  };
+
+
   if (screen === "welcome") {
     return (
       <div className="app">
@@ -110,7 +132,7 @@ export function App() {
   if (screen === "running") {
     return (
       <div className="app">
-        {TopBar}
+        {TopBarWithLogo}
         <div className="header">
           <h1>{device === "android" ? tr("running.title.android", "Analizando Android…") : tr("running.title.ios", "Analizando iPhone…")}</h1>
           <p>{tr("running.subtitle", "No cierres esta ventana. Tarda entre 5 y 15 minutos.")}</p>
@@ -141,7 +163,13 @@ export function App() {
             );
           })}
           <div className="scanline" aria-hidden="true" />
+          <div className="row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
+            <button className="btn btn-secondary" onClick={handleCancel}>
+              {tr("running.cancel", "Cancelar")}
+            </button>
+          </div>
         </div>
+
 
         <details style={{ marginTop: 16 }}>
           <summary>{tr("details.toggle", "Ver detalles técnicos")}</summary>
@@ -168,7 +196,7 @@ export function App() {
   // screen === "done"
   return (
     <div className="app">
-      {TopBar}
+      {TopBarWithLogo}
       <div className="header">
         <h1>{tr("done.title", "✓ Análisis completado")}</h1>
         <p>{tr("done.subtitle", "Los datos se han guardado en tu carpeta de Descargas.")}</p>

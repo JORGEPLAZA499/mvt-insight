@@ -407,36 +407,64 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         env: process.env,
       });
 
-      // Respuestas por prompt. Cada prompt se responde UNA sola vez para no
-      // spamear (survey re-pinta el menú constantemente).
-      // Teclas: ↓ = "\x1b[B", Enter = "\r".
+      // Auto-responder a los prompts interactivos de AndroidQF (librería survey).
+      // Teclas ANSI: ↓ = "\x1b[B", ↑ = "\x1b[A", Enter = "\r".
       const DOWN = "\x1b[B";
       const ENTER = "\r";
-      const promptRules = [
-        // Backup: bajamos 2 veces → "No backup" (rápido y evita errores AAPM).
-        { id: "backup",   re: /\?\s*Backup\s*:/i,                          keys: DOWN + DOWN + ENTER },
-        // APKs: bajamos 1 vez → "Only non-system" (más rápido que "All").
-        { id: "download", re: /\?\s*Download\s*:/i,                        keys: DOWN + ENTER },
-        // Cualquier otro prompt con "?": aceptamos el valor por defecto.
-        { id: "default",  re: /\?\s+\S.*:\s*$/m,                           keys: ENTER },
-        // Cierre final del programa.
-        { id: "finish",   re: /Press\s+.*Enter.*to finish/i,               keys: ENTER },
+
+      // Respuestas por label de prompt (case-insensitive, match parcial).
+      // Para Yes/No, el cursor empieza en "Yes" → ENTER acepta Yes.
+      const PROMPT_ANSWERS = [
+        { label: /modules/i,  keys: ENTER,               note: "Modules: default (todos)" },
+        { label: /backup/i,   keys: DOWN + DOWN + ENTER, note: "Backup: No backup" },
+        { label: /download/i, keys: DOWN + ENTER,        note: "Download: Only non-system" },
+        { label: /remove/i,   keys: ENTER,               note: "Remove: Yes (reducir tamaño)" },
+        { label: /acquire/i,  keys: ENTER,               note: "Acquire: default" },
+        { label: /collect/i,  keys: ENTER,               note: "Collect: default" },
       ];
-      const sent = new Set();
+      const DEFAULT_ANSWER = { keys: ENTER, note: "default (Enter)" };
 
       const stripAnsi = (s) => s.replace(/\x1b\[[0-9;?]*[ -\/]*[@-~]/g, "");
+      const answeredPrompts = new Set();
       let buffer = "";
+      let stableTimer = null;
+
+      const tryAnswerPrompt = () => {
+        const clean = stripAnsi(buffer);
+        const lines = clean.split(/\r?\n/);
+        // Recorremos de abajo arriba (últimas 20 líneas) buscando un prompt activo.
+        for (let i = lines.length - 1; i >= 0 && i >= lines.length - 20; i--) {
+          const m = lines[i].match(/\?\s+([A-Za-z][A-Za-z ]*?)\s*:/);
+          if (!m) continue;
+          const label = m[1].trim();
+          // Hash del prompt = label + ~5 líneas siguientes (las opciones).
+          // Así un re-pintado del MISMO prompt no se responde dos veces.
+          const optionsBlob = lines.slice(i, i + 6).join("|").replace(/\s+/g, " ").trim();
+          const hash = `${label}::${optionsBlob}`;
+          if (answeredPrompts.has(hash)) return;
+
+          const rule = PROMPT_ANSWERS.find((r) => r.label.test(label)) || DEFAULT_ANSWER;
+          answeredPrompts.add(hash);
+          send("mvt:log", `\r\n[auto] Prompt detectado "${label}" → ${rule.note}\r\n`);
+          try { child.write(rule.keys); } catch (e) {
+            console.warn("[androidqf pty.write]", e.message);
+          }
+          return;
+        }
+        if (/Press\s+.*Enter.*to finish/i.test(clean) && !answeredPrompts.has("__finish__")) {
+          answeredPrompts.add("__finish__");
+          try { child.write(ENTER); } catch {}
+        }
+      };
 
       child.onData((data) => {
         const text = data.toString();
         buffer += text;
-        // Mantén el buffer acotado para no consumir RAM en sesiones largas.
-        if (buffer.length > 8000) buffer = buffer.slice(-8000);
+        if (buffer.length > 16000) buffer = buffer.slice(-16000);
 
         send("mvt:log", text);
 
         const clean = stripAnsi(text);
-        const cleanBuf = stripAnsi(buffer);
 
         // Heurística de progreso por sección detectada
         if (/backup/i.test(clean)) send("mvt:phase", { phase: 3, label: "Backup", progress: 0.2 });
@@ -444,18 +472,10 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         if (/Collecting information on installed apps/i.test(clean))
           send("mvt:phase", { phase: 3, label: "Analizando apps", progress: 0.8 });
 
-        // Detectar y responder prompts (probamos sobre el buffer limpio
-        // porque survey suele mandar el prompt en varios trozos).
-        for (const rule of promptRules) {
-          if (sent.has(rule.id)) continue;
-          if (rule.re.test(cleanBuf)) {
-            sent.add(rule.id);
-            try { child.write(rule.keys); } catch (e) {
-              console.warn("[androidqf pty.write]", e.message);
-            }
-            break;
-          }
-        }
+        // Esperamos 300 ms sin nuevos datos antes de responder, para no
+        // contestar a un prompt que aún se está renderizando.
+        if (stableTimer) clearTimeout(stableTimer);
+        stableTimer = setTimeout(tryAnswerPrompt, 300);
       });
 
       const exitCode = await new Promise((resolve) => {

@@ -29,6 +29,7 @@
     "vite": "^7.0.0"
   },
   "dependencies": {
+    "@homebridge/node-pty-prebuilt-multiarch": "^0.11.14",
     "electron-updater": "^6.8.3",
     "i18next": "^23.15.2",
     "react": "^19.0.0",

@@ -175,6 +175,42 @@ export function App() {
             <div className="sub">{tr("welcome.ios.sub", "Próximamente (solo macOS)")}</div>
           </button>
         </div>
+
+        <div style={{ marginTop: 24, textAlign: "center", fontSize: 13, color: "var(--muted)" }}>
+          {updateState.state === "idle" && (
+            <button className="btn btn-secondary" onClick={checkUpdates}>
+              {tr("update.check", "Buscar actualizaciones")}
+            </button>
+          )}
+          {updateState.state === "checking" && <span>{tr("update.checking", "Comprobando…")}</span>}
+          {updateState.state === "up-to-date" && (
+            <span>✓ {tr("update.upToDate", "Ya tienes la última versión")} (v{updateState.version || appVersion})</span>
+          )}
+          {updateState.state === "available" && (
+            <span>
+              {tr("update.available", "Nueva versión disponible:")} <strong>v{updateState.version}</strong>{" "}
+              <button className="btn" style={{ marginLeft: 8 }} onClick={installUpdate}>
+                {tr("update.install", "Instalar")}
+              </button>
+            </span>
+          )}
+          {updateState.state === "downloading" && (
+            <span>{tr("update.downloading", "Descargando…")} {Math.round(updateState.percent ?? 0)}%</span>
+          )}
+          {updateState.state === "downloaded" && (
+            <span>
+              ✓ {tr("update.readyToInstall", "Actualización lista para instalar")}{" "}
+              <button className="btn" style={{ marginLeft: 8 }} onClick={restartAndInstall}>
+                {tr("update.restart", "Reiniciar e instalar")}
+              </button>
+            </span>
+          )}
+          {updateState.state === "error" && (
+            <span style={{ color: "var(--danger)" }}>
+              {tr("update.error", "Error al comprobar actualizaciones:")} {updateState.error}
+            </span>
+          )}
+        </div>
       </div>
     );
   }

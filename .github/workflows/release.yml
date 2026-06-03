@@ -2,6 +2,10 @@ name: Build & Release Desktop App
 
 on:
   push:
+    branches:
+      - main
+    paths:
+      - "desktop/package.json"
     tags:
       - "v*"
   workflow_dispatch:
@@ -10,7 +14,45 @@ permissions:
   contents: write
 
 jobs:
+  tag:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+      tag: ${{ steps.read.outputs.tag }}
+      created: ${{ steps.create.outputs.created }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from desktop/package.json
+        id: read
+        run: |
+          VERSION=$(node -p "require('./desktop/package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag if missing
+        id: create
+        run: |
+          TAG="${{ steps.read.outputs.tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, skipping."
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "created=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: [tag]
+    if: |
+      always() &&
+      (needs.tag.result == 'skipped' || needs.tag.result == 'success')
     strategy:
       fail-fast: false
       matrix:
@@ -29,6 +71,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag || github.ref }}
 
       - uses: actions/setup-node@v4
         with:

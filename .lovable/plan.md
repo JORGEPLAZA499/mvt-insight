@@ -1,16 +1,26 @@
-El log crudo del PTY se envía al renderer en `desktop/electron/main.cjs:500` con `send("mvt:log", text)`, sin limpiar. Ya existe `stripAnsi` justo debajo, solo hay que aplicarlo antes de enviar y reforzar la regex para cubrir más secuencias.
+Arreglar la detección del ZIP/carpeta de resultados de AndroidQF para que funcione independientemente del patrón de nombre. Acumular los cambios sin bumpear versión (regla nueva: solo bumpeo cuando digas "publica").
+
+### Causa raíz
+`desktop/electron/main.cjs:547` filtra subdirectorios con la regex estricta `/^\d{14}-/` (14 dígitos + guion). Si AndroidQF nombra la carpeta de otra forma, el filtro la descarta y lanzamos "No se encontró ni ZIP ni carpeta de resultados" aunque la captura terminó bien.
 
 ### Cambios
-1. **`desktop/electron/main.cjs`**
-   - Reemplazar la regex de `stripAnsi` por una versión más completa que cubra:
-     - CSI: `\x1b\[...letter`
-     - OSC: `\x1b\][^\x07]*\x07`
-     - Otras secuencias de un solo carácter: `\x1b[=>()*+]`
-     - Caracteres de control no imprimibles (excepto `\n`, `\t`): `[\x00-\x08\x0B-\x1F\x7F]`
-     - `\r` solo, sin `\n` detrás → convertir a `\n` para que no sobrescriba la línea anterior.
-   - En el handler `child.onData`, enviar `send("mvt:log", stripAnsi(text))` en vez del `text` crudo. El `buffer` interno (usado para detectar prompts) sigue trabajando con el texto original — eso ya hace su propio `stripAnsi` en `tryAnswerPrompt`.
 
-2. **`desktop/package.json`** — Bump `1.0.20` → `1.0.21` para que la nueva versión salga publicada.
+**1. `desktop/electron/main.cjs` — bloque de búsqueda de resultados (líneas 532-559)**
+
+Reescribir para ser robusto:
+
+- Capturar `const startMs = Date.now()` **antes** de `pty.spawn(...)`.
+- Tras `Acquisition completed` / `exit`, escanear `dir` y considerar **cualquier** entrada (archivo o carpeta) cuyo `mtimeMs >= startMs - 5000` (margen de 5 s).
+- Prioridad de elección:
+  1. Si hay un `.zip` nuevo → usarlo directamente.
+  2. Si hay una carpeta nueva → comprimirla (mantener `zipFolder`).
+  3. Si no hay nada nuevo → recién entonces lanzar error, **incluyendo en el mensaje el listado del directorio** (`fs.readdirSync(dir).join(", ")`) para diagnosticar futuras versiones de AndroidQF.
+- Añadir `send("mvt:log", "...")` con qué carpeta/archivo se eligió, para trazabilidad.
+
+**2. Versión** — NO bumpear. Mantener `1.0.21` hasta que pidas "publica".
+
+### Regla nueva confirmada
+A partir de ahora no toco `desktop/package.json > version` en ningún cambio. Solo lo bumpeo cuando me escribas explícitamente **"publica"** o **"saca versión"**, y entonces hago un único bump (`1.0.21 → 1.0.22`) que dispara una sola release en GitHub Actions con todos los cambios acumulados.
 
 ### Lo que NO cambia
-- Lógica de detección de prompts, fases, cancelación, updater, UI.
+- Lógica de spawn de AndroidQF, prompts, fases, cancelación, updater, UI, i18n.

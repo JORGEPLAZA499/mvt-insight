@@ -382,72 +382,85 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       // 3. Ejecutar AndroidQF respondiendo automáticamente a sus prompts
       send("mvt:phase", { phase: 3, label: "Recolectando datos del dispositivo", progress: 0 });
 
-      // Reintenta spawn ante EBUSY (antivirus aún escaneando el .exe).
-      const spawnWithRetry = async () => {
-        let lastErr;
-        for (let i = 0; i < 5; i++) {
-          try {
-            const c = spawn(binPath, [], { cwd: dir, windowsHide: true });
-            await new Promise((resolve, reject) => {
-              const onErr = (e) => { c.removeListener("spawn", onSpawn); reject(e); };
-              const onSpawn = () => { c.removeListener("error", onErr); resolve(); };
-              c.once("error", onErr);
-              c.once("spawn", onSpawn);
-            });
-            return c;
-          } catch (e) {
-            lastErr = e;
-            if (e.code !== "EBUSY" && e.code !== "UNKNOWN" && e.code !== "EPERM") throw e;
-            send("mvt:log", `⏳ spawn ${e.code}, reintentando en 2s…`);
-            await new Promise((r) => setTimeout(r, 2000));
-          }
-        }
-        throw lastErr;
-      };
-      const child = await spawnWithRetry();
+      // Cargamos node-pty bajo demanda: si falla, damos un mensaje claro
+      // (típicamente falta el Visual C++ Redistributable en Windows).
+      let pty;
+      try {
+        pty = require("@homebridge/node-pty-prebuilt-multiarch");
+      } catch (e) {
+        throw new Error(
+          "No se pudo iniciar el terminal interno (node-pty). " +
+          (process.platform === "win32"
+            ? "Instala el Visual C++ Redistributable 2015-2022 (x64) desde Microsoft y vuelve a abrir la app."
+            : `Detalle: ${e.message}`)
+        );
+      }
+
+      // AndroidQF usa una librería interactiva (survey) que requiere un TTY
+      // real y se controla con teclas de flecha. Lanzamos el binario dentro
+      // de un pseudo-terminal y enviamos escapes ANSI para responder.
+      const child = pty.spawn(binPath, [], {
+        name: "xterm-color",
+        cwd: dir,
+        cols: 120,
+        rows: 30,
+        env: process.env,
+      });
+
+      // Respuestas por prompt. Cada prompt se responde UNA sola vez para no
+      // spamear (survey re-pinta el menú constantemente).
+      // Teclas: ↓ = "\x1b[B", Enter = "\r".
+      const DOWN = "\x1b[B";
+      const ENTER = "\r";
+      const promptRules = [
+        // Backup: bajamos 2 veces → "No backup" (rápido y evita errores AAPM).
+        { id: "backup",   re: /\?\s*Backup\s*:/i,                          keys: DOWN + DOWN + ENTER },
+        // APKs: bajamos 1 vez → "Only non-system" (más rápido que "All").
+        { id: "download", re: /\?\s*Download\s*:/i,                        keys: DOWN + ENTER },
+        // Cualquier otro prompt con "?": aceptamos el valor por defecto.
+        { id: "default",  re: /\?\s+\S.*:\s*$/m,                           keys: ENTER },
+        // Cierre final del programa.
+        { id: "finish",   re: /Press\s+.*Enter.*to finish/i,               keys: ENTER },
+      ];
+      const sent = new Set();
+
+      const stripAnsi = (s) => s.replace(/\x1b\[[0-9;?]*[ -\/]*[@-~]/g, "");
       let buffer = "";
 
-      // Respuestas predefinidas (Everything / All / No / No)
-      const answers = ["1\n", "1\n", "n\n", "n\n"];
-      let answerIdx = 0;
-
-      // Evita que un EPIPE inesperado tumbe el proceso de Electron.
-      child.on("error", (e) => send("mvt:log", `[err] spawn: ${e.message}`));
-      child.stdin.on("error", (e) => console.warn("[androidqf stdin]", e.message));
-
-      child.stdout.on("data", (data) => {
+      child.onData((data) => {
         const text = data.toString();
         buffer += text;
+        // Mantén el buffer acotado para no consumir RAM en sesiones largas.
+        if (buffer.length > 8000) buffer = buffer.slice(-8000);
+
         send("mvt:log", text);
 
+        const clean = stripAnsi(text);
+        const cleanBuf = stripAnsi(buffer);
+
         // Heurística de progreso por sección detectada
-        if (/backup/i.test(text)) send("mvt:phase", { phase: 3, label: "Backup", progress: 0.2 });
-        if (/Downloading APKs/i.test(text)) send("mvt:phase", { phase: 3, label: "Descargando APKs", progress: 0.5 });
-        if (/Collecting information on installed apps/i.test(text))
+        if (/backup/i.test(clean)) send("mvt:phase", { phase: 3, label: "Backup", progress: 0.2 });
+        if (/Downloading APKs/i.test(clean)) send("mvt:phase", { phase: 3, label: "Descargando APKs", progress: 0.5 });
+        if (/Collecting information on installed apps/i.test(clean))
           send("mvt:phase", { phase: 3, label: "Analizando apps", progress: 0.8 });
 
-        // Prompt final "Press Enter to finish ..." — sin '?', necesita un Enter
-        // suelto para que AndroidQF cierre limpiamente y comprima el resultado.
-        if (/Press\s+.*Enter.*to finish/i.test(text)) {
-          try { child.stdin.write("\n"); } catch (e) {
-            console.warn("[androidqf stdin.write finish]", e.message);
-          }
-          return;
-        }
-
-        // Detectar prompts normales (acaban en '?') y enviar la respuesta
-        if (/\?\s*$/.test(text) && answerIdx < answers.length) {
-          try {
-            child.stdin.write(answers[answerIdx++]);
-          } catch (e) {
-            console.warn("[androidqf stdin.write]", e.message);
+        // Detectar y responder prompts (probamos sobre el buffer limpio
+        // porque survey suele mandar el prompt en varios trozos).
+        for (const rule of promptRules) {
+          if (sent.has(rule.id)) continue;
+          if (rule.re.test(cleanBuf)) {
+            sent.add(rule.id);
+            try { child.write(rule.keys); } catch (e) {
+              console.warn("[androidqf pty.write]", e.message);
+            }
+            break;
           }
         }
       });
 
-      child.stderr.on("data", (data) => send("mvt:log", `[err] ${data.toString()}`));
-
-      const exitCode = await new Promise((res) => child.on("close", res));
+      const exitCode = await new Promise((resolve) => {
+        child.onExit(({ exitCode: code }) => resolve(code ?? 0));
+      });
       if (exitCode !== 0) throw new Error(`AndroidQF terminó con código ${exitCode}`);
 
       // 4. Buscar el ZIP generado o, si no existe, comprimir la carpeta de

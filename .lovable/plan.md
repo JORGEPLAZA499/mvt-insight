@@ -1,102 +1,79 @@
 
-## Problema
+## Por qué falló
 
-En el log se ve claramente que AndroidQF **terminó bien**:
+AndroidQF NO usa preguntas estilo "1/2/3 + Enter". Usa la librería Go **`survey`**, que pinta un menú interactivo con **teclas de flecha** (↓ ↑ → ←) y necesita un **TTY real** para leer pulsaciones crudas.
 
-```
-Acquisition completed.
-Press Enter to finish ...
-❌ No se encontró el ZIP de resultados
-```
+En `main.cjs` lanzamos AndroidQF con `spawn(binPath, [])`, lo cual abre **pipes normales**, no un TTY. Resultado:
+- `survey` detecta que no hay terminal y aborta inmediatamente con `^D` (EOF).
+- Por eso ves `ERROR: failed to make selection for backup option: ^D`.
+- Nuestro `child.stdin.write("1\n")` no hace nada útil — esos caracteres llegan a un proceso que ya ni siquiera está escuchando con el modo correcto.
+- Como el módulo de backup falla, AndroidQF salta al siguiente paso y al final no genera ZIP ni carpeta válida.
 
-Hay **dos bugs** en `desktop/electron/main.cjs`:
+Las "opciones" (`> Only SMS`, `Everything`, `No backup`) sí aparecen pintadas en pantalla, pero no podemos navegarlas sin teclas de flecha sobre un TTY.
 
-### Bug 1 — Nunca enviamos el último Enter
-
-El código solo responde a prompts que terminan en `?`:
-```js
-if (/\?\s*$/.test(text) && answerIdx < answers.length) { ... }
-```
-
-Pero el prompt final es `Press Enter to finish ...` (sin `?`). Como nadie pulsa Enter, AndroidQF no llega a **comprimir** el resultado en `.zip` — solo deja la carpeta de acquisition cruda. Por eso el `readdirSync` no encuentra ningún `.zip`.
-
-### Bug 2 — Solo buscamos `.zip`
-
-Las versiones recientes de AndroidQF crean una **carpeta** con UUID (ej. `20260121133226-62061841/`) con todos los artefactos dentro, y solo la convierten a `.zip` si el usuario lo confirma. Si por lo que sea el zip no se genera, nos quedamos sin nada que subir aunque la carpeta exista.
+Comprobado además que AndroidQF **no tiene flags CLI no-interactivas** (ni `--module`, ni `--backup=none`, ni `-y`). El README confirma que todo es a través del menú.
 
 ## Solución
 
-Editar **solo** `desktop/electron/main.cjs`:
+Sustituir `child_process.spawn` por **node-pty**, que crea un pseudo-terminal real. Así `survey` cree que está en una terminal de verdad y podemos enviarle escapes ANSI de flechas + Enter para seleccionar opciones.
 
-1. **Detectar el prompt final** `Press Enter to finish` y enviar `\n` para que AndroidQF cierre limpiamente y finalice la escritura del zip.
+Para evitar compilar binarios nativos en cada build, usar el paquete con **prebuilds**:
 
-2. **Detectar también prompts sin `?`** (líneas tipo `>` o que terminen en `:` esperando respuesta) — pero con cuidado de no spamear respuestas. Solución simple: añadir el patrón `/Press .*Enter.*to finish/i` como caso especial que dispara un Enter sin consumir la cola de respuestas.
-
-3. **Fallback de carpeta → zip**: si tras cerrar el proceso no hay `.zip`, buscar la carpeta de acquisition más reciente (nombre tipo `YYYYMMDDHHMMSS-XXXXXXXX/`) y comprimirla nosotros usando el módulo `archiver` (ya disponible vía npm; si no, usar el `zlib` nativo + recorrido recursivo, o el comando del sistema `tar`/`powershell Compress-Archive` en Windows).
-
-   Opción más simple y sin dependencias nuevas: usar **PowerShell** en Windows (`Compress-Archive`) y `zip` en macOS/Linux, ejecutados con `spawn`. Esto evita añadir paquetes al bundle de Electron.
-
-4. **Bump versión** a `1.0.10` en `desktop/package.json` para que los usuarios con 1.0.9 reciban el fix vía auto-updater.
-
-## Sección técnica
-
-Cambios concretos en `main.cjs`:
-
-```js
-// Dentro del handler de stdout:
-child.stdout.on("data", (data) => {
-  const text = data.toString();
-  buffer += text;
-  send("mvt:log", text);
-
-  // ... heurística de progreso sin cambios ...
-
-  // NUEVO: prompt final
-  if (/Press\s+.*Enter.*to finish/i.test(text)) {
-    try { child.stdin.write("\n"); } catch {}
-    return;
-  }
-
-  // Prompts normales (?)
-  if (/\?\s*$/.test(text) && answerIdx < answers.length) {
-    try { child.stdin.write(answers[answerIdx++]); } catch {}
-  }
-});
+```
+@homebridge/node-pty-prebuilt-multiarch
 ```
 
-Y tras `child.close`:
+Trae binarios precompilados para Windows (x64), macOS (x64 + arm64) y Linux (x64) y para varias versiones de Electron. Encaja directo con el workflow de GitHub Actions sin paso extra.
 
-```js
-// Buscar zip primero
-let files = fs.readdirSync(dir).filter(f => f.endsWith(".zip"));
-let zipPath;
-if (files.length) {
-  const newest = files
-    .map(f => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
-    .sort((a, b) => b.t - a.t)[0];
-  zipPath = path.join(dir, newest.f);
-} else {
-  // Fallback: comprimir la carpeta de acquisition más reciente
-  const dirs = fs.readdirSync(dir, { withFileTypes: true })
-    .filter(d => d.isDirectory() && /^\d{14}-/.test(d.name))
-    .map(d => ({ name: d.name, t: fs.statSync(path.join(dir, d.name)).mtimeMs }))
-    .sort((a, b) => b.t - a.t);
-  if (!dirs.length) throw new Error("No se encontró ni ZIP ni carpeta de resultados");
+### Respuestas que enviamos
 
-  const folder = path.join(dir, dirs[0].name);
-  zipPath = path.join(dir, `${dirs[0].name}.zip`);
-  send("mvt:log", `📦 Comprimiendo ${folder} → ${zipPath}`);
-  await zipFolder(folder, zipPath);    // usa PowerShell en win32, zip en otros
-}
+Para cada prompt detectado en stdout, enviar la combinación de teclas:
+
+| Prompt | Acción | Bytes |
+|---|---|---|
+| `? Backup:` | Bajar 2 veces → "No backup" | `\x1b[B\x1b[B\r` |
+| `? Download:` (APKs) | Bajar 1 vez → "Only non-system" (más rápido) | `\x1b[B\r` |
+| `? SMS:` o similar | Enter (default) | `\r` |
+| `Press Enter to finish` | Enter | `\r` |
+
+Elegimos **"No backup"** porque:
+- En Android 12+ el backup está rota para casi todas las apps (lo dice el README).
+- Evita el error AAPM-incompatible que ya se vio en el log.
+- Acelera el análisis a la mitad.
+
+### Cambios concretos en `desktop/electron/main.cjs`
+
+1. `npm install` de `@homebridge/node-pty-prebuilt-multiarch` en `desktop/package.json` (`dependencies`).
+2. Quitar `const { spawn } = require("child_process")` en lo que afecta al binario de AndroidQF (lo seguimos usando para `taskkill` y `zip`/PowerShell).
+3. Sustituir `spawnWithRetry` por una versión que use `pty.spawn(binPath, [], { name: 'xterm-color', cwd: dir, cols: 120, rows: 30, env: process.env })`.
+4. Reescribir el handler de `onData`:
+   - Quitar el ANSI con un regex para detectar prompts limpios.
+   - Mantener la heurística de progreso (backup, APKs, apps).
+   - Tabla de respuestas como arriba; cada prompt se envía **una sola vez** marcándolo en un `Set` para no spamear.
+   - Cuando se detecte `Press Enter to finish`, `pty.write("\r")`.
+5. Esperar `pty.onExit` en vez de `child.on("close")`.
+
+### Cambios en empaquetado
+
+`electron-builder` debe incluir los prebuilds nativos. Añadir en `desktop/package.json` → `build.asarUnpack`:
+
+```json
+"asarUnpack": [
+  "node_modules/@homebridge/node-pty-prebuilt-multiarch/**/*"
+]
 ```
 
-`zipFolder` se implementa con `spawn` invocando:
-- Windows: `powershell -Command "Compress-Archive -Path '<folder>\\*' -DestinationPath '<zip>' -Force"`
-- macOS/Linux: `zip -r <zip> .` con cwd en la carpeta.
+### Versión
+
+Bump a **1.0.11** para que los usuarios con 1.0.10 reciban el fix por auto-updater.
+
+## Sección técnica — fallback si node-pty falla en algún user
+
+Si `pty.spawn` lanza un error al cargar el `.node` (raro pero posible en Windows sin Visual C++ runtimes antiguos), capturarlo y mostrar mensaje claro: "Tu Windows necesita el Redistributable de Visual C++ 2015-2022". No reintentamos con `spawn` clásico porque ya sabemos que no funciona.
 
 ## Archivos a tocar
 
-- `desktop/electron/main.cjs` — los dos fixes anteriores
-- `desktop/package.json` — bump a `1.0.10`
+- `desktop/package.json` — añadir dependencia + `asarUnpack` + bump a 1.0.11
+- `desktop/electron/main.cjs` — reemplazar el spawn de androidqf por node-pty y reescribir el handler de respuestas
 
-Después solo queda hacer **Run workflow** en `release.yml` para publicar 1.0.10; los usuarios con 1.0.9 recibirán el aviso de actualización al abrir la app.
+Después: **Run workflow** `release.yml` para publicar 1.0.11. Los usuarios con 1.0.10 verán el aviso de actualización al abrir la app.

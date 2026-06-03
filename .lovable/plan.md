@@ -1,21 +1,24 @@
-# Botones de descarga dinámicos
+## Objetivo
+Dejar un solo workflow de GitHub Actions (`release.yml`) que haga tag + build + publish en un mismo flujo, eliminando el workflow duplicado "Auto Tag on Version Bump" que está rompiendo el pipeline.
 
-## Problema
-`src/routes/upload.tsx` tiene `APP_VERSION = "1.0.9"` hardcoded. Cuando se publique `v1.0.14`, los enlaces apuntarán a archivos `1.0.9` inexistentes → 404.
+## Problema actual
+- Existen 2 workflows: uno crea el tag (`Auto Tag on Version Bump`) y otro compila/publica (`Build & Release Desktop App`).
+- Los tags creados con `GITHUB_TOKEN` **no disparan otros workflows** (limitación de GitHub Actions para evitar bucles).
+- Resultado: las versiones 1.0.7 → 1.0.13 fueron tagueadas pero nunca compiladas, por eso el último release publicado sigue siendo 1.0.9.
 
-## Solución
-Obtener la versión del último release desde la API pública de GitHub al cargar la página, y construir los enlaces dinámicamente. Sin tocar lógica de negocio.
+## Pasos
+1. Listar `.github/workflows/` para identificar el archivo del workflow duplicado (probablemente `auto-tag.yml` o similar).
+2. Eliminar ese archivo.
+3. Verificar que `release.yml` queda intacto (ya contiene job `tag` + job `build` correctamente encadenados con `needs: [tag]`).
+4. Bumpear `desktop/package.json` de `1.0.13` → `1.0.14` para forzar una corrida de prueba del workflow unificado.
 
-## Cambios en `src/routes/upload.tsx`
+## Resultado esperado
+- Al hacer push a `main`, `release.yml` corre solo:
+  - Job `tag`: lee `desktop/package.json`, crea tag `v1.0.14`.
+  - Job `build`: compila Windows/macOS/Linux en paralelo y publica el release.
+- La web `upload.tsx` (que ya lee `releases/latest` vía API de GitHub) automáticamente servirá los enlaces a `MvtInsight-Setup-1.0.14.exe` sin redeploy.
 
-1. **Eliminar** la constante `APP_VERSION = "1.0.9"`.
-2. **Añadir un `useState<string | null>(null)`** para `latestVersion`.
-3. **Añadir un `useEffect`** que haga `fetch("https://api.github.com/repos/JORGEPLAZA499/mvt-insight/releases/latest")`, lea `tag_name` (formato `v1.0.14`), le quite la `v` y guarde la versión.
-4. **Modificar los 3 botones de descarga** (Windows/macOS/Linux):
-   - Mientras `latestVersion` sea `null` → botón deshabilitado con texto "Cargando…".
-   - Cuando se obtenga → enlaces normales usando `latestVersion`.
-5. **Fallback**: si el `fetch` falla (rate-limit, sin red), usar `RELEASES_PAGE_URL` (página `/releases/latest`) como destino del botón, para que el usuario siempre pueda llegar al instalador correcto.
-
-## Resultado
-- Bumpeás `desktop/package.json` → push a `main` → GitHub Actions tagguea, compila y publica → la web automáticamente sirve los enlaces de la nueva versión sin redeploy.
-- Cero mantenimiento manual de versión en el frontend.
+## Notas
+- No toco código del frontend.
+- No toco `release.yml` (ya está bien diseñado).
+- El bump a 1.0.14 es opcional; si preferís verificar primero que el duplicado se eliminó y bumpear vos mismo después, decímelo.

@@ -68,6 +68,21 @@ function Upload() {
 
   useEffect(() => {
     let active = true;
+    fetch(RELEASES_API_URL)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!active || !data?.tag_name) return;
+        const v = String(data.tag_name).replace(/^v/, "");
+        setLatestVersion(v);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
     (async () => {

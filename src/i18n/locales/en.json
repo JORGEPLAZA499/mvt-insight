@@ -233,8 +233,8 @@
     "step1": {
       "title": "Which device do you want to analyze?",
       "subtitle": "Pick the mobile operating system.",
-      "android": { "title": "Android", "sub": "Samsung, Xiaomi, Pixel…" },
-      "ios": { "title": "iPhone", "sub": "iOS 14 or newer" },
+      "android": { "title": "Android", "sub": "" },
+      "ios": { "title": "iPhone", "sub": "" },
       "noCredits": {
         "title": "You have no credits available",
         "body": "You need at least 1 credit to start an analysis. Top up credits from your dashboard to enable the options.",

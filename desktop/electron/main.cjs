@@ -295,8 +295,28 @@ async function download(url, dest, onProgress) {
 
 /* ---------- IPC handlers ---------- */
 
+let currentChild = null;
+let cancelled = false;
+
+ipcMain.handle("mvt:cancel", async () => {
+  cancelled = true;
+  if (currentChild) {
+    try { currentChild.kill(); } catch {}
+  }
+  if (process.platform === "win32") {
+    await new Promise((resolve) => {
+      const k = spawn("taskkill", ["/F", "/IM", "androidqf.exe", "/T"], { windowsHide: true });
+      k.on("close", () => resolve());
+      k.on("error", () => resolve());
+    });
+  }
+  return { ok: true };
+});
+
 ipcMain.handle("mvt:start", async (event, { device }) => {
   const send = (channel, payload) => event.sender.send(channel, payload);
+  cancelled = false;
+
 
   try {
     const dir = workDir();

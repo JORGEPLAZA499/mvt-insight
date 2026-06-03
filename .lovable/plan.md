@@ -1,22 +1,21 @@
-## Unificar auto-tag y release en un solo workflow
+# Botones de descarga dinámicos
 
-**Problema:** Los tags creados por un workflow con el `GITHUB_TOKEN` por defecto no disparan otros workflows (protección de GitHub contra bucles). Por eso `v1.0.13` se creó pero `release.yml` nunca arrancó.
+## Problema
+`src/routes/upload.tsx` tiene `APP_VERSION = "1.0.9"` hardcoded. Cuando se publique `v1.0.14`, los enlaces apuntarán a archivos `1.0.9` inexistentes → 404.
 
-**Solución:** Unificar todo en `release.yml`. Cuando se haga push a `main` con cambio en `desktop/package.json`, el mismo workflow crea el tag y compila/publica los instaladores en una sola corrida.
+## Solución
+Obtener la versión del último release desde la API pública de GitHub al cargar la página, y construir los enlaces dinámicamente. Sin tocar lógica de negocio.
 
-### Cambios
+## Cambios en `src/routes/upload.tsx`
 
-**1. Editar `.github/workflows/release.yml`**
-- Añadir trigger `push` a `main` filtrado por `paths: ['desktop/package.json']` (manteniendo el trigger por tags `v*` y `workflow_dispatch`).
-- Añadir un job previo `tag` que corre solo en push a main:
-  - Lee la versión desde `desktop/package.json`.
-  - Si el tag `vX.Y.Z` no existe, lo crea y lo pushea.
-  - Expone la versión como output.
-- El job `build` depende de `tag` (cuando aplica) y compila para Windows / macOS / Linux.
-- Publica el GitHub Release con los instaladores (`.exe`, `.dmg`, `.AppImage`).
+1. **Eliminar** la constante `APP_VERSION = "1.0.9"`.
+2. **Añadir un `useState<string | null>(null)`** para `latestVersion`.
+3. **Añadir un `useEffect`** que haga `fetch("https://api.github.com/repos/JORGEPLAZA499/mvt-insight/releases/latest")`, lea `tag_name` (formato `v1.0.14`), le quite la `v` y guarde la versión.
+4. **Modificar los 3 botones de descarga** (Windows/macOS/Linux):
+   - Mientras `latestVersion` sea `null` → botón deshabilitado con texto "Cargando…".
+   - Cuando se obtenga → enlaces normales usando `latestVersion`.
+5. **Fallback**: si el `fetch` falla (rate-limit, sin red), usar `RELEASES_PAGE_URL` (página `/releases/latest`) como destino del botón, para que el usuario siempre pueda llegar al instalador correcto.
 
-**2. Eliminar `.github/workflows/auto-tag.yml`**
-- Su lógica queda absorbida por `release.yml`.
-
-### Resultado
-Próximo bump de versión en `desktop/package.json` → push a `main` → una sola corrida que tagguea, compila los 3 instaladores y publica el Release automáticamente.
+## Resultado
+- Bumpeás `desktop/package.json` → push a `main` → GitHub Actions tagguea, compila y publica → la web automáticamente sirve los enlaces de la nueva versión sin redeploy.
+- Cero mantenimiento manual de versión en el frontend.

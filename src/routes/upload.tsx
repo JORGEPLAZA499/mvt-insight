@@ -280,52 +280,6 @@ function StepRun({
     );
   }
 
-
-  const protocolStep = {
-    title: t("upload.step3.substeps.protocol.title"),
-    content: (
-      <>
-        <p className="text-sm text-muted-foreground">
-          {t("upload.step3.substeps.protocol.intro")}
-        </p>
-        <ol className="mt-3 space-y-3 text-sm">
-          <li className="flex gap-3">
-            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">
-              A
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 font-medium text-foreground">
-                <WifiOff className="h-3.5 w-3.5" /> {t("upload.step3.substeps.protocol.a.title")}
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                <Trans
-                  i18nKey="upload.step3.substeps.protocol.a.body"
-                  components={transComponents}
-                />
-              </p>
-            </div>
-          </li>
-          <li className="flex gap-3">
-            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">
-              B
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 font-medium text-foreground">
-                <Smartphone className="h-3.5 w-3.5" /> {t("upload.step3.substeps.protocol.b.title")}
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                <Trans
-                  i18nKey="upload.step3.substeps.protocol.b.body"
-                  components={transComponents}
-                />
-              </p>
-            </div>
-          </li>
-        </ol>
-      </>
-    ),
-  };
-
   const brandRoutes = t("upload.step3.substeps.dev.routes", {
     returnObjects: true,
   }) as string[];
@@ -336,100 +290,95 @@ function StepRun({
 
   const osLabel = os === "windows" ? "Windows" : os === "mac" ? "macOS" : "Linux";
 
-  const subSteps: { title: string; content: React.ReactNode }[] =
-    device === "android"
-      ? [
-          {
-            title: t("upload.step3.substeps.dev.title"),
-            content: (
-              <>
-                <p>
-                  <Trans i18nKey="upload.step3.substeps.dev.body" components={transComponents} />
-                </p>
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-primary hover:underline text-sm">
-                    {t("upload.step3.substeps.dev.routesSummary")}
-                  </summary>
-                  <ul className="mt-2 space-y-1 pl-4 list-disc text-sm">
-                    {brandRoutes.map((html, i) => (
-                      <li key={i}>
-                        <Trans
-                          i18nKey={`upload.step3.substeps.dev.routes.${i}`}
-                          components={transComponents}
-                        >
-                          {html}
-                        </Trans>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              </>
-            ),
-          },
-          {
-            title: t("upload.step3.substeps.usb.title"),
-            content: (
-              <p>
-                <Trans i18nKey="upload.step3.substeps.usb.body" components={transComponents} />
-              </p>
-            ),
-          },
-          {
-            title: t("upload.step3.substeps.connect.title"),
-            content: (
-              <>
-                <p>
-                  <Trans
-                    i18nKey="upload.step3.substeps.connect.body"
-                    components={transComponents}
-                  />
-                </p>
-                <div className="mt-4 rounded-xl border border-border bg-card/40 p-4">
-                  <UsbConnect connected />
-                </div>
-              </>
-            ),
-          },
-        ]
-      : [
-          
-          {
-            title: t("upload.step3.substeps.iosTrust.title"),
-            content: (
-              <p>
+  const preambleStep = {
+    title: t("upload.step3.substeps.preamble.title"),
+    content: (
+      <p>
+        <Trans i18nKey="upload.step3.substeps.preamble.body" components={transComponents} />
+      </p>
+    ),
+  };
+
+  const devStep = {
+    title: t("upload.step3.substeps.dev.title"),
+    content: (
+      <>
+        <p>
+          <Trans i18nKey="upload.step3.substeps.dev.body" components={transComponents} />
+        </p>
+        <details className="mt-3">
+          <summary className="cursor-pointer text-primary hover:underline text-sm">
+            {t("upload.step3.substeps.dev.routesSummary")}
+          </summary>
+          <ul className="mt-2 space-y-1 pl-4 list-disc text-sm">
+            {brandRoutes.map((html, i) => (
+              <li key={i}>
                 <Trans
-                  i18nKey="upload.step3.substeps.iosTrust.body"
+                  i18nKey={`upload.step3.substeps.dev.routes.${i}`}
                   components={transComponents}
-                />
-              </p>
-            ),
-          },
-          {
-            title: t("upload.step3.substeps.iosBackup.title"),
-            content: (
-              <p>
-                <Trans
-                  i18nKey="upload.step3.substeps.iosBackup.body"
-                  components={transComponents}
-                />
-                <span className="block mt-1 text-warning">
-                  {t("upload.step3.substeps.iosBackup.warn")}
-                </span>
-              </p>
-            ),
-          },
-          {
-            title: t("upload.step3.substeps.iosKeep.title"),
-            content: (
-              <p>
-                <Trans
-                  i18nKey="upload.step3.substeps.iosKeep.body"
-                  components={transComponents}
-                />
-              </p>
-            ),
-          },
-        ];
+                >
+                  {html}
+                </Trans>
+              </li>
+            ))}
+          </ul>
+        </details>
+      </>
+    ),
+  };
+
+  const usbStep = {
+    title: t("upload.step3.substeps.usb.title"),
+    content: (
+      <p>
+        <Trans i18nKey="upload.step3.substeps.usb.body" components={transComponents} />
+      </p>
+    ),
+  };
+
+  const connectStep = {
+    title: t("upload.step3.substeps.connect.title"),
+    content: (
+      <>
+        <p>
+          <Trans i18nKey="upload.step3.substeps.connect.body" components={transComponents} />
+        </p>
+        <div className="mt-4 rounded-xl border border-border bg-card/40 p-4">
+          <UsbConnect connected />
+        </div>
+      </>
+    ),
+  };
+
+  const iosTrustStep = {
+    title: t("upload.step3.substeps.iosTrust.title"),
+    content: (
+      <p>
+        <Trans i18nKey="upload.step3.substeps.iosTrust.body" components={transComponents} />
+      </p>
+    ),
+  };
+
+  const iosBackupStep = {
+    title: t("upload.step3.substeps.iosBackup.title"),
+    content: (
+      <p>
+        <Trans i18nKey="upload.step3.substeps.iosBackup.body" components={transComponents} />
+        <span className="block mt-1 text-warning">
+          {t("upload.step3.substeps.iosBackup.warn")}
+        </span>
+      </p>
+    ),
+  };
+
+  const iosKeepStep = {
+    title: t("upload.step3.substeps.iosKeep.title"),
+    content: (
+      <p>
+        <Trans i18nKey="upload.step3.substeps.iosKeep.body" components={transComponents} />
+      </p>
+    ),
+  };
 
   const downloadStep = {
     title: t("upload.step3.substeps.download.title"),
@@ -517,21 +466,96 @@ function StepRun({
             </li>
           ))}
         </ol>
-
       </>
     ),
   };
 
-  subSteps.unshift(downloadStep, protocolStep);
+  const protocolStep = {
+    title: t("upload.step3.substeps.protocol.title"),
+    content: (
+      <>
+        <p className="text-sm text-muted-foreground">
+          {t("upload.step3.substeps.protocol.intro")}
+        </p>
+        <ol className="mt-3 space-y-3 text-sm">
+          <li className="flex gap-3">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">
+              A
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <WifiOff className="h-3.5 w-3.5" /> {t("upload.step3.substeps.protocol.a.title")}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                <Trans
+                  i18nKey="upload.step3.substeps.protocol.a.body"
+                  components={transComponents}
+                />
+              </p>
+            </div>
+          </li>
+          <li className="flex gap-3">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-card border border-border grid place-items-center text-xs font-semibold">
+              B
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <Smartphone className="h-3.5 w-3.5" /> {t("upload.step3.substeps.protocol.b.title")}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                <Trans
+                  i18nKey="upload.step3.substeps.protocol.b.body"
+                  components={transComponents}
+                />
+              </p>
+            </div>
+          </li>
+        </ol>
+      </>
+    ),
+  };
 
-  subSteps.push({
+  const runStep = {
+    title: t("upload.step3.substeps.run.title"),
+    content: (
+      <p>
+        <Trans i18nKey="upload.step3.substeps.run.body" components={transComponents} />
+      </p>
+    ),
+  };
+
+  const uploadStep = {
     title: t("upload.step3.substeps.upload.title"),
     content: (
       <p>
         <Trans i18nKey="upload.step3.substeps.upload.body" components={transComponents} />
       </p>
     ),
-  });
+  };
+
+  const subSteps: { title: string; content: React.ReactNode }[] =
+    device === "android"
+      ? [
+          preambleStep,
+          downloadStep,
+          devStep,
+          usbStep,
+          protocolStep,
+          connectStep,
+          runStep,
+          uploadStep,
+        ]
+      : [
+          preambleStep,
+          downloadStep,
+          protocolStep,
+          iosTrustStep,
+          iosBackupStep,
+          iosKeepStep,
+          runStep,
+          uploadStep,
+        ];
+
 
   const total = subSteps.length;
   const current = Math.min(subStep, total);

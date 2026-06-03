@@ -50,6 +50,9 @@
       "build-resources/icon.png",
       "package.json"
     ],
+    "asarUnpack": [
+      "node_modules/@homebridge/node-pty-prebuilt-multiarch/**/*"
+    ],
     "publish": [
       {
         "provider": "github",

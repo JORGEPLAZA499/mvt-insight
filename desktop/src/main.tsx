@@ -15,6 +15,7 @@ declare global {
   interface Window {
     mvt: {
       start: (device: "android" | "ios") => Promise<{ ok: boolean; zipPath?: string; error?: string }>;
+      cancel: () => Promise<{ ok: boolean }>;
       onLog: (cb: (msg: string) => void) => () => void;
       onPhase: (cb: (p: { phase: number; label: string; progress: number }) => void) => () => void;
       openFolder: (p: string) => Promise<void>;

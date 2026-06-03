@@ -73,7 +73,8 @@
       "notSupported": "No soportado: {{name}}",
       "tooBig": "{{name}} supera 500 MB",
       "filesLabel": "{{count}} archivos MVT",
-      "genericError": "No se pudo procesar."
+      "genericError": "No se pudo procesar.",
+      "noCredits": "No tienes créditos disponibles. Compra créditos para generar el informe."
     },
     "redeem": {
       "title": "Comprar créditos",
@@ -339,7 +340,8 @@
       "errors": {
         "unsupported": "Archivo no soportado: {{name}}. Solo .json o .zip generados por MVT.",
         "tooBig": "El archivo {{name}} supera el límite de 500 MB.",
-        "generic": "No se pudieron procesar los archivos."
+        "generic": "No se pudieron procesar los archivos.",
+        "noCredits": "No tienes créditos disponibles. Compra créditos para generar el informe."
       },
       "filesLabel": "{{count}} archivos MVT",
       "consent": "Soy propietario del dispositivo o tengo <b>consentimiento explícito</b>. Los archivos se procesan localmente en mi navegador.",

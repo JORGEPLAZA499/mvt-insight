@@ -23,6 +23,8 @@ import { upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 import { UsbConnect } from "@/components/usb-connect";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { processAndStoreAnalysis } from "@/lib/analyses.functions";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),
@@ -32,7 +34,7 @@ export const Route = createFileRoute("/upload")({
 const MAX_SIZE = 500 * 1024 * 1024;
 const RELEASES_BASE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest/download";
 const RELEASES_PAGE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest";
-const APP_VERSION = "1.0.8";
+const APP_VERSION = "1.0.9";
 const TOTAL_STEPS = 4;
 
 type Device = "android" | "ios";
@@ -146,7 +148,7 @@ function Upload() {
         {step === 3 && device && (
           <StepRun device={device} os={os} onDone={next} onChangeOS={back} />
         )}
-        {step === 4 && <StepUpload />}
+        {step === 4 && <StepUpload device={device ?? "android"} />}
       </div>
     </AppShell>
   );
@@ -630,7 +632,7 @@ function NumberedStep({
 }
 
 /* -------------------------- Paso 4 -------------------------- */
-function StepUpload() {
+function StepUpload({ device }: { device: Device }) {
   const { t } = useTranslation();
   const [files, setFiles] = useState<File[]>([]);
   const [consent, setConsent] = useState(false);
@@ -638,6 +640,7 @@ function StepUpload() {
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const processAnalysis = useServerFn(processAndStoreAnalysis);
 
   const addFiles = (incoming: File[]) => {
     setError(null);
@@ -666,38 +669,53 @@ function StepUpload() {
     if (!files.length || !consent || busy) return;
     setBusy(true);
     setError(null);
-    const id = crypto.randomUUID();
     const sourceName =
       files.length === 1 ? files[0].name : t("upload.step4.filesLabel", { count: files.length });
     const totalSize = files.reduce((s, f) => s + f.size, 0);
 
-    const base: Analysis = {
-      id,
-      fileName: sourceName,
-      fileSize: totalSize,
-      uploadedAt: new Date().toISOString(),
-      status: "processing",
-      progress: 10,
-    };
-    upsertAnalysis(base);
-
     try {
+      // 1. Parsear localmente (sin cobrar todavía)
       const result = await parseMvtFiles(files, sourceName);
-      const done: Analysis = { ...base, status: "completed", progress: 100, result };
-      upsertAnalysis(done);
-      navigate({ to: "/analysis/$id", params: { id } });
-    } catch (e: any) {
-      const errored: Analysis = {
-        ...base,
-        status: "error",
-        progress: 0,
-        error: e?.message || t("upload.step4.errors.generic"),
+
+      // 2. Validar sesión + descontar crédito + guardar en BD (atómico).
+      //    Si falla, no se cobra y no se guarda nada.
+      const res = await processAnalysis({
+        data: {
+          device,
+          fileName: sourceName,
+          fileSize: totalSize,
+          result,
+        },
+      });
+
+      if (!res.ok) {
+        if (res.error === "INSUFFICIENT_CREDITS") {
+          setError(t("upload.step4.errors.noCredits"));
+        } else {
+          setError(t("upload.step4.errors.generic"));
+        }
+        setBusy(false);
+        return;
+      }
+
+      // 3. Caché local para la UI existente (dashboard / historial).
+      const done: Analysis = {
+        id: res.analysisId,
+        fileName: sourceName,
+        fileSize: totalSize,
+        uploadedAt: new Date().toISOString(),
+        status: "completed",
+        progress: 100,
+        result,
       };
-      upsertAnalysis(errored);
+      upsertAnalysis(done);
+      navigate({ to: "/analysis/$id", params: { id: res.analysisId } });
+    } catch (e: any) {
       setError(e?.message || t("upload.step4.errors.generic"));
       setBusy(false);
     }
   };
+
 
   return (
     <section>

@@ -1,33 +1,30 @@
-## Diagnóstico
+# Cobrar al generar el informe, no al descargar el .exe (implementado v1.0.9)
 
-El error cambió de `spawn UNKNOWN` a `spawn EBUSY`. Eso indica que ahora el ejecutable sí existe, pero Windows lo tiene ocupado/bloqueado en el momento de ejecutarlo. Las causas más probables son:
+## Resumen del cambio
 
-- el `.exe` acaba de descargarse y Windows Defender/SmartScreen aún lo está analizando;
-- quedó un proceso `androidqf.exe` anterior abierto;
-- el archivo se está sobrescribiendo o usando demasiado pronto después de la descarga.
+El `.exe` pasa a ser una utilidad **gratuita** que solo genera un ZIP crudo. El descuento de crédito ocurre **en el servidor** cuando se sube el ZIP a la web y se procesa con éxito. Si falla, no se cobra. Aunque el repo sea público o alguien clone el `.exe`, sin el backend no obtiene informe.
 
-## Plan de cambios
+## Cambios aplicados
 
-1. **Hacer la ejecución de AndroidQF más robusta** en `desktop/electron/main.cjs`:
-   - esperar brevemente después de descargar el binario antes de ejecutarlo;
-   - verificar que el archivo se pueda abrir en modo lectura antes de llamar a `spawn`;
-   - si `spawn` falla con `EBUSY`, reintentar automáticamente varias veces con pausa entre intentos;
-   - mostrar un mensaje más claro si Windows sigue bloqueando el archivo.
+### Backend (Lovable Cloud)
+- Nueva tabla `public.analyses` (user_id, device, file_name, file_size, result jsonb).
+- RLS: SELECT solo dueño o admin. Sin policy INSERT directa.
+- Función SQL `consume_credit_and_insert_analysis` (`SECURITY DEFINER`, transaccional):
+  - `SELECT credits FOR UPDATE` → si <1, `RAISE EXCEPTION 'INSUFFICIENT_CREDITS'`.
+  - Decrementa `accounts.credits` y `INSERT INTO analyses` en la misma TX.
+  - GRANT EXECUTE solo a `service_role`.
 
-2. **Evitar procesos duplicados**:
-   - antes de iniciar AndroidQF, intentar cerrar cualquier `androidqf.exe` anterior con `taskkill` en Windows;
-   - esto reduce errores cuando el usuario pulsa de nuevo o quedó una ejecución colgada.
+### Web
+- `src/lib/analyses.functions.ts` — `processAndStoreAnalysis` (server fn protegido con `requireSupabaseAuth`) que llama al RPC.
+- `src/routes/upload.tsx` (StepUpload) y `src/components/app-shell.tsx` (quick upload): tras parsear localmente, llaman al server fn antes de guardar en mock-store. Si el server devuelve `INSUFFICIENT_CREDITS` o error, no se navega ni se cachea nada.
+- i18n: añadidas claves `shell.quick.noCredits` y `upload.step4.errors.noCredits` en ES y EN.
 
-3. **Mantener/confirmar el icono del escritorio**:
-   - el instalador ya tiene configurado `createDesktopShortcut: true` y `shortcutName: "MvtInsight"` en `desktop/package.json`;
-   - no hace falta añadirlo: al instalar el `.exe` debe crear el acceso directo en el escritorio;
-   - si no aparece, normalmente es porque Windows no reinstaló la app limpia o el instalador no se regeneró con esa configuración.
+### Desktop
+- `desktop/electron/main.cjs`: eliminada la ventana modal de actualización que bloqueaba el arranque sin internet. La app arranca de inmediato; el updater corre 30 s después en background y, si encuentra una versión, muestra un diálogo no bloqueante ("Instalar ahora" / "Más tarde"). Sin internet, silencio total.
+- Borrados `desktop/electron/updater.html` y `desktop/electron/preload-updater.cjs`.
+- `desktop/package.json`: versión `1.0.8` → `1.0.9`.
+- `src/routes/upload.tsx`: `APP_VERSION` → `1.0.9`.
 
-4. **Subir versión del desktop**:
-   - aumentar `desktop/package.json` de `1.0.7` a `1.0.8`;
-   - actualizar `APP_VERSION` en `src/routes/upload.tsx` a `1.0.8`;
-   - después tendrás que compilar/publicar un nuevo `MvtInsight-Setup-1.0.8.exe` e instalarlo.
+## Siguiente paso
 
-## Resultado esperado
-
-Con la nueva versión, si Windows bloquea temporalmente `androidqf.exe`, la app esperará y reintentará en vez de fallar directamente con `spawn EBUSY`. Además, el instalador seguirá creando el icono/acceso directo de escritorio.
+Compilar y publicar `MvtInsight-Setup-1.0.9.exe` desde el workflow `release.yml` (Actions → Run workflow). La versión instalada actual recibirá el aviso al abrirse con internet.

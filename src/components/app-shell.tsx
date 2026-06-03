@@ -73,27 +73,44 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!ok.length) return;
 
     setQuickBusy(true);
-    const id = crypto.randomUUID();
     const sourceName = ok.length === 1 ? ok[0].name : t("shell.quick.filesLabel", { count: ok.length });
-
     const totalSize = ok.reduce((s, f) => s + f.size, 0);
-    const base: Analysis = {
-      id,
-      fileName: sourceName,
-      fileSize: totalSize,
-      uploadedAt: new Date().toISOString(),
-      status: "processing",
-      progress: 10,
-    };
-    upsertAnalysis(base);
+
     try {
       const result = await parseMvtFiles(ok, sourceName);
-      upsertAnalysis({ ...base, status: "completed", progress: 100, result });
-      navigate({ to: "/analysis/$id", params: { id } });
-    } catch (e: any) {
-      upsertAnalysis({ ...base, status: "error", progress: 0, error: e?.message || "Error" });
-      setQuickError(e?.message || t("shell.quick.genericError"));
 
+      // Cobro atómico server-side: si falla no se guarda nada.
+      const res = await processQuickAnalysis({
+        data: {
+          device: (result as any)?.platform === "ios" ? "ios" : "android",
+          fileName: sourceName,
+          fileSize: totalSize,
+          result,
+        },
+      });
+
+      if (!res.ok) {
+        if (res.error === "INSUFFICIENT_CREDITS") {
+          setQuickError(t("shell.quick.noCredits"));
+        } else {
+          setQuickError(t("shell.quick.genericError"));
+        }
+        return;
+      }
+
+      const done: Analysis = {
+        id: res.analysisId,
+        fileName: sourceName,
+        fileSize: totalSize,
+        uploadedAt: new Date().toISOString(),
+        status: "completed",
+        progress: 100,
+        result,
+      };
+      upsertAnalysis(done);
+      navigate({ to: "/analysis/$id", params: { id: res.analysisId } });
+    } catch (e: any) {
+      setQuickError(e?.message || t("shell.quick.genericError"));
     } finally {
       setQuickBusy(false);
       if (quickInputRef.current) quickInputRef.current.value = "";

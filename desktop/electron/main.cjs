@@ -1,5 +1,7 @@
-// Proceso principal de Electron — gatea el arranque con auto-actualización obligatoria,
-// luego crea la ventana principal y ejecuta AndroidQF/MVT por debajo.
+// Proceso principal de Electron.
+// Arranca la ventana principal de inmediato (incluso sin internet).
+// La comprobación de actualizaciones se hace en background y avisa al usuario
+// con un diálogo no bloqueante si encuentra una nueva versión.
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -11,7 +13,6 @@ const { autoUpdater } = require("electron-updater");
 
 const isDev = !app.isPackaged;
 
-// Logging del updater (útil para soporte). En dev, redirige a consola.
 autoUpdater.logger = {
   info: (m) => console.log("[updater]", m),
   warn: (m) => console.warn("[updater]", m),
@@ -27,10 +28,9 @@ if (!gotLock) {
   app.quit();
 } else {
   app.on("second-instance", () => {
-    const win = mainWindow || updaterWindow;
-    if (win && !win.isDestroyed()) {
-      if (win.isMinimized()) win.restore();
-      win.focus();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
   });
 }
@@ -38,7 +38,7 @@ if (!gotLock) {
 /* ---------- Ventana principal ---------- */
 
 let mainWindow = null;
-let isTransitioning = false;
+let updatePromptShown = false;
 
 function createMainWindow() {
   const iconPath = path.join(__dirname, "..", "build", "icon.png");
@@ -63,25 +63,22 @@ function createMainWindow() {
   mainWindow = win;
 
   win.once("ready-to-show", () => {
-    isTransitioning = false;
     win.show();
     win.focus();
   });
 
   win.webContents.on("did-fail-load", (_e, code, desc, url) => {
     console.error("[main] did-fail-load:", code, desc, url);
-    isTransitioning = false;
     try {
       dialog.showErrorBox(
         "Error al cargar la app",
-        `No se pudo cargar la interfaz (${code}): ${desc}\n\nURL: ${url}`
+        `No se pudo cargar la interfaz (${code}): ${desc}\n\nURL: ${url}`,
       );
     } catch {}
   });
 
   win.webContents.on("render-process-gone", (_e, details) => {
     console.error("[main] render-process-gone:", details);
-    isTransitioning = false;
   });
 
   win.on("closed", () => {
@@ -91,7 +88,6 @@ function createMainWindow() {
   const indexPath = path.join(__dirname, "..", "dist", "index.html");
   win.loadFile(indexPath).catch((err) => {
     console.error("[main] loadFile failed:", err);
-    isTransitioning = false;
     try {
       dialog.showErrorBox("Error al cargar la app", String(err?.message || err));
     } catch {}
@@ -100,200 +96,89 @@ function createMainWindow() {
   if (isDev) win.webContents.openDevTools({ mode: "detach" });
 }
 
+/* ---------- Actualización en background (no bloqueante) ---------- */
 
-/* ---------- Modal de actualización (bloqueante) ---------- */
-
-let updaterWindow = null;
-let updateMandatory = false; // true cuando ya sabemos que hay update disponible
-let updaterAllowClose = false;
-let updaterReady = false;
-let pendingUpdaterState = null;
-
-function createUpdaterWindow() {
-  updaterReady = false;
-  pendingUpdaterState = null;
-  updaterWindow = new BrowserWindow({
-    width: 440,
-    height: 240,
-    resizable: false,
-    minimizable: false,
-    maximizable: false,
-    fullscreenable: false,
-    closable: false,
-    frame: false,
-    alwaysOnTop: true,
-    backgroundColor: "#0b0b12",
-    webPreferences: {
-      preload: path.join(__dirname, "preload-updater.cjs"),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-
-  updaterWindow.loadFile(path.join(__dirname, "updater.html"));
-
-  // Cuando el HTML termine de cargar, drenamos el último estado pendiente.
-  updaterWindow.webContents.once("did-finish-load", () => {
-    updaterReady = true;
-    if (pendingUpdaterState) {
-      updaterWindow.webContents.send("updater:state", pendingUpdaterState);
-      pendingUpdaterState = null;
-    }
-  });
-
-  // Bloquea cualquier intento de cerrar mientras la actualización sea obligatoria.
-  updaterWindow.on("close", (e) => {
-    if (!updaterAllowClose && updateMandatory) {
-      e.preventDefault();
-    }
-  });
-
-  return updaterWindow;
-}
-
-function sendUpdaterState(state) {
-  if (!updaterWindow || updaterWindow.isDestroyed()) return;
-  if (!updaterReady) {
-    // Aún no ha cargado: guarda y se enviará en did-finish-load.
-    pendingUpdaterState = state;
-    return;
-  }
-  updaterWindow.webContents.send("updater:state", state);
-}
-
-function closeUpdaterWindow() {
-  updaterAllowClose = true;
-  if (updaterWindow && !updaterWindow.isDestroyed()) {
-    updaterWindow.destroy();
-  }
-  updaterWindow = null;
-  updaterReady = false;
-  pendingUpdaterState = null;
-}
-
-/* ---------- Flujo de actualización ---------- */
-
-function checkForUpdates() {
-  sendUpdaterState({
-    title: "Buscando actualizaciones…",
-    message: "Comprobando si hay una nueva versión disponible.",
-    showSpinner: true,
-  });
-  autoUpdater.checkForUpdates().catch((err) => {
-    console.error("[updater] checkForUpdates rejected:", err);
-  });
+function scheduleBackgroundUpdateCheck() {
+  // 30s después de arrancar, comprobamos updates. Si no hay internet, el
+  // error se ignora silenciosamente y la app sigue funcionando.
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch((err) => {
+      console.warn("[updater] check failed (ignored):", err?.message || err);
+    });
+  }, 30_000);
 }
 
 autoUpdater.on("update-available", (info) => {
-  updateMandatory = true;
-  sendUpdaterState({
-    title: "Actualización disponible",
-    message: "Para continuar usando MVT Insight debes instalar la última versión.",
-    version: `Versión ${info.version}`,
-    showSpinner: false,
-    primaryLabel: "Actualizar ahora",
-    primaryAction: "startUpdate",
-  });
+  if (updatePromptShown || !mainWindow || mainWindow.isDestroyed()) return;
+  updatePromptShown = true;
+  dialog
+    .showMessageBox(mainWindow, {
+      type: "info",
+      buttons: ["Instalar ahora", "Más tarde"],
+      defaultId: 0,
+      cancelId: 1,
+      title: "Actualización disponible",
+      message: `Hay una nueva versión disponible (${info.version}).`,
+      detail: "Puedes instalarla ahora o seguir trabajando y hacerlo más tarde.",
+    })
+    .then(({ response }) => {
+      if (response === 0) {
+        autoUpdater.downloadUpdate().catch((err) => {
+          console.error("[updater] downloadUpdate failed:", err);
+          dialog.showErrorBox(
+            "Error al descargar la actualización",
+            err?.message || String(err),
+          );
+        });
+      }
+    })
+    .catch(() => {});
 });
 
 autoUpdater.on("update-not-available", () => {
-  isTransitioning = true;
-  closeUpdaterWindow();
-  setImmediate(() => createMainWindow());
+  // Silencio: no hay nada que avisar al usuario.
 });
 
-
 autoUpdater.on("download-progress", (p) => {
-  sendUpdaterState({
-    title: "Descargando actualización…",
-    message: `${Math.round(p.percent)}% — ${formatBytes(p.transferred)} de ${formatBytes(p.total)}`,
-    showSpinner: false,
-    progress: p.percent,
-  });
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setProgressBar(Math.max(0, Math.min(1, (p.percent || 0) / 100)));
+  }
 });
 
 autoUpdater.on("update-downloaded", () => {
-  sendUpdaterState({
-    title: "Instalando…",
-    message: "La app se reiniciará automáticamente en unos segundos.",
-    showSpinner: true,
-  });
-  // Pequeño delay para que se lea el mensaje, luego cierra y reinicia.
-  // isSilent=false, isForceRunAfter=true → respeta el cierre limpio.
-  setTimeout(() => {
-    updaterAllowClose = true;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setProgressBar(-1);
+  }
+  if (!mainWindow || mainWindow.isDestroyed()) {
     autoUpdater.quitAndInstall(false, true);
-  }, 1500);
+    return;
+  }
+  dialog
+    .showMessageBox(mainWindow, {
+      type: "info",
+      buttons: ["Reiniciar e instalar", "Al cerrar la app"],
+      defaultId: 0,
+      cancelId: 1,
+      title: "Actualización lista",
+      message: "La actualización se ha descargado.",
+      detail: "Puedes reiniciar la app ahora para instalarla, o se instalará automáticamente al cerrarla.",
+    })
+    .then(({ response }) => {
+      if (response === 0) autoUpdater.quitAndInstall(false, true);
+    })
+    .catch(() => {});
 });
 
 autoUpdater.on("error", (err) => {
-  console.error("[updater] error:", err);
-  // Error de red o servidor: NO bloqueamos al usuario, pero le avisamos.
-  updateMandatory = false;
-  sendUpdaterState({
-    title: "No se pudo comprobar actualizaciones",
-    message: "Revisa tu conexión a internet. Puedes reintentar o continuar.",
-    showSpinner: false,
-    primaryLabel: "Reintentar",
-    primaryAction: "retry",
-    showSecondary: true,
-  });
+  // No bloqueamos al usuario por un fallo de update.
+  console.warn("[updater] error (ignored):", err?.message || err);
 });
-
-ipcMain.on("updater:start", () => {
-  sendUpdaterState({
-    title: "Descargando actualización…",
-    message: "Preparando la descarga.",
-    showSpinner: true,
-    progress: 0,
-  });
-  autoUpdater.downloadUpdate().catch((err) => {
-    console.error("[updater] downloadUpdate failed:", err);
-    sendUpdaterState({
-      title: "Error al descargar",
-      message: err.message || "No se pudo descargar la actualización.",
-      showSpinner: false,
-      primaryLabel: "Reintentar",
-      primaryAction: "startUpdate",
-    });
-  });
-});
-
-ipcMain.on("updater:retry", () => {
-  sendUpdaterState({
-    title: "Buscando actualizaciones…",
-    message: "Reintentando…",
-    showSpinner: true,
-  });
-  autoUpdater.checkForUpdates().catch(() => {});
-});
-
-ipcMain.on("updater:skip", () => {
-  // Solo permitido cuando NO hay update confirmado (escenario offline).
-  if (updateMandatory) return;
-  isTransitioning = true;
-  closeUpdaterWindow();
-  setImmediate(() => createMainWindow());
-});
-
-function formatBytes(b) {
-  if (!b) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(b) / Math.log(k));
-  return (b / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
-}
 
 /* ---------- Arranque ---------- */
 
 app.whenReady().then(() => {
-  if (isDev) {
-    // En desarrollo no hay metadatos publicados; saltamos el updater.
-    createMainWindow();
-  } else {
-    createUpdaterWindow();
-    checkForUpdates();
-  }
+  createMainWindow();
+  if (!isDev) scheduleBackgroundUpdateCheck();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
@@ -301,7 +186,6 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
-  if (isTransitioning) return;
   if (process.platform !== "darwin") app.quit();
 });
 

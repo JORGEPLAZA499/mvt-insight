@@ -53,7 +53,7 @@
       "package.json"
     ],
     "asarUnpack": [
-      "node_modules/@homebridge/node-pty-prebuilt-multiarch/**/*"
+      "node_modules/node-pty/**/*"
     ],
     "publish": [
       {

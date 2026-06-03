@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { redeemCreditToken } from "@/lib/credits.functions";
+import { processAndStoreAnalysis } from "@/lib/analyses.functions";
 import { openPurchaseCard, PurchaseCard, usePurchaseCardOpen } from "@/components/purchase-card";
 
 const QUICK_MAX_SIZE = 500 * 1024 * 1024;

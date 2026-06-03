@@ -31,7 +31,8 @@
       "ios": "Analyzing iPhone…"
     },
     "subtitle": "Don't close this window. It takes between 5 and 15 minutes.",
-    "starting": "Starting…"
+    "starting": "Starting…",
+    "working": "Analyzing"
   },
   "phases": {
     "download": "Downloading AndroidQF",

@@ -375,12 +375,16 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       // 3. Ejecutar AndroidQF respondiendo automáticamente a sus prompts
       send("mvt:phase", { phase: 3, label: "Recolectando datos del dispositivo", progress: 0 });
 
-      const child = spawn(binPath, [], { cwd: dir });
+      const child = spawn(binPath, [], { cwd: dir, windowsHide: true });
       let buffer = "";
 
       // Respuestas predefinidas (Everything / All / No / No)
       const answers = ["1\n", "1\n", "n\n", "n\n"];
       let answerIdx = 0;
+
+      // Evita que un EPIPE inesperado tumbe el proceso de Electron.
+      child.on("error", (e) => send("mvt:log", `[err] spawn: ${e.message}`));
+      child.stdin.on("error", (e) => console.warn("[androidqf stdin]", e.message));
 
       child.stdout.on("data", (data) => {
         const text = data.toString();
@@ -395,7 +399,11 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
 
         // Detectar prompts y enviar la respuesta correspondiente
         if (/\?\s*$/.test(text) && answerIdx < answers.length) {
-          child.stdin.write(answers[answerIdx++]);
+          try {
+            child.stdin.write(answers[answerIdx++]);
+          } catch (e) {
+            console.warn("[androidqf stdin.write]", e.message);
+          }
         }
       });
 

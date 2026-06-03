@@ -265,11 +265,11 @@
       "substeps": {
         "preamble": {
           "title": "Prepara el cable y el móvil",
-          "body": "Ten a mano un <b>cable USB</b> (mejor el original, que transmita datos, no solo carga). Mantén el móvil <b>desbloqueado y con la pantalla encendida</b> durante todo el proceso."
+          "body": "Ten a mano un <b>cable USB</b> (mejor el original, que transmita datos, no solo carga). Durante todo el proceso el móvil deberá estar <b>desbloqueado y con la pantalla encendida</b>. Aún no conectes nada: primero descargarás la app en el computador."
         },
         "dev": {
           "title": "Activa el modo desarrollador en el móvil",
-          "body": "Abre <b>Ajustes</b> → <b>Información del teléfono</b> y toca <b>7 veces</b> sobre «Número de compilación». Verás un mensaje: «Ya eres desarrollador».",
+          "body": "En el móvil, abre <b>Ajustes</b> → <b>Información del teléfono</b> y toca <b>7 veces</b> sobre «Número de compilación». Verás un mensaje: «Ya eres desarrollador».",
           "routesSummary": "Ruta exacta por marca",
           "routes": [
             "<b>Samsung:</b> Ajustes → Acerca del teléfono → Información del software → tocar «Número de compilación» 7 veces.",
@@ -280,53 +280,55 @@
         },
         "usb": {
           "title": "Activa la Depuración USB",
-          "body": "Vuelve a <b>Ajustes</b> → <b>Sistema</b> → <b>Opciones de desarrollador</b> y activa <b>«Depuración USB»</b>. Confirma cuando te lo pida."
+          "body": "En el mismo móvil, ve a <b>Ajustes</b> → <b>Sistema</b> → <b>Opciones de desarrollador</b> y activa <b>«Depuración USB»</b>. Confirma cuando te lo pida. Sigue sin conectar el cable todavía."
         },
         "connect": {
-          "title": "Conecta ahora el teléfono al computador mediante el cable USB",
-          "body": "Usa el <b>cable original</b> si puedes (algunos cables solo cargan, no transmiten datos). En el móvil aparecerá un aviso: <b>«¿Permitir depuración USB?»</b>. Marca <b>«Permitir siempre desde este ordenador»</b> y pulsa Aceptar."
+          "title": "Ahora sí: conecta el móvil al computador por USB",
+          "body": "Con ambos equipos ya aislados (modo avión / sin red), conecta el móvil al computador con el <b>cable USB</b>. En el móvil aparecerá un aviso: <b>«¿Permitir depuración USB?»</b>. Marca <b>«Permitir siempre desde este ordenador»</b> y pulsa Aceptar."
         },
         "iosTrust": {
-          "title": "Confía en el ordenador desde el iPhone",
-          "body": "Conecta el iPhone por USB, <b>desbloquéalo</b> y, cuando aparezca el aviso <b>«¿Confiar en este ordenador?»</b>, pulsa <b>Confiar</b> e introduce el código del iPhone."
+          "title": "Conecta el iPhone y confía en el ordenador",
+          "body": "Con ambos equipos ya en modo avión, conecta ahora el iPhone al computador por USB. <b>Desbloquéalo</b> y, cuando aparezca el aviso <b>«¿Confiar en este ordenador?»</b>, pulsa <b>Confiar</b> e introduce el código del iPhone."
         },
         "iosBackup": {
           "title": "Crea un backup cifrado del iPhone",
-          "body": "Abre <b>Finder</b> (macOS Catalina o superior) o <b>iTunes</b>, selecciona el iPhone, marca <b>«Cifrar copia de seguridad local»</b> y define una contraseña.",
+          "body": "Con el iPhone ya conectado, abre <b>Finder</b> (macOS Catalina o superior) o <b>iTunes</b>, selecciona el iPhone, marca <b>«Cifrar copia de seguridad local»</b> y define una contraseña.",
           "warn": "⚠ Apunta la contraseña: la necesitarás más adelante."
         },
         "iosKeep": {
           "title": "Mantén el iPhone conectado y desbloqueado",
-          "body": "Durante todo el análisis el iPhone debe estar <b>conectado por USB</b> y <b>desbloqueado</b>. Si se bloquea, vuelve a desbloquearlo."
+          "body": "Durante todo el análisis el iPhone debe seguir <b>conectado por USB</b> y <b>desbloqueado</b>. Si se bloquea, vuelve a desbloquearlo."
         },
         "download": {
           "title": "Descarga la app de escritorio",
-          "intro": "Ya tienes el móvil conectado por USB. Ahora descarga la app <b>MVT Insight Desktop</b> en tu computador: con un solo botón descargará las herramientas, hablará con el móvil que ya tienes enchufado y guardará un ZIP listo para subir aquí. <b>Sin ventana negra ni comandos.</b>",
+          "intro": "Mientras todavía tienes Internet, descarga ahora la app <b>MVT Insight Desktop</b> en tu computador. Más adelante conectarás el móvil por USB y la app hará el resto: descargará las herramientas, recogerá los datos del móvil y guardará un ZIP listo para subir aquí. <b>Sin ventana negra ni comandos.</b>",
           "appName": "MVT Insight Desktop",
           "version": "Versión 1.0 · Análisis con interfaz visual y barras de progreso",
           "recommended": "Recomendado para ti: <b>{{os}}</b> (detectado automáticamente) ·",
           "seeAll": "Ver todas las versiones en GitHub",
           "instructions": [
-            "Descomprime el archivo descargado y haz <b>doble clic</b> en <code>MvtInsight</code> para abrir la app.",
-            "Con el móvil <b>aún conectado por USB y desbloqueado</b>, pulsa <b>«Iniciar análisis»</b> dentro de la app. Verás barras de progreso para cada fase (descarga de herramientas y recolección de datos del móvil).",
-            "Al terminar, la app te dirá dónde se ha guardado el ZIP y te traerá de vuelta aquí para subirlo."
+            "Descomprime el archivo descargado y haz <b>doble clic</b> en <code>MvtInsight</code> para abrir la app. Aún no pulses «Iniciar análisis»: primero hay que aislar los equipos y conectar el móvil."
           ]
         },
         "protocol": {
-          "title": "Protocolo forense recomendado (máxima privacidad)",
-          "intro": "Si sospechas que el móvil está realmente comprometido, sigue este protocolo para evitar que el spyware «se entere» de que lo estás analizando o filtre datos durante el proceso:",
+          "title": "Aísla los equipos antes de conectar",
+          "intro": "Antes de conectar el móvil al computador, aísla ambos de la red. Así, si hubiera spyware, no podrá «enterarse» de que estás analizando ni filtrar datos durante el proceso:",
           "a": {
-            "title": "PC sin Internet",
-            "body": "Usa un ordenador desconectado (cable de red desenchufado y Wi-Fi apagado, o en modo avión). Antes, ejecuta la app de escritorio <b>una vez con Internet</b> para que descargue las herramientas; luego ya puedes desconectar."
+            "title": "Computador sin Internet",
+            "body": "Desconecta el cable de red y apaga el Wi-Fi del computador (o ponlo en modo avión). La app ya está descargada, así que no necesitas Internet a partir de aquí."
           },
           "b": {
             "title": "Móvil en modo avión",
-            "body": "Activa el modo avión en el móvil para cortarle Internet. Mantén el USB activo (en Android, la depuración USB sigue funcionando aunque el móvil esté sin red)."
+            "body": "Activa el modo avión en el móvil para cortarle Internet. <b>Todavía no lo conectes por USB</b>: lo harás en el siguiente paso. El modo avión <b>no</b> desactiva la depuración USB, así que la conexión funcionará igual."
           }
+        },
+        "run": {
+          "title": "Abre la app y ejecuta el análisis",
+          "body": "Con el móvil ya conectado por USB y desbloqueado, vuelve a la app <b>MVT Insight Desktop</b> y pulsa <b>«Iniciar análisis»</b>. Verás barras de progreso para cada fase (descarga de herramientas y recolección de datos del móvil). Al terminar, la app te indicará dónde se ha guardado el ZIP."
         },
         "upload": {
           "title": "Sube el ZIP generado por la app",
-          "body": "Cuando la app termine, te mostrará un botón <b>«Subir al informe»</b> y la ruta del archivo <code>mvt-resultados-AAAAMMDD.zip</code> (normalmente en <b>Descargas</b>). Pulsa el botón de abajo para subirlo y ver el informe."
+          "body": "La app te mostrará un botón <b>«Subir al informe»</b> y la ruta del archivo <code>mvt-resultados-AAAAMMDD.zip</code> (normalmente en <b>Descargas</b>). Pulsa el botón de abajo para subirlo y ver el informe."
         }
       }
     },

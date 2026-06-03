@@ -265,11 +265,11 @@
       "substeps": {
         "preamble": {
           "title": "Get the cable and phone ready",
-          "body": "Have a <b>USB cable</b> handy (preferably the original one, that transfers data and not just charges). Keep the phone <b>unlocked with the screen on</b> during the whole process."
+          "body": "Have a <b>USB cable</b> handy (preferably the original one, that transfers data and not just charges). During the whole process the phone must stay <b>unlocked with the screen on</b>. Don't plug anything in yet: first you'll download the app on the computer."
         },
         "dev": {
           "title": "Enable developer mode on the phone",
-          "body": "Open <b>Settings</b> → <b>About phone</b> and tap <b>7 times</b> on \"Build number\". You'll see a message: \"You are now a developer\".",
+          "body": "On the phone, open <b>Settings</b> → <b>About phone</b> and tap <b>7 times</b> on \"Build number\". You'll see a message: \"You are now a developer\".",
           "routesSummary": "Exact path by brand",
           "routes": [
             "<b>Samsung:</b> Settings → About phone → Software information → tap \"Build number\" 7 times.",
@@ -280,53 +280,55 @@
         },
         "usb": {
           "title": "Enable USB Debugging",
-          "body": "Go back to <b>Settings</b> → <b>System</b> → <b>Developer options</b> and turn on <b>\"USB Debugging\"</b>. Confirm when prompted."
+          "body": "On the same phone, go to <b>Settings</b> → <b>System</b> → <b>Developer options</b> and turn on <b>\"USB Debugging\"</b>. Confirm when prompted. Still don't plug in the cable yet."
         },
         "connect": {
-          "title": "Now connect the phone to the computer with the USB cable",
-          "body": "Use the <b>original cable</b> if you can (some cables only charge, they don't transfer data). On the phone you'll see a prompt: <b>\"Allow USB debugging?\"</b>. Tick <b>\"Always allow from this computer\"</b> and tap OK."
+          "title": "Now plug the phone into the computer via USB",
+          "body": "With both devices already isolated (airplane mode / no network), plug the phone into the computer with the <b>USB cable</b>. On the phone you'll see a prompt: <b>\"Allow USB debugging?\"</b>. Tick <b>\"Always allow from this computer\"</b> and tap OK."
         },
         "iosTrust": {
-          "title": "Trust the computer from the iPhone",
-          "body": "Connect the iPhone via USB, <b>unlock it</b> and, when the <b>\"Trust this computer?\"</b> prompt appears, tap <b>Trust</b> and enter the iPhone passcode."
+          "title": "Plug in the iPhone and trust the computer",
+          "body": "With both devices already in airplane mode, now plug the iPhone into the computer via USB. <b>Unlock it</b> and, when the <b>\"Trust this computer?\"</b> prompt appears, tap <b>Trust</b> and enter the iPhone passcode."
         },
         "iosBackup": {
           "title": "Create an encrypted iPhone backup",
-          "body": "Open <b>Finder</b> (macOS Catalina or later) or <b>iTunes</b>, select the iPhone, tick <b>\"Encrypt local backup\"</b> and set a password.",
+          "body": "With the iPhone already plugged in, open <b>Finder</b> (macOS Catalina or later) or <b>iTunes</b>, select the iPhone, tick <b>\"Encrypt local backup\"</b> and set a password.",
           "warn": "⚠ Write down the password: you'll need it later."
         },
         "iosKeep": {
           "title": "Keep the iPhone connected and unlocked",
-          "body": "During the whole analysis the iPhone must be <b>connected via USB</b> and <b>unlocked</b>. If it locks, unlock it again."
+          "body": "During the whole analysis the iPhone must stay <b>connected via USB</b> and <b>unlocked</b>. If it locks, unlock it again."
         },
         "download": {
           "title": "Download the desktop app",
-          "intro": "Your phone is already plugged in via USB. Now download the <b>MVT Insight Desktop</b> app on your computer: with one click it will download the tools, talk to the phone that's already connected, and save a ZIP ready to upload here. <b>No black window, no commands.</b>",
+          "intro": "While you still have Internet, download the <b>MVT Insight Desktop</b> app on your computer now. Later you'll plug in the phone via USB and the app will do the rest: download the tools, collect data from the phone, and save a ZIP ready to upload here. <b>No black window, no commands.</b>",
           "appName": "MVT Insight Desktop",
           "version": "Version 1.0 · Analysis with visual UI and progress bars",
           "recommended": "Recommended for you: <b>{{os}}</b> (auto-detected) ·",
           "seeAll": "See all versions on GitHub",
           "instructions": [
-            "Unzip the downloaded file and <b>double-click</b> <code>MvtInsight</code> to open the app.",
-            "With the phone <b>still connected via USB and unlocked</b>, click <b>\"Start analysis\"</b> inside the app. You'll see progress bars for each phase (downloading tools and collecting data from the phone).",
-            "When it finishes, the app will show you where the ZIP was saved and bring you back here to upload it."
+            "Unzip the downloaded file and <b>double-click</b> <code>MvtInsight</code> to open the app. Don't click \"Start analysis\" yet: first you have to isolate the devices and plug in the phone."
           ]
         },
         "protocol": {
-          "title": "Recommended forensic protocol (maximum privacy)",
-          "intro": "If you suspect the phone is really compromised, follow this protocol to prevent the spyware from \"noticing\" you're analyzing it or leaking data during the process:",
+          "title": "Isolate the devices before plugging in",
+          "intro": "Before plugging the phone into the computer, isolate both from the network. That way, if there is spyware, it can't \"notice\" you're analyzing or leak data during the process:",
           "a": {
-            "title": "Offline PC",
-            "body": "Use a disconnected computer (network cable unplugged and Wi-Fi off, or in airplane mode). Before that, run the desktop app <b>once with Internet</b> so it downloads the tools; then you can disconnect."
+            "title": "Computer offline",
+            "body": "Unplug the network cable and turn off the Wi-Fi on the computer (or put it in airplane mode). The app is already downloaded, so you don't need Internet from here on."
           },
           "b": {
             "title": "Phone in airplane mode",
-            "body": "Enable airplane mode on the phone to cut its Internet. Keep the USB active (on Android, USB debugging still works even with no network)."
+            "body": "Enable airplane mode on the phone to cut its Internet. <b>Don't plug it into USB yet</b>: you'll do that in the next step. Airplane mode <b>does not</b> disable USB debugging, so the connection will still work."
           }
+        },
+        "run": {
+          "title": "Open the app and run the analysis",
+          "body": "With the phone already connected via USB and unlocked, go back to the <b>MVT Insight Desktop</b> app and click <b>\"Start analysis\"</b>. You'll see progress bars for each phase (downloading tools and collecting data from the phone). When it finishes, the app will tell you where the ZIP was saved."
         },
         "upload": {
           "title": "Upload the ZIP generated by the app",
-          "body": "When the app finishes, it will show an <b>\"Upload to report\"</b> button and the path to the file <code>mvt-results-YYYYMMDD.zip</code> (usually in <b>Downloads</b>). Click the button below to upload it and view the report."
+          "body": "The app will show an <b>\"Upload to report\"</b> button and the path to the file <code>mvt-results-YYYYMMDD.zip</code> (usually in <b>Downloads</b>). Click the button below to upload it and view the report."
         }
       }
     },

@@ -169,9 +169,11 @@ autoUpdater.on("update-available", (info) => {
 });
 
 autoUpdater.on("update-not-available", () => {
+  isTransitioning = true;
   closeUpdaterWindow();
-  createMainWindow();
+  setImmediate(() => createMainWindow());
 });
+
 
 autoUpdater.on("download-progress", (p) => {
   sendUpdaterState({

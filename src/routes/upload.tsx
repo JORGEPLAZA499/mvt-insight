@@ -437,21 +437,6 @@ function StepRun({
             </a>
           </div>
 
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            <Trans
-              i18nKey="upload.step3.substeps.download.recommended"
-              values={{ os: osLabel }}
-              components={transComponents}
-            />{" "}
-            <a
-              href={RELEASES_PAGE_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="underline hover:text-foreground"
-            >
-              {t("upload.step3.substeps.download.seeAll")}
-            </a>
-          </p>
         </div>
 
         <ol className="mt-5 space-y-2 text-sm text-muted-foreground list-decimal pl-5">

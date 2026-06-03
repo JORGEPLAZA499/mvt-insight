@@ -31,7 +31,8 @@
       "ios": "Analizando iPhone…"
     },
     "subtitle": "No cierres esta ventana. Tarda entre 5 y 15 minutos.",
-    "starting": "Iniciando…"
+    "starting": "Iniciando…",
+    "working": "Analizando"
   },
   "phases": {
     "download": "Descargando AndroidQF",

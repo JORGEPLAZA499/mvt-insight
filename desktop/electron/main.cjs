@@ -468,7 +468,29 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       // 3. Ejecutar AndroidQF respondiendo automáticamente a sus prompts
       send("mvt:phase", { phase: 3, label: "Recolectando datos del dispositivo", progress: 0 });
 
-      const child = spawn(binPath, [], { cwd: dir, windowsHide: true });
+      // Reintenta spawn ante EBUSY (antivirus aún escaneando el .exe).
+      const spawnWithRetry = async () => {
+        let lastErr;
+        for (let i = 0; i < 5; i++) {
+          try {
+            const c = spawn(binPath, [], { cwd: dir, windowsHide: true });
+            await new Promise((resolve, reject) => {
+              const onErr = (e) => { c.removeListener("spawn", onSpawn); reject(e); };
+              const onSpawn = () => { c.removeListener("error", onErr); resolve(); };
+              c.once("error", onErr);
+              c.once("spawn", onSpawn);
+            });
+            return c;
+          } catch (e) {
+            lastErr = e;
+            if (e.code !== "EBUSY" && e.code !== "UNKNOWN" && e.code !== "EPERM") throw e;
+            send("mvt:log", `⏳ spawn ${e.code}, reintentando en 2s…`);
+            await new Promise((r) => setTimeout(r, 2000));
+          }
+        }
+        throw lastErr;
+      };
+      const child = await spawnWithRetry();
       let buffer = "";
 
       // Respuestas predefinidas (Everything / All / No / No)

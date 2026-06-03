@@ -87,7 +87,7 @@ export function App() {
     await window.mvt?.quitAndInstall();
   };
 
-
+  const start = async (d: Device) => {
     setDevice(d);
     setScreen("running");
     setLogs([]);

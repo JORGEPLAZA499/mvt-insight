@@ -106,8 +106,12 @@ function createMainWindow() {
 let updaterWindow = null;
 let updateMandatory = false; // true cuando ya sabemos que hay update disponible
 let updaterAllowClose = false;
+let updaterReady = false;
+let pendingUpdaterState = null;
 
 function createUpdaterWindow() {
+  updaterReady = false;
+  pendingUpdaterState = null;
   updaterWindow = new BrowserWindow({
     width: 440,
     height: 240,
@@ -128,6 +132,15 @@ function createUpdaterWindow() {
 
   updaterWindow.loadFile(path.join(__dirname, "updater.html"));
 
+  // Cuando el HTML termine de cargar, drenamos el último estado pendiente.
+  updaterWindow.webContents.once("did-finish-load", () => {
+    updaterReady = true;
+    if (pendingUpdaterState) {
+      updaterWindow.webContents.send("updater:state", pendingUpdaterState);
+      pendingUpdaterState = null;
+    }
+  });
+
   // Bloquea cualquier intento de cerrar mientras la actualización sea obligatoria.
   updaterWindow.on("close", (e) => {
     if (!updaterAllowClose && updateMandatory) {
@@ -139,9 +152,13 @@ function createUpdaterWindow() {
 }
 
 function sendUpdaterState(state) {
-  if (updaterWindow && !updaterWindow.isDestroyed()) {
-    updaterWindow.webContents.send("updater:state", state);
+  if (!updaterWindow || updaterWindow.isDestroyed()) return;
+  if (!updaterReady) {
+    // Aún no ha cargado: guarda y se enviará en did-finish-load.
+    pendingUpdaterState = state;
+    return;
   }
+  updaterWindow.webContents.send("updater:state", state);
 }
 
 function closeUpdaterWindow() {
@@ -150,23 +167,20 @@ function closeUpdaterWindow() {
     updaterWindow.destroy();
   }
   updaterWindow = null;
+  updaterReady = false;
+  pendingUpdaterState = null;
 }
 
 /* ---------- Flujo de actualización ---------- */
 
 function checkForUpdates() {
-  // Espera a que el HTML cargue antes de enviar el primer estado.
-  updaterWindow.webContents.once("did-finish-load", () => {
-    sendUpdaterState({
-      title: "Buscando actualizaciones…",
-      message: "Comprobando si hay una nueva versión disponible.",
-      showSpinner: true,
-    });
-
-    autoUpdater.checkForUpdates().catch((err) => {
-      // Capturado también por el evento "error", pero por si acaso.
-      console.error("[updater] checkForUpdates rejected:", err);
-    });
+  sendUpdaterState({
+    title: "Buscando actualizaciones…",
+    message: "Comprobando si hay una nueva versión disponible.",
+    showSpinner: true,
+  });
+  autoUpdater.checkForUpdates().catch((err) => {
+    console.error("[updater] checkForUpdates rejected:", err);
   });
 }
 

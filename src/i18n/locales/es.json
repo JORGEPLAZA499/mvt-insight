@@ -163,7 +163,7 @@
       "title": "Aviso legal",
       "body": "Spyware Forensic Analyzer es una herramienta de análisis forense preliminar. Los resultados son indicios técnicos basados en patrones conocidos y no constituyen una certificación absoluta de infección. El análisis debe realizarse únicamente con el consentimiento explícito del propietario del dispositivo. No compartimos datos con terceros."
     },
-    "legalNotice": "Plataforma independiente. No afiliada, certificada ni respaldada por Amnesty International. Mobile Verification Toolkit, MVT, es una herramienta open source utilizada como componente técnico de análisis."
+    "legalNotice": "Plataforma independiente. No afiliada, certificada ni respaldada por Amnesty International. Mobile Verification Toolkit, MVT, es una herramienta open source utilizada como componente técnico de análisis.",
     "footer": {
       "copy": "© {{year}} Spyware Forensic Analyzer",
       "engine": "Motor técnico: MVT — Mobile Verification Toolkit (Amnesty International)"

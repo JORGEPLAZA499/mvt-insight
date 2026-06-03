@@ -233,8 +233,8 @@
     "step1": {
       "title": "¿Qué dispositivo quieres analizar?",
       "subtitle": "Elige el sistema operativo del móvil.",
-      "android": { "title": "Android", "sub": "Samsung, Xiaomi, Pixel…" },
-      "ios": { "title": "iPhone", "sub": "iOS 14 o superior" },
+      "android": { "title": "Android", "sub": "" },
+      "ios": { "title": "iPhone", "sub": "" },
       "noCredits": {
         "title": "No tienes créditos disponibles",
         "body": "Necesitas al menos 1 crédito para iniciar un análisis. Recarga créditos desde tu panel para activar las opciones.",

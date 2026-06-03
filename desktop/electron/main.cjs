@@ -503,7 +503,12 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       const exitCode = await new Promise((resolve) => {
         child.onExit(({ exitCode: code }) => resolve(code ?? 0));
       });
+      currentChild = null;
+      if (cancelled) {
+        return { ok: false, error: "cancelled" };
+      }
       if (exitCode !== 0) throw new Error(`AndroidQF terminó con código ${exitCode}`);
+
 
       // 4. Buscar el ZIP generado o, si no existe, comprimir la carpeta de
       //    acquisition que AndroidQF deja en disco.

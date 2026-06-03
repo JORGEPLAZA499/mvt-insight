@@ -418,34 +418,34 @@ function StepRun({
 
           <div className="grid sm:grid-cols-3 gap-2">
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-Setup-${APP_VERSION}.exe`}
+              href={latestVersion ? `${RELEASES_BASE_URL}/MvtInsight-Setup-${latestVersion}.exe` : RELEASES_PAGE_URL}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "windows"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
                   : "border-border bg-card hover:border-primary/40"
-              }`}
+              } ${latestVersion ? "" : "opacity-70"}`}
             >
               <Monitor className="h-4 w-4" />
               Windows
             </a>
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-${APP_VERSION}-arm64.dmg`}
+              href={latestVersion ? `${RELEASES_BASE_URL}/MvtInsight-${latestVersion}-arm64.dmg` : RELEASES_PAGE_URL}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "mac"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
                   : "border-border bg-card hover:border-primary/40"
-              }`}
+              } ${latestVersion ? "" : "opacity-70"}`}
             >
               <Apple className="h-4 w-4" />
               macOS
             </a>
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-${APP_VERSION}.AppImage`}
+              href={latestVersion ? `${RELEASES_BASE_URL}/MvtInsight-${latestVersion}.AppImage` : RELEASES_PAGE_URL}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "linux"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
                   : "border-border bg-card hover:border-primary/40"
-              }`}
+              } ${latestVersion ? "" : "opacity-70"}`}
             >
               <Monitor className="h-4 w-4" />
               Linux

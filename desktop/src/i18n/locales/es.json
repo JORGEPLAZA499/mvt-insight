@@ -58,5 +58,16 @@
     "upload": "Subir al informe →",
     "openFolder": "Abrir carpeta",
     "new": "Nuevo análisis"
+  },
+  "update": {
+    "check": "Buscar actualizaciones",
+    "checking": "Comprobando…",
+    "upToDate": "Ya tienes la última versión",
+    "available": "Nueva versión disponible:",
+    "install": "Instalar",
+    "downloading": "Descargando…",
+    "readyToInstall": "Actualización lista para instalar",
+    "restart": "Reiniciar e instalar",
+    "error": "Error al comprobar actualizaciones:"
   }
 }

@@ -2,7 +2,7 @@
 // Arranca la ventana principal de inmediato (incluso sin internet).
 // La comprobación de actualizaciones se hace en background y avisa al usuario
 // con un diálogo no bloqueante si encuentra una nueva versión.
-const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, safeStorage } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -618,4 +618,63 @@ ipcMain.handle("updater:download", async () => {
 ipcMain.handle("updater:quitAndInstall", async () => {
   autoUpdater.quitAndInstall(false, true);
   return { ok: true };
+});
+
+/* ---------- Auth (token cifrado en safeStorage) ---------- */
+
+function tokenFilePath() {
+  return path.join(app.getPath("userData"), "desktop-token.enc");
+}
+
+ipcMain.handle("auth:get", async () => {
+  try {
+    const p = tokenFilePath();
+    if (!fs.existsSync(p)) return { token: null };
+    const buf = fs.readFileSync(p);
+    if (safeStorage.isEncryptionAvailable()) {
+      return { token: safeStorage.decryptString(buf) };
+    }
+    return { token: buf.toString("utf8") };
+  } catch (err) {
+    return { token: null, error: err?.message || String(err) };
+  }
+});
+
+ipcMain.handle("auth:save", async (_e, token) => {
+  try {
+    if (typeof token !== "string" || !token.startsWith("dt_")) {
+      return { ok: false, error: "invalid-token" };
+    }
+    const p = tokenFilePath();
+    const data = safeStorage.isEncryptionAvailable()
+      ? safeStorage.encryptString(token)
+      : Buffer.from(token, "utf8");
+    fs.writeFileSync(p, data, { mode: 0o600 });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
+
+ipcMain.handle("auth:clear", async () => {
+  try {
+    const p = tokenFilePath();
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
+
+ipcMain.handle("mvt:readZip", async (_e, zipPath) => {
+  try {
+    if (typeof zipPath !== "string" || !zipPath) {
+      return { ok: false, error: "invalid-path" };
+    }
+    const buf = fs.readFileSync(zipPath);
+    // Devolvemos el buffer como Uint8Array (Electron lo serializa por IPC).
+    return { ok: true, data: buf, size: buf.length };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
 });

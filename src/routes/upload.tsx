@@ -262,6 +262,21 @@ function StepRun({
 }) {
   const { t } = useTranslation();
   const [subStep, setSubStep] = useState<number>(1);
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(RELEASES_API_URL)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!active || !data?.tag_name) return;
+        setLatestVersion(String(data.tag_name).replace(/^v/, ""));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const blocked = device === "ios" && os === "windows";
 

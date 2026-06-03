@@ -307,11 +307,9 @@ app.on("window-all-closed", () => {
 
 /* ---------- Helpers AndroidQF ---------- */
 
-const ANDROIDQF_RELEASES = {
-  win32: "https://github.com/mvt-project/androidqf/releases/latest/download/androidqf_windows_amd64.exe",
-  linux: "https://github.com/mvt-project/androidqf/releases/latest/download/androidqf_linux_amd64",
-  darwin: "https://github.com/mvt-project/androidqf/releases/latest/download/androidqf_darwin_amd64",
-};
+// Tamaño mínimo razonable para un binario válido (~5 MB). Cualquier cosa por
+// debajo es casi seguro un HTML de error de GitHub, no el ejecutable real.
+const MIN_BINARY_BYTES = 5 * 1024 * 1024;
 
 function workDir() {
   const dir = path.join(os.homedir(), "Downloads", "mvt-insight");
@@ -319,27 +317,66 @@ function workDir() {
   return dir;
 }
 
-async function download(url, dest, onProgress) {
+function httpsGet(url, headers = {}, maxRedirects = 5) {
   return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(dest);
-    const get = (u) =>
-      https.get(u, (res) => {
-        if (res.statusCode === 301 || res.statusCode === 302) {
-          return get(res.headers.location);
+    const visit = (u, left) => {
+      const req = https.get(u, { headers: { "User-Agent": "MvtInsight-Desktop", ...headers } }, (res) => {
+        if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+          if (left <= 0) return reject(new Error(`Demasiados redirects para ${url}`));
+          res.resume();
+          return visit(res.headers.location, left - 1);
         }
-        if (res.statusCode !== 200) {
-          return reject(new Error(`HTTP ${res.statusCode}`));
-        }
-        const total = parseInt(res.headers["content-length"] || "0", 10);
-        let downloaded = 0;
-        res.on("data", (chunk) => {
-          downloaded += chunk.length;
-          if (total) onProgress?.(downloaded / total);
-        });
-        pipeline(res, file).then(resolve).catch(reject);
+        resolve(res);
       });
-    get(url).on("error", reject);
+      req.on("error", reject);
+    };
+    visit(url, maxRedirects);
   });
+}
+
+async function fetchJson(url) {
+  const res = await httpsGet(url, { Accept: "application/vnd.github+json" });
+  if (res.statusCode !== 200) throw new Error(`HTTP ${res.statusCode} en ${url}`);
+  const chunks = [];
+  for await (const c of res) chunks.push(c);
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+
+async function resolveAndroidqfUrl() {
+  const rel = await fetchJson("https://api.github.com/repos/mvt-project/androidqf/releases/latest");
+  const assets = rel.assets || [];
+  const platform = process.platform;
+  const match = assets.find((a) => {
+    const n = a.name.toLowerCase();
+    if (platform === "win32") return /windows.*amd64.*\.exe$/.test(n);
+    if (platform === "linux") return /linux.*amd64/.test(n) && !/arm/.test(n);
+    if (platform === "darwin") return /(macos|darwin)/.test(n);
+    return false;
+  });
+  if (!match) throw new Error(`No se encontró asset de AndroidQF para ${platform} en ${rel.tag_name}`);
+  return match.browser_download_url;
+}
+
+async function download(url, dest, onProgress) {
+  const res = await httpsGet(url);
+  if (res.statusCode !== 200) {
+    res.resume();
+    throw new Error(`HTTP ${res.statusCode} al descargar ${url}`);
+  }
+  const total = parseInt(res.headers["content-length"] || "0", 10);
+  let downloaded = 0;
+  res.on("data", (chunk) => {
+    downloaded += chunk.length;
+    if (total) onProgress?.(downloaded / total);
+  });
+  const file = fs.createWriteStream(dest);
+  await pipeline(res, file);
+  // Valida tamaño mínimo: si la "descarga" fue un HTML de error, bórralo.
+  const stat = fs.statSync(dest);
+  if (stat.size < MIN_BINARY_BYTES) {
+    try { fs.unlinkSync(dest); } catch {}
+    throw new Error(`Descarga inválida (${stat.size} bytes). Reintenta o revisa tu conexión.`);
+  }
 }
 
 /* ---------- IPC handlers ---------- */

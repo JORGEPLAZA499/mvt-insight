@@ -15,6 +15,7 @@ import {
   Users,
   Ticket,
   Activity,
+  Monitor,
 } from "lucide-react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -135,6 +136,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         { to: "/upload", label: t("shell.nav.newAnalysis"), icon: UploadCloud, hint: t("shell.nav.uploadHint"), highlight: true },
         { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
         { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
+        { to: "/settings/desktop", label: "App de escritorio", icon: Monitor, hint: "Vincular la app de escritorio" },
         ...(isAdmin
           ? [{ to: "/admin", label: t("shell.nav.admin"), icon: ShieldCheck, hint: t("shell.adminHint") }]
           : []),

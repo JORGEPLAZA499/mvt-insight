@@ -148,7 +148,7 @@ function Upload() {
         {step === 3 && device && (
           <StepRun device={device} os={os} onDone={next} onChangeOS={back} />
         )}
-        {step === 4 && <StepUpload />}
+        {step === 4 && <StepUpload device={device ?? "android"} />}
       </div>
     </AppShell>
   );

@@ -302,14 +302,12 @@
         },
         "download": {
           "title": "Descarga la app de escritorio",
-          "intro": "Mientras todavía tienes Internet, descarga ahora la app <b>MVT Insight Desktop</b> en tu computador. Más adelante conectarás el móvil por USB y la app hará el resto: descargará las herramientas, recogerá los datos del móvil y guardará un ZIP listo para subir aquí. <b>Sin ventana negra ni comandos.</b>",
+          "intro": "Descarga la app <b>MVT Insight Desktop</b> en tu computador.",
           "appName": "MVT Insight Desktop",
           "version": "Versión 1.0 · Análisis con interfaz visual y barras de progreso",
           "recommended": "Recomendado para ti: <b>{{os}}</b> (detectado automáticamente) ·",
           "seeAll": "Ver todas las versiones en GitHub",
-          "instructions": [
-            "Descomprime el archivo descargado y haz <b>doble clic</b> en <code>MvtInsight</code> para abrir la app. Aún no pulses «Iniciar análisis»: primero hay que aislar los equipos y conectar el móvil."
-          ]
+          "instructions": []
         },
         "protocol": {
           "title": "Aísla los equipos antes de conectar",

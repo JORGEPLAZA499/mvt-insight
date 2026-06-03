@@ -132,7 +132,7 @@ export function App() {
   if (screen === "running") {
     return (
       <div className="app">
-        {TopBar}
+        {TopBarWithLogo}
         <div className="header">
           <h1>{device === "android" ? tr("running.title.android", "Analizando Android…") : tr("running.title.ios", "Analizando iPhone…")}</h1>
           <p>{tr("running.subtitle", "No cierres esta ventana. Tarda entre 5 y 15 minutos.")}</p>
@@ -163,7 +163,13 @@ export function App() {
             );
           })}
           <div className="scanline" aria-hidden="true" />
+          <div className="row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
+            <button className="btn btn-secondary" onClick={handleCancel}>
+              {tr("running.cancel", "Cancelar")}
+            </button>
+          </div>
         </div>
+
 
         <details style={{ marginTop: 16 }}>
           <summary>{tr("details.toggle", "Ver detalles técnicos")}</summary>

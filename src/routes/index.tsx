@@ -85,6 +85,9 @@ function Landing() {
             </div>
           ))}
         </div>
+        <p className="mt-8 text-xs text-center text-muted-foreground max-w-3xl mx-auto">
+          {t("landing.legalNotice")}
+        </p>
       </section>
 
       {/* How */}

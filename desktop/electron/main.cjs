@@ -392,18 +392,35 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       // 1. Descargar AndroidQF
       send("mvt:phase", { phase: 1, label: "Descargando AndroidQF", progress: 0 });
       const platform = process.platform;
-      const url = ANDROIDQF_RELEASES[platform];
-      if (!url) throw new Error(`Plataforma no soportada: ${platform}`);
+      if (!["win32", "linux", "darwin"].includes(platform)) {
+        throw new Error(`Plataforma no soportada: ${platform}`);
+      }
       const binName = platform === "win32" ? "androidqf.exe" : "androidqf";
       const binPath = path.join(dir, binName);
 
+      // Si hay un binario cacheado pero está corrupto (demasiado pequeño,
+      // típicamente un HTML de error guardado en un intento previo), bórralo.
+      if (fs.existsSync(binPath)) {
+        try {
+          const sz = fs.statSync(binPath).size;
+          if (sz < MIN_BINARY_BYTES) {
+            send("mvt:log", `⚠️ Binario cacheado inválido (${sz} bytes). Re-descargando…`);
+            fs.unlinkSync(binPath);
+          }
+        } catch {}
+      }
+
       if (!fs.existsSync(binPath)) {
+        send("mvt:log", "🔎 Resolviendo última versión de AndroidQF…");
+        const url = await resolveAndroidqfUrl();
+        send("mvt:log", `⬇️ Descargando ${url}`);
         await download(url, binPath, (p) =>
           send("mvt:phase", { phase: 1, label: "Descargando AndroidQF", progress: p })
         );
         if (platform !== "win32") fs.chmodSync(binPath, 0o755);
       }
       send("mvt:phase", { phase: 1, label: "AndroidQF listo", progress: 1 });
+
 
       // 2. Conectar y autorizar
       send("mvt:phase", { phase: 2, label: "Esperando autorización USB", progress: 0 });

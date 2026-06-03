@@ -19,7 +19,21 @@ autoUpdater.logger = {
   debug: (m) => console.log("[updater:debug]", m),
 };
 autoUpdater.autoDownload = false;
-autoUpdater.autoInstallOnAppQuit = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+/* ---------- Instancia única ---------- */
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    const win = mainWindow || updaterWindow;
+    if (win && !win.isDestroyed()) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
+}
 
 /* ---------- Ventana principal ---------- */
 

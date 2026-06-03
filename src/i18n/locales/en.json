@@ -302,14 +302,12 @@
         },
         "download": {
           "title": "Download the desktop app",
-          "intro": "While you still have Internet, download the <b>MVT Insight Desktop</b> app on your computer now. Later you'll plug in the phone via USB and the app will do the rest: download the tools, collect data from the phone, and save a ZIP ready to upload here. <b>No black window, no commands.</b>",
+          "intro": "Download the <b>MVT Insight Desktop</b> app on your computer.",
           "appName": "MVT Insight Desktop",
           "version": "Version 1.0 · Analysis with visual UI and progress bars",
           "recommended": "Recommended for you: <b>{{os}}</b> (auto-detected) ·",
           "seeAll": "See all versions on GitHub",
-          "instructions": [
-            "Unzip the downloaded file and <b>double-click</b> <code>MvtInsight</code> to open the app. Don't click \"Start analysis\" yet: first you have to isolate the devices and plug in the phone."
-          ]
+          "instructions": []
         },
         "protocol": {
           "title": "Isolate the devices before plugging in",

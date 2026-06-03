@@ -32,6 +32,7 @@ export const Route = createFileRoute("/upload")({
 const MAX_SIZE = 500 * 1024 * 1024;
 const RELEASES_BASE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest/download";
 const RELEASES_PAGE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest";
+const APP_VERSION = "1.0.6";
 const TOTAL_STEPS = 4;
 
 type Device = "android" | "ios";
@@ -399,7 +400,7 @@ function StepRun({
 
           <div className="grid sm:grid-cols-3 gap-2">
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-Setup-1.0.3.exe`}
+              href={`${RELEASES_BASE_URL}/MvtInsight-Setup-${APP_VERSION}.exe`}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "windows"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
@@ -410,7 +411,7 @@ function StepRun({
               Windows
             </a>
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-1.0.3-arm64.dmg`}
+              href={`${RELEASES_BASE_URL}/MvtInsight-${APP_VERSION}-arm64.dmg`}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "mac"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
@@ -421,7 +422,7 @@ function StepRun({
               macOS
             </a>
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-1.0.3.AppImage`}
+              href={`${RELEASES_BASE_URL}/MvtInsight-${APP_VERSION}.AppImage`}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "linux"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"

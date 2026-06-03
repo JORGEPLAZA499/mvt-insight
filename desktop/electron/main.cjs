@@ -272,6 +272,7 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
+  if (isTransitioning) return;
   if (process.platform !== "darwin") app.quit();
 });
 

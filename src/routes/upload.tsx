@@ -23,6 +23,8 @@ import { upsertAnalysis, Analysis } from "@/lib/mock-store";
 import { parseMvtFiles } from "@/lib/mvt-parser";
 import { UsbConnect } from "@/components/usb-connect";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { processAndStoreAnalysis } from "@/lib/analyses.functions";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),

@@ -546,9 +546,13 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
     // iOS solo en macOS — pendiente Fase 2
     throw new Error("El flujo iOS estará disponible en la próxima versión.");
   } catch (err) {
+    if (cancelled) return { ok: false, error: "cancelled" };
     send("mvt:log", `❌ ${err.message}`);
     return { ok: false, error: err.message };
+  } finally {
+    currentChild = null;
   }
+
 });
 
 ipcMain.handle("mvt:openFolder", async (_e, p) => {

@@ -116,19 +116,29 @@ export function App() {
     />
   );
 
+  const VersionBadge = appVersion ? (
+    <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "SF Mono, Menlo, monospace" }}>
+      v{appVersion}
+    </span>
+  ) : null;
+
   const TopBar = (
-    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+      {VersionBadge}
       <LanguageSelector />
     </div>
   );
 
   const TopBarWithLogo = (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-      <img
-        src={logoUrl}
-        alt="Spyware Forensic Analyzer"
-        style={{ height: 40, objectFit: "contain", background: "transparent" }}
-      />
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <img
+          src={logoUrl}
+          alt="Spyware Forensic Analyzer"
+          style={{ height: 40, objectFit: "contain", background: "transparent" }}
+        />
+        {VersionBadge}
+      </div>
       <LanguageSelector />
     </div>
   );

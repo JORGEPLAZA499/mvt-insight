@@ -52,6 +52,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const quickInputRef = useRef<HTMLInputElement>(null);
   const [quickBusy, setQuickBusy] = useState(false);
   const [quickError, setQuickError] = useState<string | null>(null);
+  const processQuickAnalysis = useServerFn(processAndStoreAnalysis);
+
 
   const handleQuickUpload = async (filesList: FileList | null) => {
     if (!filesList || filesList.length === 0) return;

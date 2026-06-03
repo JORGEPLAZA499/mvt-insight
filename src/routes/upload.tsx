@@ -34,7 +34,7 @@ export const Route = createFileRoute("/upload")({
 const MAX_SIZE = 500 * 1024 * 1024;
 const RELEASES_BASE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest/download";
 const RELEASES_PAGE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest";
-const APP_VERSION = "1.0.9";
+const RELEASES_API_URL = "https://api.github.com/repos/JORGEPLAZA499/mvt-insight/releases/latest";
 const TOTAL_STEPS = 4;
 
 type Device = "android" | "ios";
@@ -262,6 +262,21 @@ function StepRun({
 }) {
   const { t } = useTranslation();
   const [subStep, setSubStep] = useState<number>(1);
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(RELEASES_API_URL)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!active || !data?.tag_name) return;
+        setLatestVersion(String(data.tag_name).replace(/^v/, ""));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const blocked = device === "ios" && os === "windows";
 
@@ -402,34 +417,34 @@ function StepRun({
 
           <div className="grid sm:grid-cols-3 gap-2">
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-Setup-${APP_VERSION}.exe`}
+              href={latestVersion ? `${RELEASES_BASE_URL}/MvtInsight-Setup-${latestVersion}.exe` : RELEASES_PAGE_URL}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "windows"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
                   : "border-border bg-card hover:border-primary/40"
-              }`}
+              } ${latestVersion ? "" : "opacity-70"}`}
             >
               <Monitor className="h-4 w-4" />
               Windows
             </a>
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-${APP_VERSION}-arm64.dmg`}
+              href={latestVersion ? `${RELEASES_BASE_URL}/MvtInsight-${latestVersion}-arm64.dmg` : RELEASES_PAGE_URL}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "mac"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
                   : "border-border bg-card hover:border-primary/40"
-              }`}
+              } ${latestVersion ? "" : "opacity-70"}`}
             >
               <Apple className="h-4 w-4" />
               macOS
             </a>
             <a
-              href={`${RELEASES_BASE_URL}/MvtInsight-${APP_VERSION}.AppImage`}
+              href={latestVersion ? `${RELEASES_BASE_URL}/MvtInsight-${latestVersion}.AppImage` : RELEASES_PAGE_URL}
               className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                 os === "linux"
                   ? "border-primary bg-primary text-primary-foreground shadow-glow"
                   : "border-border bg-card hover:border-primary/40"
-              }`}
+              } ${latestVersion ? "" : "opacity-70"}`}
             >
               <Monitor className="h-4 w-4" />
               Linux

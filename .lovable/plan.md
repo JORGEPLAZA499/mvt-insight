@@ -1,9 +1,11 @@
-Quitar la barra superior "Paso X de 4" del wizard de subida.
+Mover el extremo del cable USB (cuando está conectado) al **borde inferior** del teléfono.
 
-**Archivo:** `src/routes/upload.tsx`
+**Archivo:** `src/components/usb-connect.tsx`, bloque `connected` (líneas 56-84).
 
-En el header del wizard (líneas 121-125), eliminar:
-- El `<span>` con `t("upload.stepCounter", ...)` que muestra "Paso 3 de 4".
-- El `<Progress>` debajo (barra cyan superior).
+Cambios:
+- Reemplazar el path `"M160 125 C 210 175, 250 175, 300 95"` (termina en el lateral izquierdo del teléfono a y=95) por `"M160 125 C 220 180, 290 185, 335 158"` (termina en el centro inferior del teléfono, x=335, y=158, justo en el borde donde está el puerto USB).
+- Aplicar el mismo nuevo path a los tres `<animateMotion>` para que los pulsos de datos sigan el cable.
+- Reposicionar el conector del lado del teléfono: rect `x=331, y=153, width=8, height=10` (sobresale ligeramente del borde inferior, donde está el puerto USB real).
+- El conector del lado del portátil se mantiene igual.
 
-Se mantiene el botón "Atrás" (queda solo en la fila), y se conserva intacta la barra interna del paso 3 ("Paso 2 de 8" / "Descarga la app de escritorio") que vive dentro de `StepRun`.
+No se toca el estado `connected={false}` (cable suelto) ni el resto del SVG.

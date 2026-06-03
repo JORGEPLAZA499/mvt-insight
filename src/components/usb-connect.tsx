@@ -56,7 +56,7 @@ export function UsbConnect({ connected = false }: { connected?: boolean }) {
           <g>
             <path
               id="usb-cable-connected"
-              d="M160 125 C 210 175, 250 175, 300 95"
+              d="M160 125 C 220 180, 290 185, 335 158"
               fill="none"
               stroke={c("primary")}
               strokeWidth="3"
@@ -65,21 +65,21 @@ export function UsbConnect({ connected = false }: { connected?: boolean }) {
             {/* Flowing data pulses along the cable */}
             <circle r="3" fill={c("primary")}>
               <animateMotion dur="1.6s" repeatCount="indefinite"
-                path="M160 125 C 210 175, 250 175, 300 95" />
+                path="M160 125 C 220 180, 290 185, 335 158" />
             </circle>
             <circle r="2.5" fill={c("primary", 70)}>
               <animateMotion dur="1.6s" begin="0.5s" repeatCount="indefinite"
-                path="M160 125 C 210 175, 250 175, 300 95" />
+                path="M160 125 C 220 180, 290 185, 335 158" />
             </circle>
             <circle r="2" fill={c("primary", 50)}>
               <animateMotion dur="1.6s" begin="1s" repeatCount="indefinite"
-                path="M160 125 C 210 175, 250 175, 300 95" />
+                path="M160 125 C 220 180, 290 185, 335 158" />
             </circle>
             {/* Connector plugged into laptop side */}
             <rect x="152" y="121" width="12" height="8" rx="1.5"
                   fill={c("card")} stroke={c("primary")} strokeWidth="1.5" />
-            {/* Connector plugged into phone bottom */}
-            <rect x="296" y="91" width="8" height="10" rx="1.5"
+            {/* Connector plugged into phone bottom (USB port) */}
+            <rect x="331" y="153" width="8" height="10" rx="1.5"
                   fill={c("card")} stroke={c("primary")} strokeWidth="1.5" />
           </g>
         ) : (

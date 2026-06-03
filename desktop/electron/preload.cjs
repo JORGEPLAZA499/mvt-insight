@@ -16,4 +16,13 @@ contextBridge.exposeInMainWorld("mvt", {
   },
   openFolder: (p) => ipcRenderer.invoke("mvt:openFolder", p),
   openExternal: (url) => ipcRenderer.invoke("mvt:openExternal", url),
+  getVersion: () => ipcRenderer.invoke("app:getVersion"),
+  checkForUpdates: () => ipcRenderer.invoke("updater:check"),
+  downloadUpdate: () => ipcRenderer.invoke("updater:download"),
+  quitAndInstall: () => ipcRenderer.invoke("updater:quitAndInstall"),
+  onUpdaterStatus: (cb) => {
+    const listener = (_e, payload) => cb(payload);
+    ipcRenderer.on("updater:status", listener);
+    return () => ipcRenderer.removeListener("updater:status", listener);
+  },
 });

@@ -218,11 +218,12 @@ autoUpdater.on("update-downloaded", () => {
     message: "La app se reiniciará automáticamente en unos segundos.",
     showSpinner: true,
   });
-  // Pequeño delay para que se lea el mensaje, luego instala y reinicia.
+  // Pequeño delay para que se lea el mensaje, luego cierra y reinicia.
+  // isSilent=false, isForceRunAfter=true → respeta el cierre limpio.
   setTimeout(() => {
     updaterAllowClose = true;
-    autoUpdater.quitAndInstall(true, true);
-  }, 1200);
+    autoUpdater.quitAndInstall(false, true);
+  }, 1500);
 });
 
 autoUpdater.on("error", (err) => {

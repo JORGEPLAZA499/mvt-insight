@@ -24,6 +24,13 @@ export function App() {
   const [logs, setLogs] = useState<string[]>([]);
   const [zipPath, setZipPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [updateState, setUpdateState] = useState<{
+    state: "idle" | "checking" | "up-to-date" | "available" | "downloading" | "downloaded" | "error";
+    version?: string;
+    percent?: number;
+    error?: string;
+  }>({ state: "idle" });
   const logRef = useRef<HTMLDivElement>(null);
 
   const PHASES = [

@@ -1,58 +1,35 @@
-# Fix: Auto-responder a TODOS los prompts de AndroidQF
+# Logo arriba-izquierda + botón Cancelar en pantalla "Analyzing…"
 
-## Problema
+## Cambios
 
-AndroidQF es interactivo. Pregunta cosas como:
-1. `? Modules:` (qué módulos ejecutar)
-2. `? Backup:` (hacer backup ADB)
-3. `? Download:` (descargar APKs: all / non-system)
-4. `? Remove:` (eliminar APKs firmadas por CA confiable para reducir tamaño) ← **aquí se cuelga ahora**
-5. `Press Enter to finish`
+### 1. `desktop/src/App.tsx` — pantalla `running`
+- TopBar reestructurado: logo pequeño (`<Logo size={36}>`) a la izquierda, selector de idioma a la derecha. Solo afecta a la pantalla "running" (las pantallas welcome/done ya muestran el logo grande de otra forma; mantenerlas como están salvo aplicar también el logo arriba-izquierda en `done` por consistencia).
+- Añadir botón **Cancelar** dentro de la card de fases, alineado abajo a la derecha. Estilo `btn btn-secondary`.
+- Al pulsar: llamar `window.mvt.cancel()`, limpiar estado y volver a `screen="welcome"`. Mostrar confirm nativo opcional ("¿Cancelar el análisis en curso?").
 
-La app ya tiene un parser de prompts en `main.cjs`, pero:
-- La regla genérica `default` se marca como "ya enviada" tras el primer prompt y los siguientes nunca reciben respuesta.
-- Las reglas específicas (`backup`, `download`) buscan labels que no coinciden con la versión actual de AndroidQF.
+### 2. `desktop/electron/preload.cjs`
+- Exponer `cancel: () => ipcRenderer.invoke("mvt:cancel")`.
 
-Resultado: AndroidQF se queda esperando flechas en el prompt nº 4 y la fase 3 nunca termina → nunca se genera el ZIP.
+### 3. `desktop/src/main.tsx`
+- Añadir `cancel: () => Promise<void>` al tipo `window.mvt`.
 
-## Solución (Opción A — auto-responder a todo)
+### 4. `desktop/electron/main.cjs`
+- Guardar referencia al `child` del pty actual en una variable de módulo (`currentChild`).
+- Nuevo handler `ipcMain.handle("mvt:cancel", ...)`: si hay `currentChild`, llamar `child.kill()` (en Windows también `taskkill /F /IM androidqf.exe /T` por si quedó descolgado). Limpiar `currentChild` en `onExit` y al final del flujo.
+- El `mvt:start` actual debe resolver de forma controlada cuando se cancela (devolver `{ ok: false, error: "cancelled" }`) en vez de lanzar excepción ruidosa.
 
-Reescribir la detección de prompts en `desktop/electron/main.cjs` para responder a **cada prompt nuevo** según su label, sin reglas genéricas que se "quemen".
+### 5. i18n (`desktop/src/i18n/locales/es.json` y `en.json`)
+- Nuevas claves: `running.cancel` ("Cancelar" / "Cancel"), `running.cancelConfirm` ("¿Cancelar el análisis en curso?" / "Cancel the running analysis?").
 
-### Cambios en `desktop/electron/main.cjs` (líneas ~410-458)
+### 6. Bump versión
+- `desktop/package.json`: `1.0.17` → `1.0.18` para que se publique vía workflow y el usuario reciba el update.
 
-1. **Detectar prompts por label** con regex `/\?\s+([A-Za-z ]+?):\s*$/m` sobre líneas recientes (no sobre todo el buffer).
-2. **Tabla de respuestas por label** (case-insensitive):
-   - `Modules` → `ENTER` (defaults: todos los módulos seleccionados)
-   - `Backup` → `DOWN+DOWN+ENTER` (No backup — evita errores AAPM y es más rápido)
-   - `Download` → `DOWN+ENTER` (Only non-system — más rápido que All)
-   - `Remove` → `ENTER` (Yes — reduce tamaño del output)
-   - `Acquire` / `Collect` / cualquier otro `Yes/No` → `ENTER` (acepta default)
-   - **Fallback para prompts desconocidos**: `ENTER` (acepta lo que esté preseleccionado)
-3. **Dedup por hash del prompt completo** (label + opciones visibles), no por rule-id. Así cada prompt nuevo se responde una vez y los re-pintados del mismo prompt se ignoran.
-4. **Detectar prompt "estable"**: esperar 300 ms sin nuevos datos antes de responder, para no responder a un prompt a medio renderizar.
-5. **Detectar `Press Enter to finish`** → `ENTER` (igual que antes).
-6. **Log limpio de qué prompt se detectó y qué se respondió** (para depurar futuros prompts nuevos sin tener que descifrar ANSI).
+## Resultado
 
-### Bump de versión
-
-- `desktop/package.json`: `1.0.16` → `1.0.17`
-- El push dispara el workflow que publica `v1.0.17` con los 3 instaladores.
-
-### Auto-update
-
-La v1.0.16 ya tiene `electron-updater` funcionando (el usuario está corriendo v1.0.16 con node-pty OK). Cuando publique v1.0.17, la app instalada lo detectará automáticamente 30 s después de abrir y ofrecerá actualizar.
-
-## Resultado esperado
-
-- AndroidQF avanza sin pararse por todos sus prompts.
-- Fase 3 progresa hasta "Empaquetando".
-- Se genera el ZIP en `Downloads/mvt-insight/` y aparece la pantalla final con "Abrir carpeta" / "Subir".
-
-## Riesgo y mitigación
-
-Si AndroidQF añade un prompt nuevo en una release futura con un label desconocido, el fallback `ENTER` acepta el default, que suele ser la opción segura. Si el default fuera destructivo, lo veríamos en el log limpio y añadiríamos una regla específica.
+- En la pantalla "Analyzing Android…" aparece el logo arriba-izquierda (selector de idioma sigue arriba-derecha).
+- Botón "Cancelar" visible. Al pulsarlo se mata AndroidQF y se vuelve al inicio.
 
 ## Lo que NO cambia
 
-- Auto-update, workflow de CI, lógica de descarga de AndroidQF, lógica de empaquetado del ZIP, UI de la app, traducciones, instalador NSIS.
+- Pantalla welcome (logo grande sigue centrado).
+- Lógica de auto-update, descarga, parser de prompts, empaquetado del ZIP.

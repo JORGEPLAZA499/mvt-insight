@@ -82,6 +82,28 @@ export function App() {
     </div>
   );
 
+  const TopBarWithLogo = (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+      <img
+        src={logoUrl}
+        alt="Spyware Forensic Analyzer"
+        style={{ height: 40, objectFit: "contain", background: "transparent" }}
+      />
+      <LanguageSelector />
+    </div>
+  );
+
+  const handleCancel = async () => {
+    const msg = tr("running.cancelConfirm", "¿Cancelar el análisis en curso?");
+    if (!window.confirm(msg)) return;
+    try { await window.mvt?.cancel(); } catch {}
+    setScreen("welcome");
+    setError(null);
+    setPhase({ num: 0, label: "", progress: 0 });
+    setLogs([]);
+  };
+
+
   if (screen === "welcome") {
     return (
       <div className="app">

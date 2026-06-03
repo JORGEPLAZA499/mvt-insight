@@ -23,14 +23,18 @@ autoUpdater.autoInstallOnAppQuit = false;
 
 /* ---------- Ventana principal ---------- */
 
+let mainWindow = null;
+let isTransitioning = false;
+
 function createMainWindow() {
-  const win = new BrowserWindow({
+  const iconPath = path.join(__dirname, "..", "build", "icon.png");
+  const opts = {
     width: 980,
     height: 720,
     minWidth: 760,
     minHeight: 560,
     backgroundColor: "#0b0b12",
-    icon: path.join(__dirname, "..", "build", "icon.png"),
+    show: false,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -38,12 +42,50 @@ function createMainWindow() {
       nodeIntegration: false,
       sandbox: false,
     },
+  };
+  if (fs.existsSync(iconPath)) opts.icon = iconPath;
+
+  const win = new BrowserWindow(opts);
+  mainWindow = win;
+
+  win.once("ready-to-show", () => {
+    isTransitioning = false;
+    win.show();
+    win.focus();
   });
 
-  win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
+  win.webContents.on("did-fail-load", (_e, code, desc, url) => {
+    console.error("[main] did-fail-load:", code, desc, url);
+    isTransitioning = false;
+    try {
+      dialog.showErrorBox(
+        "Error al cargar la app",
+        `No se pudo cargar la interfaz (${code}): ${desc}\n\nURL: ${url}`
+      );
+    } catch {}
+  });
+
+  win.webContents.on("render-process-gone", (_e, details) => {
+    console.error("[main] render-process-gone:", details);
+    isTransitioning = false;
+  });
+
+  win.on("closed", () => {
+    if (mainWindow === win) mainWindow = null;
+  });
+
+  const indexPath = path.join(__dirname, "..", "dist", "index.html");
+  win.loadFile(indexPath).catch((err) => {
+    console.error("[main] loadFile failed:", err);
+    isTransitioning = false;
+    try {
+      dialog.showErrorBox("Error al cargar la app", String(err?.message || err));
+    } catch {}
+  });
 
   if (isDev) win.webContents.openDevTools({ mode: "detach" });
 }
+
 
 /* ---------- Modal de actualización (bloqueante) ---------- */
 

@@ -1,72 +1,73 @@
-## Problema detectado
+## Problema
 
-El orden actual de los sub-pasos en `/upload` paso 3 es **ilógico** y los textos asumen un estado que aún no se ha producido. Ejemplos:
+En la app de escritorio MVT Insight, cuando arrancas sin conexión a internet (o el updater no puede contactar GitHub), aparece el modal "No se pudo comprobar actualizaciones". Al pulsar **Continuar sin actualizar** el modal desaparece pero la ventana principal **no aparece nunca** y la app queda colgada.
 
-- El **paso 1 actual es "Descarga la app"** y su texto dice *"Ya tienes el móvil conectado por USB"* y *"hablará con el móvil que ya tienes enchufado"* — pero el USB todavía no se ha conectado (eso ocurre 4 pasos después).
-- El **paso 2 actual es "Protocolo forense"** (PC sin internet + móvil en modo avión) y su texto dice *"ejecuta la app de escritorio una vez con Internet para que descargue las herramientas"* — pero la app se acaba de descargar en el paso anterior y todavía no se ha abierto.
-- Las **instrucciones del paso "Descarga"** mezclan tres cosas distintas: instalar la app, conectar el móvil y ejecutar el análisis. Eso provoca la confusión de "ya tienes el móvil conectado".
-- El **orden tampoco respeta la secuencia operativa**: hay que descargar la app **con internet**, luego aislar los equipos, y solo entonces conectar el móvil; el flujo actual hace lo contrario.
+## Causa
 
-## Reordenar los sub-pasos (Android)
+En `desktop/electron/main.cjs`, el handler de `updater:skip` hace dos cosas seguidas en el mismo tick:
 
-Nuevo orden lógico:
-
-```text
-1. Prepara el cable y el móvil           (preamble — ya existe sin usar)
-2. Descarga la app de escritorio         (download — aún con internet)
-3. Activa el modo desarrollador          (dev)
-4. Activa la Depuración USB              (usb)
-5. Aísla los equipos (recomendado)       (protocol — PC sin red + móvil en avión)
-6. Conecta el móvil por USB              (connect)
-7. Abre la app y ejecuta el análisis     (run — paso NUEVO, extraído del actual download)
-8. Sube el ZIP                           (upload)
+```js
+ipcMain.on("updater:skip", () => {
+  if (!updateMandatory) {
+    closeUpdaterWindow();   // destroy() del modal
+    createMainWindow();      // crea la ventana principal
+  }
+});
 ```
 
-## Reordenar los sub-pasos (iPhone)
+Con la configuración actual de la ventana principal (sin `show: false` ni `ready-to-show`, e icono apuntando a `build/icon.png` que puede no existir empaquetado), hay varios fallos posibles que la dejan invisible o cerrada:
 
-```text
-1. Prepara el cable y el iPhone          (preamble)
-2. Descarga la app de escritorio         (download — aún con internet)
-3. Aísla los equipos (recomendado)       (protocol)
-4. Conecta y confía en el ordenador      (iosTrust)
-5. Crea el backup cifrado                (iosBackup)
-6. Mantén el iPhone conectado            (iosKeep)
-7. Abre la app y ejecuta el análisis     (run)
-8. Sube el ZIP                           (upload)
-```
+1. La destrucción síncrona del updater puede disparar `window-all-closed` justo antes de que la nueva ventana esté registrada, cerrando la app en Windows.
+2. Si `loadFile(dist/index.html)` o el `preload.cjs` lanzan un error, la ventana se crea pero queda en blanco y, al no haber `show: false` + `ready-to-show`, no hay forma de saberlo.
+3. No hay manejadores de `did-fail-load` ni `render-process-gone`, así que un crash silencioso no deja rastro.
 
-## Reescritura de textos (es y en)
+## Cambios
 
-Se corrigen las contradicciones y se reasigna el contenido entre pasos. Resumen de los cambios principales:
+**`desktop/electron/main.cjs`** — todas las ediciones contenidas en este archivo:
 
-- **`download.intro`**: ya no afirma que el móvil esté conectado. Pasa a decir que se descargue *ahora* aprovechando que aún hay internet, y que más adelante se conectará el móvil.
-- **`download.instructions`**: se queda solo con la instrucción de instalación (descomprimir + doble clic). Las instrucciones de "iniciar análisis" y "dónde queda el ZIP" se mueven al nuevo paso `run`.
-- **`run` (nuevo)**: título *"Abre la app y ejecuta el análisis"*, cuerpo claro: con el móvil ya conectado por USB y desbloqueado, pulsar "Iniciar análisis"; al terminar la app dirá dónde se ha guardado el ZIP.
-- **`protocol.intro`**: se reformula como recomendación general previa a la conexión (no como "si sospechas"), y se ubica claramente *entre* descargar y conectar.
-- **`protocol.a.body`**: se elimina la frase *"Antes, ejecuta la app de escritorio una vez con Internet…"* (ya está descargada). Queda solo la instrucción de desconectar red/Wi-Fi del PC.
-- **`protocol.b.body`**: aclara que el móvil **todavía no está conectado por USB** y que el modo avión no afecta a la depuración USB que se usará en el paso siguiente.
-- **`connect.body`** (Android): añade *"con ambos equipos ya en modo avión"* para encadenar con el paso anterior.
-- **`iosTrust.body`**: ya menciona "Conecta el iPhone por USB" — se mantiene, queda coherente porque ahora viene después del aislamiento.
-- **`upload.body`**: pequeño ajuste para que no repita "cuando la app termine" (ya se dijo en `run`).
+1. **Diferir la creación de la ventana principal** un tick para que Electron procese el destroy del updater primero:
+   ```js
+   ipcMain.on("updater:skip", () => {
+     if (updateMandatory) return;
+     closeUpdaterWindow();
+     setImmediate(() => createMainWindow());
+   });
+   ```
+   Aplicar el mismo patrón en `update-not-available`.
 
-## Cambios técnicos
+2. **Crear la ventana principal con `show: false` y mostrarla en `ready-to-show`** para garantizar que solo aparezca cuando el contenido esté listo:
+   ```js
+   const win = new BrowserWindow({ ..., show: false, ... });
+   win.once("ready-to-show", () => win.show());
+   ```
 
-Archivos a tocar (solo frontend / textos):
+3. **Quitar el `icon:` si el archivo no existe** (verificar con `fs.existsSync`) para evitar errores en arranque empaquetado.
 
-1. **`src/i18n/locales/es.json`** y **`src/i18n/locales/en.json`**
-   - Reescribir los textos listados arriba dentro de `upload.step3.substeps.*`.
-   - Añadir nuevo bloque `upload.step3.substeps.run` con `title` y `body` (array de 2 ítems).
-   - Recortar `download.instructions` a un solo elemento.
+4. **Añadir logging y fallback de errores de carga** para que un fallo no pase desapercibido:
+   ```js
+   win.webContents.on("did-fail-load", (_e, code, desc) => {
+     console.error("[main] did-fail-load:", code, desc);
+     dialog.showErrorBox("Error al cargar la app", `${code}: ${desc}`);
+   });
+   win.webContents.on("render-process-gone", (_e, details) => {
+     console.error("[main] render-process-gone:", details);
+   });
+   ```
 
-2. **`src/routes/upload.tsx`** (función que construye `subSteps`, líneas ~339-534)
-   - **Android**: `[preamble, download, dev, usb, protocol, connect, run, upload]`
-   - **iPhone**: `[preamble, download, protocol, iosTrust, iosBackup, iosKeep, run, upload]`
-   - Reemplazar el `subSteps.unshift(downloadStep, protocolStep)` y el `subSteps.push(uploadStep)` por la construcción explícita del array según `device`.
-   - Añadir un nuevo bloque `runStep` que renderice las instrucciones de ejecutar la app.
-   - Añadir el `preamble` como primer paso (hoy existe en i18n pero no se usa).
+5. **Evitar que `window-all-closed` cierre la app durante la transición** updater → main: mantener una referencia y posponer el quit:
+   ```js
+   let isTransitioning = false;
+   // En skip / update-not-available: isTransitioning = true antes de destroy, false tras ready-to-show
+   app.on("window-all-closed", () => {
+     if (isTransitioning) return;
+     if (process.platform !== "darwin") app.quit();
+   });
+   ```
 
-No se toca lógica de créditos, fetch, realtime, navegación entre pasos ni el step 4. Solo orden y copys.
+6. **Bump de versión** en `desktop/package.json` (de `1.0.3` a `1.0.4`) para que la nueva build se publique como release nuevo.
 
-## Resultado esperado
+No se tocan `updater.html`, `preload.cjs`, `preload-updater.cjs` ni el flujo MVT (sigue funcionando igual cuando la ventana principal ya está abierta).
 
-Cada sub-paso describe únicamente acciones que el usuario *ya* puede hacer en ese momento, sin asumir estados futuros. El móvil se conecta después de aislar los equipos, la app se descarga mientras todavía hay internet, y la ejecución del análisis tiene su propio paso visible en la barra de progreso (8 sub-pasos en lugar de 6).
+## Tras aplicar
+
+Tendrás que **reempaquetar y reinstalar** la app desktop (`npm run dist:win` desde `/desktop`) para que el fix llegue al equipo del usuario, ya que el bug está en el binario instalado, no en algo que el updater pueda parchear (precisamente porque el updater no funciona aún).

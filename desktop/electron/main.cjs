@@ -241,10 +241,10 @@ ipcMain.on("updater:retry", () => {
 
 ipcMain.on("updater:skip", () => {
   // Solo permitido cuando NO hay update confirmado (escenario offline).
-  if (!updateMandatory) {
-    closeUpdaterWindow();
-    createMainWindow();
-  }
+  if (updateMandatory) return;
+  isTransitioning = true;
+  closeUpdaterWindow();
+  setImmediate(() => createMainWindow());
 });
 
 function formatBytes(b) {

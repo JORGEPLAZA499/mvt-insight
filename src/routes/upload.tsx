@@ -118,11 +118,7 @@ function Upload() {
             >
               <ArrowLeft className="h-4 w-4" /> {t("upload.back")}
             </button>
-            <span className="text-xs text-muted-foreground">
-              {t("upload.stepCounter", { step, total: TOTAL_STEPS })}
-            </span>
           </div>
-          <Progress value={(step / TOTAL_STEPS) * 100} className="h-1" />
         </header>
 
         {step === 1 && (

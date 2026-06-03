@@ -420,14 +420,35 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       const exitCode = await new Promise((res) => child.on("close", res));
       if (exitCode !== 0) throw new Error(`AndroidQF terminó con código ${exitCode}`);
 
-      // 4. Buscar el ZIP generado y devolverlo
-      const files = fs.readdirSync(dir).filter((f) => f.endsWith(".zip"));
-      const newest = files
+      // 4. Buscar el ZIP generado o, si no existe, comprimir la carpeta de
+      //    acquisition que AndroidQF deja en disco.
+      let zipPath;
+      const zipFiles = fs.readdirSync(dir).filter((f) => f.endsWith(".zip"));
+      const newestZip = zipFiles
         .map((f) => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
         .sort((a, b) => b.t - a.t)[0];
-      if (!newest) throw new Error("No se encontró el ZIP de resultados");
 
-      const zipPath = path.join(dir, newest.f);
+      if (newestZip) {
+        zipPath = path.join(dir, newestZip.f);
+      } else {
+        // Fallback: AndroidQF guardó los datos como carpeta (nombre tipo
+        // YYYYMMDDHHMMSS-XXXXXXXX). La comprimimos nosotros.
+        const subdirs = fs
+          .readdirSync(dir, { withFileTypes: true })
+          .filter((d) => d.isDirectory() && /^\d{14}-/.test(d.name))
+          .map((d) => ({ name: d.name, t: fs.statSync(path.join(dir, d.name)).mtimeMs }))
+          .sort((a, b) => b.t - a.t);
+
+        if (!subdirs.length) {
+          throw new Error("No se encontró ni ZIP ni carpeta de resultados");
+        }
+
+        const folder = path.join(dir, subdirs[0].name);
+        zipPath = path.join(dir, `${subdirs[0].name}.zip`);
+        send("mvt:log", `📦 Comprimiendo resultados en ${zipPath}`);
+        await zipFolder(folder, zipPath);
+      }
+
       send("mvt:phase", { phase: 3, label: "Listo", progress: 1 });
       return { ok: true, zipPath };
     }

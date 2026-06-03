@@ -32,7 +32,9 @@
     },
     "subtitle": "No cierres esta ventana. Tarda entre 5 y 15 minutos.",
     "starting": "Iniciando…",
-    "working": "Analizando"
+    "working": "Analizando",
+    "cancel": "Cancelar",
+    "cancelConfirm": "¿Cancelar el análisis en curso?"
   },
   "phases": {
     "download": "Descargando AndroidQF",

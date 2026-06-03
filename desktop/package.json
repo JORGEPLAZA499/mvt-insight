@@ -1,6 +1,6 @@
 {
   "name": "mvt-insight-desktop",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "MVT Insight — App de escritorio para recolectar datos forenses de Android/iOS y subirlos a spyware.rpjsoftware.com",
   "main": "electron/main.cjs",
   "private": true,
@@ -39,6 +39,8 @@
   "build": {
     "appId": "com.jorgeplaza.mvtinsight",
     "productName": "MvtInsight",
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
     "directories": {
       "output": "release",
       "buildResources": "build-resources"

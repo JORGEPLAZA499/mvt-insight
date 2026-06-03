@@ -459,7 +459,13 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       ];
       const DEFAULT_ANSWER = { keys: ENTER, note: "default (Enter)" };
 
-      const stripAnsi = (s) => s.replace(/\x1b\[[0-9;?]*[ -\/]*[@-~]/g, "");
+      const stripAnsi = (s) =>
+        s
+          .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "") // OSC
+          .replace(/\x1b\[[0-9;?]*[ -\/]*[@-~]/g, "")         // CSI
+          .replace(/\x1b[=>()*+\-.\/]./g, "")                  // charset/single-shift
+          .replace(/\r(?!\n)/g, "\n")                           // CR solo -> LF
+          .replace(/[\x00-\x08\x0B-\x1F\x7F]/g, "");           // otros controles
       const answeredPrompts = new Set();
       let buffer = "";
       let stableTimer = null;
@@ -497,7 +503,7 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         buffer += text;
         if (buffer.length > 16000) buffer = buffer.slice(-16000);
 
-        send("mvt:log", text);
+        send("mvt:log", stripAnsi(text));
 
         const clean = stripAnsi(text);
 

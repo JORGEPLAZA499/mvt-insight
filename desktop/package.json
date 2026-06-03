@@ -39,6 +39,8 @@
   "build": {
     "appId": "com.jorgeplaza.mvtinsight",
     "productName": "MvtInsight",
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
     "directories": {
       "output": "release",
       "buildResources": "build-resources"

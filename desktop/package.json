@@ -80,7 +80,7 @@
       "installerHeaderIcon": "build-resources/icon.ico"
     },
     "mac": {
-      "icon": "build/icon.png",
+      "icon": "build-resources/icon.png",
       "target": [
         {
           "target": "dmg",
@@ -94,7 +94,7 @@
       "category": "public.app-category.utilities"
     },
     "linux": {
-      "icon": "build/icon.png",
+      "icon": "build-resources/icon.png",
       "target": [
         {
           "target": "AppImage",

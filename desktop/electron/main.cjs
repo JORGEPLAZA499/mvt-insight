@@ -386,7 +386,7 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       // (típicamente falta el Visual C++ Redistributable en Windows).
       let pty;
       try {
-        pty = require("@homebridge/node-pty-prebuilt-multiarch");
+        pty = require("node-pty");
       } catch (e) {
         throw new Error(
           "No se pudo iniciar el terminal interno (node-pty). " +

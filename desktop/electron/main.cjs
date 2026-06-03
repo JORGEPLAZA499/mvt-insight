@@ -226,6 +226,36 @@ async function fetchJson(url) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
+// Comprime una carpeta en un .zip usando herramientas nativas del SO.
+// - Windows: PowerShell Compress-Archive (siempre disponible).
+// - macOS/Linux: el comando `zip` (preinstalado en macOS; en linux suele estarlo).
+function zipFolder(srcDir, destZip) {
+  return new Promise((resolve, reject) => {
+    let cmd, args, opts = { windowsHide: true };
+    if (process.platform === "win32") {
+      cmd = "powershell.exe";
+      args = [
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        `Compress-Archive -Path '${srcDir.replace(/'/g, "''")}\\*' -DestinationPath '${destZip.replace(/'/g, "''")}' -Force`,
+      ];
+    } else {
+      cmd = "zip";
+      args = ["-r", destZip, "."];
+      opts.cwd = srcDir;
+    }
+    const p = spawn(cmd, args, opts);
+    let stderr = "";
+    p.stderr?.on("data", (d) => { stderr += d.toString(); });
+    p.on("error", reject);
+    p.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Compresión falló (código ${code}): ${stderr.trim()}`));
+    });
+  });
+}
+
 async function resolveAndroidqfUrl() {
   const rel = await fetchJson("https://api.github.com/repos/mvt-project/androidqf/releases/latest");
   const assets = rel.assets || [];

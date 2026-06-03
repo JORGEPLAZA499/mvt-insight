@@ -396,7 +396,16 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         if (/Collecting information on installed apps/i.test(text))
           send("mvt:phase", { phase: 3, label: "Analizando apps", progress: 0.8 });
 
-        // Detectar prompts y enviar la respuesta correspondiente
+        // Prompt final "Press Enter to finish ..." — sin '?', necesita un Enter
+        // suelto para que AndroidQF cierre limpiamente y comprima el resultado.
+        if (/Press\s+.*Enter.*to finish/i.test(text)) {
+          try { child.stdin.write("\n"); } catch (e) {
+            console.warn("[androidqf stdin.write finish]", e.message);
+          }
+          return;
+        }
+
+        // Detectar prompts normales (acaban en '?') y enviar la respuesta
         if (/\?\s*$/.test(text) && answerIdx < answers.length) {
           try {
             child.stdin.write(answers[answerIdx++]);

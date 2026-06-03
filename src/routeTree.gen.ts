@@ -18,9 +18,13 @@ import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsDesktopRouteImport } from './routes/settings.desktop'
 import { Route as AnalysisIdRouteImport } from './routes/analysis.$id'
 import { Route as ApiPublicScriptsFileRouteImport } from './routes/api/public/scripts/$file'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicDesktopWhoamiRouteImport } from './routes/api/public/desktop/whoami'
+import { Route as ApiPublicDesktopSubmitAnalysisRouteImport } from './routes/api/public/desktop/submit-analysis'
+import { Route as ApiPublicDesktopPairRouteImport } from './routes/api/public/desktop/pair'
 import { Route as ApiPublicCronPurgeInactiveRouteImport } from './routes/api/public/cron/purge-inactive'
 
 const UploadRoute = UploadRouteImport.update({
@@ -68,6 +72,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsDesktopRoute = SettingsDesktopRouteImport.update({
+  id: '/settings/desktop',
+  path: '/settings/desktop',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalysisIdRoute = AnalysisIdRouteImport.update({
   id: '/analysis/$id',
   path: '/analysis/$id',
@@ -84,6 +93,22 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicDesktopWhoamiRoute = ApiPublicDesktopWhoamiRouteImport.update({
+  id: '/api/public/desktop/whoami',
+  path: '/api/public/desktop/whoami',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicDesktopSubmitAnalysisRoute =
+  ApiPublicDesktopSubmitAnalysisRouteImport.update({
+    id: '/api/public/desktop/submit-analysis',
+    path: '/api/public/desktop/submit-analysis',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicDesktopPairRoute = ApiPublicDesktopPairRouteImport.update({
+  id: '/api/public/desktop/pair',
+  path: '/api/public/desktop/pair',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronPurgeInactiveRoute =
   ApiPublicCronPurgeInactiveRouteImport.update({
     id: '/api/public/cron/purge-inactive',
@@ -102,7 +127,11 @@ export interface FileRoutesByFullPath {
   '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/settings/desktop': typeof SettingsDesktopRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
+  '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
+  '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
+  '/api/public/desktop/whoami': typeof ApiPublicDesktopWhoamiRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
@@ -117,7 +146,11 @@ export interface FileRoutesByTo {
   '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/settings/desktop': typeof SettingsDesktopRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
+  '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
+  '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
+  '/api/public/desktop/whoami': typeof ApiPublicDesktopWhoamiRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
@@ -133,7 +166,11 @@ export interface FileRoutesById {
   '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/settings/desktop': typeof SettingsDesktopRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
+  '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
+  '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
+  '/api/public/desktop/whoami': typeof ApiPublicDesktopWhoamiRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
@@ -150,7 +187,11 @@ export interface FileRouteTypes {
     | '/setup-admin'
     | '/upload'
     | '/analysis/$id'
+    | '/settings/desktop'
     | '/api/public/cron/purge-inactive'
+    | '/api/public/desktop/pair'
+    | '/api/public/desktop/submit-analysis'
+    | '/api/public/desktop/whoami'
     | '/api/public/payments/webhook'
     | '/api/public/scripts/$file'
   fileRoutesByTo: FileRoutesByTo
@@ -165,7 +206,11 @@ export interface FileRouteTypes {
     | '/setup-admin'
     | '/upload'
     | '/analysis/$id'
+    | '/settings/desktop'
     | '/api/public/cron/purge-inactive'
+    | '/api/public/desktop/pair'
+    | '/api/public/desktop/submit-analysis'
+    | '/api/public/desktop/whoami'
     | '/api/public/payments/webhook'
     | '/api/public/scripts/$file'
   id:
@@ -180,7 +225,11 @@ export interface FileRouteTypes {
     | '/setup-admin'
     | '/upload'
     | '/analysis/$id'
+    | '/settings/desktop'
     | '/api/public/cron/purge-inactive'
+    | '/api/public/desktop/pair'
+    | '/api/public/desktop/submit-analysis'
+    | '/api/public/desktop/whoami'
     | '/api/public/payments/webhook'
     | '/api/public/scripts/$file'
   fileRoutesById: FileRoutesById
@@ -196,7 +245,11 @@ export interface RootRouteChildren {
   SetupAdminRoute: typeof SetupAdminRoute
   UploadRoute: typeof UploadRoute
   AnalysisIdRoute: typeof AnalysisIdRoute
+  SettingsDesktopRoute: typeof SettingsDesktopRoute
   ApiPublicCronPurgeInactiveRoute: typeof ApiPublicCronPurgeInactiveRoute
+  ApiPublicDesktopPairRoute: typeof ApiPublicDesktopPairRoute
+  ApiPublicDesktopSubmitAnalysisRoute: typeof ApiPublicDesktopSubmitAnalysisRoute
+  ApiPublicDesktopWhoamiRoute: typeof ApiPublicDesktopWhoamiRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicScriptsFileRoute: typeof ApiPublicScriptsFileRoute
 }
@@ -266,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/desktop': {
+      id: '/settings/desktop'
+      path: '/settings/desktop'
+      fullPath: '/settings/desktop'
+      preLoaderRoute: typeof SettingsDesktopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analysis/$id': {
       id: '/analysis/$id'
       path: '/analysis/$id'
@@ -285,6 +345,27 @@ declare module '@tanstack/react-router' {
       path: '/api/public/payments/webhook'
       fullPath: '/api/public/payments/webhook'
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/desktop/whoami': {
+      id: '/api/public/desktop/whoami'
+      path: '/api/public/desktop/whoami'
+      fullPath: '/api/public/desktop/whoami'
+      preLoaderRoute: typeof ApiPublicDesktopWhoamiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/desktop/submit-analysis': {
+      id: '/api/public/desktop/submit-analysis'
+      path: '/api/public/desktop/submit-analysis'
+      fullPath: '/api/public/desktop/submit-analysis'
+      preLoaderRoute: typeof ApiPublicDesktopSubmitAnalysisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/desktop/pair': {
+      id: '/api/public/desktop/pair'
+      path: '/api/public/desktop/pair'
+      fullPath: '/api/public/desktop/pair'
+      preLoaderRoute: typeof ApiPublicDesktopPairRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/cron/purge-inactive': {
@@ -308,7 +389,11 @@ const rootRouteChildren: RootRouteChildren = {
   SetupAdminRoute: SetupAdminRoute,
   UploadRoute: UploadRoute,
   AnalysisIdRoute: AnalysisIdRoute,
+  SettingsDesktopRoute: SettingsDesktopRoute,
   ApiPublicCronPurgeInactiveRoute: ApiPublicCronPurgeInactiveRoute,
+  ApiPublicDesktopPairRoute: ApiPublicDesktopPairRoute,
+  ApiPublicDesktopSubmitAnalysisRoute: ApiPublicDesktopSubmitAnalysisRoute,
+  ApiPublicDesktopWhoamiRoute: ApiPublicDesktopWhoamiRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicScriptsFileRoute: ApiPublicScriptsFileRoute,
 }

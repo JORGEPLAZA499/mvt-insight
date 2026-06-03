@@ -2,15 +2,30 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./components/LanguageSelector";
 import logoUrl from "./assets/logo.png";
+import { parseMvtFiles } from "./lib/mvt-parser";
 
 type Device = "android" | "ios";
-type Screen = "welcome" | "running" | "done";
+type Screen = "welcome" | "running" | "done" | "link";
+
+const WEB_BASE_URL = "https://spyware.rpjsoftware.com";
 
 interface PhaseState {
   num: number;
   label: string;
   progress: number;
 }
+
+interface Account {
+  email: string | null;
+  label: string;
+  credits: number;
+}
+
+type UploadState =
+  | { state: "idle" }
+  | { state: "uploading" }
+  | { state: "done"; analysisId: string; remainingCredits: number }
+  | { state: "error"; error: string; code?: string };
 
 export function App() {
   const { t } = useTranslation();
@@ -32,6 +47,15 @@ export function App() {
     error?: string;
   }>({ state: "idle" });
   const logRef = useRef<HTMLDivElement>(null);
+
+  // Auth/account
+  const [account, setAccount] = useState<Account | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [linkCode, setLinkCode] = useState("");
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  // Upload state for the "done" screen
+  const [upload, setUpload] = useState<UploadState>({ state: "idle" });
 
   const PHASES = [
     tr("phases.download", "Descargando AndroidQF"),
@@ -57,6 +81,37 @@ export function App() {
       setUpdateState((prev) => ({ ...prev, ...s } as typeof prev));
     });
     return () => off();
+  }, []);
+
+  // Cargar token persistido y resolver cuenta vía whoami
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!window.mvt?.auth) { setAuthChecked(true); return; }
+        const { token } = await window.mvt.auth.get();
+        if (!token) { setAuthChecked(true); return; }
+        const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/whoami`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (cancelled) return;
+        if (r.ok) {
+          const data = await r.json();
+          if (data?.ok) {
+            setAccount({ email: data.email, label: data.label, credits: data.credits });
+          } else {
+            await window.mvt.auth.clear();
+          }
+        } else if (r.status === 401) {
+          await window.mvt.auth.clear();
+        }
+      } catch {
+        // sin conexión: dejamos sin cuenta y seguimos
+      } finally {
+        if (!cancelled) setAuthChecked(true);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -92,6 +147,7 @@ export function App() {
     setScreen("running");
     setLogs([]);
     setError(null);
+    setUpload({ state: "idle" });
     setPhase({ num: 1, label: tr("running.starting", "Iniciando…"), progress: 0 });
 
     if (!window.mvt) {
@@ -105,6 +161,119 @@ export function App() {
     } else {
       setError(result.error ?? tr("error.unknown", "Error desconocido"));
     }
+  };
+
+  // Subida automática al servidor cuando entramos en "done" con cuenta vinculada
+  useEffect(() => {
+    if (screen !== "done" || !zipPath || !account) return;
+    if (upload.state !== "idle") return;
+    void autoUpload(zipPath, device ?? "android");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, zipPath, account]);
+
+  const autoUpload = async (path: string, dev: Device) => {
+    setUpload({ state: "uploading" });
+    try {
+      const { token } = (await window.mvt!.auth.get()) ?? { token: null };
+      if (!token) throw new Error("NO_TOKEN");
+
+      const zip = await window.mvt!.readZip(path);
+      if (!zip.ok || !zip.data) throw new Error(zip.error || "READ_FAILED");
+
+      const bytes = zip.data instanceof Uint8Array ? zip.data : new Uint8Array(zip.data);
+      const fileName = path.split(/[\\/]/).pop() || "android-qf.zip";
+      const file = new File([bytes], fileName, { type: "application/zip" });
+      const result = await parseMvtFiles([file], fileName);
+
+      const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/submit-analysis`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          device: dev,
+          fileName,
+          fileSize: bytes.length,
+          result,
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.status === 401) {
+        await window.mvt!.auth.clear();
+        setAccount(null);
+        setUpload({ state: "error", error: tr("upload.errors.unauth", "Sesión caducada. Vincula la app de nuevo."), code: "UNAUTHORIZED" });
+        return;
+      }
+      if (!r.ok || !data?.ok) {
+        setUpload({
+          state: "error",
+          error: data?.error === "INSUFFICIENT_CREDITS"
+            ? tr("upload.errors.credits", "No te quedan créditos.")
+            : tr("upload.errors.generic", "No se pudo subir el informe."),
+          code: data?.error,
+        });
+        return;
+      }
+      setUpload({
+        state: "done",
+        analysisId: data.analysisId,
+        remainingCredits: data.remainingCredits ?? 0,
+      });
+      setAccount((a) => a ? { ...a, credits: data.remainingCredits ?? a.credits } : a);
+    } catch (e: any) {
+      setUpload({ state: "error", error: e?.message || tr("upload.errors.generic", "No se pudo subir el informe.") });
+    }
+  };
+
+  const handleLink = async () => {
+    setLinkError(null);
+    const code = linkCode.trim().toUpperCase();
+    if (!/^[A-Z2-9]{8}$/.test(code)) {
+      setLinkError(tr("link.errors.format", "El código debe tener 8 caracteres."));
+      return;
+    }
+    setLinkBusy(true);
+    try {
+      const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/pair`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data?.ok) {
+        setLinkError(
+          data?.error === "CODE_INVALID_OR_EXPIRED"
+            ? tr("link.errors.invalid", "Código no válido o caducado.")
+            : tr("link.errors.generic", "No se pudo vincular."),
+        );
+        return;
+      }
+      await window.mvt!.auth.save(data.token);
+      setAccount({ email: data.email, label: data.label, credits: 0 });
+      // Refrescar créditos
+      try {
+        const me = await fetch(`${WEB_BASE_URL}/api/public/desktop/whoami`, {
+          headers: { Authorization: `Bearer ${data.token}` },
+        });
+        const meData = await me.json().catch(() => ({}));
+        if (meData?.ok) {
+          setAccount({ email: meData.email, label: meData.label, credits: meData.credits });
+        }
+      } catch {}
+      setLinkCode("");
+      setScreen("welcome");
+    } catch (e: any) {
+      setLinkError(e?.message || tr("link.errors.generic", "No se pudo vincular."));
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (!confirm(tr("account.signOutConfirm", "¿Desvincular esta app de tu cuenta?"))) return;
+    await window.mvt?.auth?.clear();
+    setAccount(null);
   };
 
   const Logo = ({ size = 96 }: { size?: number }) => (
@@ -122,15 +291,37 @@ export function App() {
     </span>
   ) : null;
 
+  const AccountBadge = account ? (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--muted)" }}>
+      <span>{account.email ?? account.label}</span>
+      <span style={{ color: "var(--primary, #6ea8ff)" }}>· {account.credits} {tr("account.credits", "créditos")}</span>
+      <button
+        className="btn btn-secondary"
+        style={{ padding: "2px 8px", fontSize: 11 }}
+        onClick={handleSignOut}
+      >
+        {tr("account.signOut", "Desvincular")}
+      </button>
+    </span>
+  ) : authChecked ? (
+    <button
+      className="btn btn-secondary"
+      style={{ padding: "2px 8px", fontSize: 11 }}
+      onClick={() => setScreen("link")}
+    >
+      {tr("account.link", "Vincular cuenta")}
+    </button>
+  ) : null;
+
   const TopBar = (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-      {VersionBadge}
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>{VersionBadge}{AccountBadge}</div>
       <LanguageSelector />
     </div>
   );
 
   const TopBarWithLogo = (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <img
           src={logoUrl}
@@ -139,7 +330,10 @@ export function App() {
         />
         {VersionBadge}
       </div>
-      <LanguageSelector />
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {AccountBadge}
+        <LanguageSelector />
+      </div>
     </div>
   );
 
@@ -153,6 +347,73 @@ export function App() {
     setLogs([]);
   };
 
+  if (screen === "link") {
+    return (
+      <div className="app">
+        {TopBar}
+        <div className="header">
+          <Logo size={140} />
+          <h1>{tr("link.title", "Vincular cuenta")}</h1>
+          <p>{tr("link.subtitle", "Vincula esta app con tu cuenta web para subir los análisis automáticamente.")}</p>
+        </div>
+        <div className="card">
+          <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "var(--muted)", lineHeight: 1.7 }}>
+            <li>
+              {tr("link.step1", "Abre")}{" "}
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); window.mvt?.openExternal(`${WEB_BASE_URL}/settings/desktop`); }}
+                style={{ color: "var(--primary, #6ea8ff)" }}
+              >
+                {WEB_BASE_URL.replace("https://", "")}/settings/desktop
+              </a>{" "}
+              {tr("link.step1b", "(inicia sesión si hace falta).")}
+            </li>
+            <li>{tr("link.step2", "Pulsa «Generar código».")}</li>
+            <li>{tr("link.step3", "Pega aquí el código de 8 caracteres:")}</li>
+          </ol>
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <input
+              type="text"
+              value={linkCode}
+              onChange={(e) => setLinkCode(e.target.value.toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 8))}
+              placeholder="ABCD2345"
+              maxLength={8}
+              autoFocus
+              style={{
+                fontFamily: "SF Mono, Menlo, monospace",
+                fontSize: 24,
+                letterSpacing: "0.3em",
+                textAlign: "center",
+                padding: "12px 16px",
+                borderRadius: 8,
+                border: "1px solid var(--border, #333)",
+                background: "var(--bg-soft, #1a1a22)",
+                color: "var(--fg, #fff)",
+              }}
+            />
+            {linkError && (
+              <div style={{ color: "var(--danger)", fontSize: 13 }}>{linkError}</div>
+            )}
+            <div className="row">
+              <button className="btn" onClick={handleLink} disabled={linkBusy || linkCode.length !== 8}>
+                {linkBusy ? tr("link.linking", "Vinculando…") : tr("link.action", "Vincular")}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
+                {tr("link.cancel", "Cancelar")}
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => window.mvt?.openExternal(`${WEB_BASE_URL}/settings/desktop`)}
+              >
+                {tr("link.openPage", "Abrir página")}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (screen === "welcome") {
     return (
@@ -280,6 +541,8 @@ export function App() {
   }
 
   // screen === "done"
+  const reportUrl = upload.state === "done" ? `${WEB_BASE_URL}/analysis/${upload.analysisId}` : null;
+
   return (
     <div className="app">
       {TopBarWithLogo}
@@ -297,17 +560,84 @@ export function App() {
         }}>
           {zipPath}
         </div>
-        <div className="row">
-          <button className="btn" onClick={() => window.mvt?.openExternal("https://spyware.rpjsoftware.com/upload")}>
-            {tr("done.upload", "Subir al informe →")}
-          </button>
+
+        {/* Estado de subida automática */}
+        {account && (
+          <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: "var(--bg-soft, #1a1a22)", border: "1px solid var(--border, #333)" }}>
+            {upload.state === "uploading" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                <span className="phase-spinner" />
+                <span>{tr("upload.uploading", "Subiendo informe a tu cuenta…")}</span>
+              </div>
+            )}
+            {upload.state === "done" && (
+              <div style={{ fontSize: 13 }}>
+                <div style={{ color: "var(--primary, #6ea8ff)", fontWeight: 600, marginBottom: 4 }}>
+                  ✓ {tr("upload.done", "Informe subido")}
+                </div>
+                <div style={{ color: "var(--muted)" }}>
+                  {tr("upload.creditsLeft", "Créditos restantes:")} {upload.remainingCredits}
+                </div>
+              </div>
+            )}
+            {upload.state === "error" && (
+              <div style={{ fontSize: 13 }}>
+                <div style={{ color: "var(--danger)", fontWeight: 600, marginBottom: 4 }}>
+                  {tr("upload.error", "No se pudo subir:")} {upload.error}
+                </div>
+                <div className="row" style={{ marginTop: 8 }}>
+                  {upload.code === "INSUFFICIENT_CREDITS" ? (
+                    <button className="btn" onClick={() => window.mvt?.openExternal(`${WEB_BASE_URL}/dashboard`)}>
+                      {tr("upload.buyCredits", "Recargar créditos")}
+                    </button>
+                  ) : (
+                    <button className="btn" onClick={() => zipPath && autoUpload(zipPath, device ?? "android")}>
+                      {tr("upload.retry", "Reintentar")}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="row" style={{ marginTop: 16 }}>
+          {reportUrl ? (
+            <button className="btn" onClick={() => window.mvt?.openExternal(reportUrl)}>
+              {tr("done.viewReport", "Ver informe →")}
+            </button>
+          ) : !account ? (
+            <button className="btn" onClick={() => window.mvt?.openExternal(`${WEB_BASE_URL}/upload`)}>
+              {tr("done.upload", "Subir al informe →")}
+            </button>
+          ) : null}
           <button className="btn btn-secondary" onClick={() => zipPath && window.mvt?.openFolder(zipPath)}>
             {tr("done.openFolder", "Abrir carpeta")}
           </button>
-          <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setScreen("welcome");
+              setUpload({ state: "idle" });
+              setZipPath(null);
+            }}
+          >
             {tr("done.new", "Nuevo análisis")}
           </button>
         </div>
+
+        {!account && (
+          <div style={{ marginTop: 12, fontSize: 12, color: "var(--muted)" }}>
+            💡{" "}
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); setScreen("link"); }}
+              style={{ color: "var(--primary, #6ea8ff)" }}
+            >
+              {tr("done.linkHint", "Vincula tu cuenta para subir el informe automáticamente la próxima vez.")}
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

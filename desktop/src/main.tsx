@@ -25,6 +25,12 @@ declare global {
       downloadUpdate: () => Promise<{ ok: boolean; error?: string }>;
       quitAndInstall: () => Promise<{ ok: boolean }>;
       onUpdaterStatus: (cb: (s: { state: string; version?: string; percent?: number; error?: string }) => void) => () => void;
+      auth: {
+        get: () => Promise<{ token: string | null; error?: string }>;
+        save: (token: string) => Promise<{ ok: boolean; error?: string }>;
+        clear: () => Promise<{ ok: boolean; error?: string }>;
+      };
+      readZip: (zipPath: string) => Promise<{ ok: boolean; data?: Uint8Array; size?: number; error?: string }>;
     };
   }
 }

@@ -1,26 +1,26 @@
-Arreglar la detección del ZIP/carpeta de resultados de AndroidQF para que funcione independientemente del patrón de nombre. Acumular los cambios sin bumpear versión (regla nueva: solo bumpeo cuando digas "publica").
+# Subida automática desktop → web (implementado)
 
-### Causa raíz
-`desktop/electron/main.cjs:547` filtra subdirectorios con la regex estricta `/^\d{14}-/` (14 dígitos + guion). Si AndroidQF nombra la carpeta de otra forma, el filtro la descarta y lanzamos "No se encontró ni ZIP ni carpeta de resultados" aunque la captura terminó bien.
+## Estado
+- Migración aplicada: `desktop_pairing_codes`, `desktop_tokens` (RLS por dueño).
+- Server fns web: `createPairingCode`, `listDesktopTokens`, `revokeDesktopToken` en `src/lib/desktop-pairing.functions.ts`.
+- Rutas públicas: `/api/public/desktop/{pair,whoami,submit-analysis}`.
+- Página web: `/settings/desktop` (genera código + lista/revoca dispositivos). Enlace en sidebar.
+- Desktop: `desktop/src/lib/{mvt-parser,mvt-modules}.ts` (copia de la web), `jszip` añadido a `package.json`.
+- IPC nuevos en `desktop/electron/main.cjs`: `auth:get/save/clear` (safeStorage) y `mvt:readZip`.
+- `preload.cjs` y `main.tsx` tipados.
+- `desktop/src/App.tsx`: pantalla `link`, topbar de cuenta, subida automática tras análisis con estados uploading/done/error, link "Ver informe →" abre `/analysis/<id>`.
 
-### Cambios
+## Flujo
+1. Usuario web (autenticado) → `/settings/desktop` → "Generar código" → 8 chars, TTL 10 min.
+2. Desktop sin cuenta → muestra botón "Vincular cuenta" → pantalla link → POST `/api/public/desktop/pair` → recibe `dt_…` → guarda con `safeStorage`.
+3. `whoami` resuelve email + créditos al arrancar.
+4. Tras análisis: `readZip` → parseo local → POST `/api/public/desktop/submit-analysis` → RPC `consume_credit_and_insert_analysis` → muestra "Ver informe →".
+5. Errores: 401 → limpia token y vuelve a vincular. INSUFFICIENT_CREDITS → botón "Recargar créditos".
 
-**1. `desktop/electron/main.cjs` — bloque de búsqueda de resultados (líneas 532-559)**
+## Versión
+- Sigue en `1.0.21`. No bumpeo hasta orden explícita "publica".
 
-Reescribir para ser robusto:
-
-- Capturar `const startMs = Date.now()` **antes** de `pty.spawn(...)`.
-- Tras `Acquisition completed` / `exit`, escanear `dir` y considerar **cualquier** entrada (archivo o carpeta) cuyo `mtimeMs >= startMs - 5000` (margen de 5 s).
-- Prioridad de elección:
-  1. Si hay un `.zip` nuevo → usarlo directamente.
-  2. Si hay una carpeta nueva → comprimirla (mantener `zipFolder`).
-  3. Si no hay nada nuevo → recién entonces lanzar error, **incluyendo en el mensaje el listado del directorio** (`fs.readdirSync(dir).join(", ")`) para diagnosticar futuras versiones de AndroidQF.
-- Añadir `send("mvt:log", "...")` con qué carpeta/archivo se eligió, para trazabilidad.
-
-**2. Versión** — NO bumpear. Mantener `1.0.21` hasta que pidas "publica".
-
-### Regla nueva confirmada
-A partir de ahora no toco `desktop/package.json > version` en ningún cambio. Solo lo bumpeo cuando me escribas explícitamente **"publica"** o **"saca versión"**, y entonces hago un único bump (`1.0.21 → 1.0.22`) que dispara una sola release en GitHub Actions con todos los cambios acumulados.
-
-### Lo que NO cambia
-- Lógica de spawn de AndroidQF, prompts, fases, cancelación, updater, UI, i18n.
+## Pendientes (no incluidos por petición del usuario)
+- Storage del ZIP en servidor.
+- Labels personalizables al vincular.
+- Notificaciones de sistema.

@@ -25,4 +25,10 @@ contextBridge.exposeInMainWorld("mvt", {
     ipcRenderer.on("updater:status", listener);
     return () => ipcRenderer.removeListener("updater:status", listener);
   },
+  auth: {
+    get: () => ipcRenderer.invoke("auth:get"),
+    save: (token) => ipcRenderer.invoke("auth:save", token),
+    clear: () => ipcRenderer.invoke("auth:clear"),
+  },
+  readZip: (zipPath) => ipcRenderer.invoke("mvt:readZip", zipPath),
 });

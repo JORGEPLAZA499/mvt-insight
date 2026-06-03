@@ -135,7 +135,7 @@ export function App() {
         <img
           src={logoUrl}
           alt="Spyware Forensic Analyzer"
-          style={{ height: 40, objectFit: "contain", background: "transparent" }}
+          style={{ height: 80, objectFit: "contain", background: "transparent" }}
         />
         {VersionBadge}
       </div>

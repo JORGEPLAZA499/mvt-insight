@@ -73,7 +73,8 @@
       "notSupported": "Unsupported: {{name}}",
       "tooBig": "{{name}} exceeds 500 MB",
       "filesLabel": "{{count}} MVT files",
-      "genericError": "Could not process."
+      "genericError": "Could not process.",
+      "noCredits": "You don't have any credits. Purchase credits to generate the report."
     },
     "redeem": {
       "title": "Buy credits",

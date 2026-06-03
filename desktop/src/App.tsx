@@ -120,27 +120,27 @@ export function App() {
           {PHASES.map((label, i) => {
             const num = i + 1;
             const active = phase.num === num;
-            const done = phase.num > num || (active && phase.progress >= 1);
+            const done = phase.num > num;
             return (
               <div key={num} className={`phase ${active ? "active" : ""} ${done ? "done" : ""}`}>
-                <div className="phase-num">{done ? "✓" : num}</div>
+                <div className="phase-num">
+                  {done ? "✓" : active ? <span className="phase-spinner" /> : num}
+                </div>
                 <div className="phase-body">
                   <div className="phase-label">{label}</div>
                   {active && (
-                    <>
-                      <div className="phase-sub">{phase.label}</div>
-                      <div className="progress">
-                        <div
-                          className="progress-bar"
-                          style={{ width: `${Math.round(phase.progress * 100)}%` }}
-                        />
-                      </div>
-                    </>
+                    <div className="phase-sub">
+                      {phase.label || tr("running.working", "Analizando")}
+                      <span className="dot-pulse">
+                        <span /><span /><span />
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
             );
           })}
+          <div className="scanline" aria-hidden="true" />
         </div>
 
         <details style={{ marginTop: 16 }}>

@@ -575,3 +575,34 @@ ipcMain.handle("mvt:openFolder", async (_e, p) => {
 ipcMain.handle("mvt:openExternal", async (_e, url) => {
   shell.openExternal(url);
 });
+
+ipcMain.handle("app:getVersion", () => app.getVersion());
+
+ipcMain.handle("updater:check", async () => {
+  const currentVersion = app.getVersion();
+  if (isDev) {
+    return { currentVersion, updateAvailable: false, error: "dev-mode" };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    const latestVersion = result?.updateInfo?.version;
+    const updateAvailable = !!latestVersion && latestVersion !== currentVersion;
+    return { currentVersion, latestVersion, updateAvailable };
+  } catch (err) {
+    return { currentVersion, updateAvailable: false, error: err?.message || String(err) };
+  }
+});
+
+ipcMain.handle("updater:download", async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
+
+ipcMain.handle("updater:quitAndInstall", async () => {
+  autoUpdater.quitAndInstall(false, true);
+  return { ok: true };
+});

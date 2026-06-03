@@ -226,6 +226,36 @@ async function fetchJson(url) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
+// Comprime una carpeta en un .zip usando herramientas nativas del SO.
+// - Windows: PowerShell Compress-Archive (siempre disponible).
+// - macOS/Linux: el comando `zip` (preinstalado en macOS; en linux suele estarlo).
+function zipFolder(srcDir, destZip) {
+  return new Promise((resolve, reject) => {
+    let cmd, args, opts = { windowsHide: true };
+    if (process.platform === "win32") {
+      cmd = "powershell.exe";
+      args = [
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        `Compress-Archive -Path '${srcDir.replace(/'/g, "''")}\\*' -DestinationPath '${destZip.replace(/'/g, "''")}' -Force`,
+      ];
+    } else {
+      cmd = "zip";
+      args = ["-r", destZip, "."];
+      opts.cwd = srcDir;
+    }
+    const p = spawn(cmd, args, opts);
+    let stderr = "";
+    p.stderr?.on("data", (d) => { stderr += d.toString(); });
+    p.on("error", reject);
+    p.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Compresión falló (código ${code}): ${stderr.trim()}`));
+    });
+  });
+}
+
 async function resolveAndroidqfUrl() {
   const rel = await fetchJson("https://api.github.com/repos/mvt-project/androidqf/releases/latest");
   const assets = rel.assets || [];
@@ -396,7 +426,16 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         if (/Collecting information on installed apps/i.test(text))
           send("mvt:phase", { phase: 3, label: "Analizando apps", progress: 0.8 });
 
-        // Detectar prompts y enviar la respuesta correspondiente
+        // Prompt final "Press Enter to finish ..." — sin '?', necesita un Enter
+        // suelto para que AndroidQF cierre limpiamente y comprima el resultado.
+        if (/Press\s+.*Enter.*to finish/i.test(text)) {
+          try { child.stdin.write("\n"); } catch (e) {
+            console.warn("[androidqf stdin.write finish]", e.message);
+          }
+          return;
+        }
+
+        // Detectar prompts normales (acaban en '?') y enviar la respuesta
         if (/\?\s*$/.test(text) && answerIdx < answers.length) {
           try {
             child.stdin.write(answers[answerIdx++]);
@@ -411,14 +450,35 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       const exitCode = await new Promise((res) => child.on("close", res));
       if (exitCode !== 0) throw new Error(`AndroidQF terminó con código ${exitCode}`);
 
-      // 4. Buscar el ZIP generado y devolverlo
-      const files = fs.readdirSync(dir).filter((f) => f.endsWith(".zip"));
-      const newest = files
+      // 4. Buscar el ZIP generado o, si no existe, comprimir la carpeta de
+      //    acquisition que AndroidQF deja en disco.
+      let zipPath;
+      const zipFiles = fs.readdirSync(dir).filter((f) => f.endsWith(".zip"));
+      const newestZip = zipFiles
         .map((f) => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
         .sort((a, b) => b.t - a.t)[0];
-      if (!newest) throw new Error("No se encontró el ZIP de resultados");
 
-      const zipPath = path.join(dir, newest.f);
+      if (newestZip) {
+        zipPath = path.join(dir, newestZip.f);
+      } else {
+        // Fallback: AndroidQF guardó los datos como carpeta (nombre tipo
+        // YYYYMMDDHHMMSS-XXXXXXXX). La comprimimos nosotros.
+        const subdirs = fs
+          .readdirSync(dir, { withFileTypes: true })
+          .filter((d) => d.isDirectory() && /^\d{14}-/.test(d.name))
+          .map((d) => ({ name: d.name, t: fs.statSync(path.join(dir, d.name)).mtimeMs }))
+          .sort((a, b) => b.t - a.t);
+
+        if (!subdirs.length) {
+          throw new Error("No se encontró ni ZIP ni carpeta de resultados");
+        }
+
+        const folder = path.join(dir, subdirs[0].name);
+        zipPath = path.join(dir, `${subdirs[0].name}.zip`);
+        send("mvt:log", `📦 Comprimiendo resultados en ${zipPath}`);
+        await zipFolder(folder, zipPath);
+      }
+
       send("mvt:phase", { phase: 3, label: "Listo", progress: 1 });
       return { ok: true, zipPath };
     }

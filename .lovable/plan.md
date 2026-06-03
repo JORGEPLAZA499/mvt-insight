@@ -1,30 +1,102 @@
-# Cobrar al generar el informe, no al descargar el .exe (implementado v1.0.9)
 
-## Resumen del cambio
+## Problema
 
-El `.exe` pasa a ser una utilidad **gratuita** que solo genera un ZIP crudo. El descuento de crédito ocurre **en el servidor** cuando se sube el ZIP a la web y se procesa con éxito. Si falla, no se cobra. Aunque el repo sea público o alguien clone el `.exe`, sin el backend no obtiene informe.
+En el log se ve claramente que AndroidQF **terminó bien**:
 
-## Cambios aplicados
+```
+Acquisition completed.
+Press Enter to finish ...
+❌ No se encontró el ZIP de resultados
+```
 
-### Backend (Lovable Cloud)
-- Nueva tabla `public.analyses` (user_id, device, file_name, file_size, result jsonb).
-- RLS: SELECT solo dueño o admin. Sin policy INSERT directa.
-- Función SQL `consume_credit_and_insert_analysis` (`SECURITY DEFINER`, transaccional):
-  - `SELECT credits FOR UPDATE` → si <1, `RAISE EXCEPTION 'INSUFFICIENT_CREDITS'`.
-  - Decrementa `accounts.credits` y `INSERT INTO analyses` en la misma TX.
-  - GRANT EXECUTE solo a `service_role`.
+Hay **dos bugs** en `desktop/electron/main.cjs`:
 
-### Web
-- `src/lib/analyses.functions.ts` — `processAndStoreAnalysis` (server fn protegido con `requireSupabaseAuth`) que llama al RPC.
-- `src/routes/upload.tsx` (StepUpload) y `src/components/app-shell.tsx` (quick upload): tras parsear localmente, llaman al server fn antes de guardar en mock-store. Si el server devuelve `INSUFFICIENT_CREDITS` o error, no se navega ni se cachea nada.
-- i18n: añadidas claves `shell.quick.noCredits` y `upload.step4.errors.noCredits` en ES y EN.
+### Bug 1 — Nunca enviamos el último Enter
 
-### Desktop
-- `desktop/electron/main.cjs`: eliminada la ventana modal de actualización que bloqueaba el arranque sin internet. La app arranca de inmediato; el updater corre 30 s después en background y, si encuentra una versión, muestra un diálogo no bloqueante ("Instalar ahora" / "Más tarde"). Sin internet, silencio total.
-- Borrados `desktop/electron/updater.html` y `desktop/electron/preload-updater.cjs`.
-- `desktop/package.json`: versión `1.0.8` → `1.0.9`.
-- `src/routes/upload.tsx`: `APP_VERSION` → `1.0.9`.
+El código solo responde a prompts que terminan en `?`:
+```js
+if (/\?\s*$/.test(text) && answerIdx < answers.length) { ... }
+```
 
-## Siguiente paso
+Pero el prompt final es `Press Enter to finish ...` (sin `?`). Como nadie pulsa Enter, AndroidQF no llega a **comprimir** el resultado en `.zip` — solo deja la carpeta de acquisition cruda. Por eso el `readdirSync` no encuentra ningún `.zip`.
 
-Compilar y publicar `MvtInsight-Setup-1.0.9.exe` desde el workflow `release.yml` (Actions → Run workflow). La versión instalada actual recibirá el aviso al abrirse con internet.
+### Bug 2 — Solo buscamos `.zip`
+
+Las versiones recientes de AndroidQF crean una **carpeta** con UUID (ej. `20260121133226-62061841/`) con todos los artefactos dentro, y solo la convierten a `.zip` si el usuario lo confirma. Si por lo que sea el zip no se genera, nos quedamos sin nada que subir aunque la carpeta exista.
+
+## Solución
+
+Editar **solo** `desktop/electron/main.cjs`:
+
+1. **Detectar el prompt final** `Press Enter to finish` y enviar `\n` para que AndroidQF cierre limpiamente y finalice la escritura del zip.
+
+2. **Detectar también prompts sin `?`** (líneas tipo `>` o que terminen en `:` esperando respuesta) — pero con cuidado de no spamear respuestas. Solución simple: añadir el patrón `/Press .*Enter.*to finish/i` como caso especial que dispara un Enter sin consumir la cola de respuestas.
+
+3. **Fallback de carpeta → zip**: si tras cerrar el proceso no hay `.zip`, buscar la carpeta de acquisition más reciente (nombre tipo `YYYYMMDDHHMMSS-XXXXXXXX/`) y comprimirla nosotros usando el módulo `archiver` (ya disponible vía npm; si no, usar el `zlib` nativo + recorrido recursivo, o el comando del sistema `tar`/`powershell Compress-Archive` en Windows).
+
+   Opción más simple y sin dependencias nuevas: usar **PowerShell** en Windows (`Compress-Archive`) y `zip` en macOS/Linux, ejecutados con `spawn`. Esto evita añadir paquetes al bundle de Electron.
+
+4. **Bump versión** a `1.0.10` en `desktop/package.json` para que los usuarios con 1.0.9 reciban el fix vía auto-updater.
+
+## Sección técnica
+
+Cambios concretos en `main.cjs`:
+
+```js
+// Dentro del handler de stdout:
+child.stdout.on("data", (data) => {
+  const text = data.toString();
+  buffer += text;
+  send("mvt:log", text);
+
+  // ... heurística de progreso sin cambios ...
+
+  // NUEVO: prompt final
+  if (/Press\s+.*Enter.*to finish/i.test(text)) {
+    try { child.stdin.write("\n"); } catch {}
+    return;
+  }
+
+  // Prompts normales (?)
+  if (/\?\s*$/.test(text) && answerIdx < answers.length) {
+    try { child.stdin.write(answers[answerIdx++]); } catch {}
+  }
+});
+```
+
+Y tras `child.close`:
+
+```js
+// Buscar zip primero
+let files = fs.readdirSync(dir).filter(f => f.endsWith(".zip"));
+let zipPath;
+if (files.length) {
+  const newest = files
+    .map(f => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
+    .sort((a, b) => b.t - a.t)[0];
+  zipPath = path.join(dir, newest.f);
+} else {
+  // Fallback: comprimir la carpeta de acquisition más reciente
+  const dirs = fs.readdirSync(dir, { withFileTypes: true })
+    .filter(d => d.isDirectory() && /^\d{14}-/.test(d.name))
+    .map(d => ({ name: d.name, t: fs.statSync(path.join(dir, d.name)).mtimeMs }))
+    .sort((a, b) => b.t - a.t);
+  if (!dirs.length) throw new Error("No se encontró ni ZIP ni carpeta de resultados");
+
+  const folder = path.join(dir, dirs[0].name);
+  zipPath = path.join(dir, `${dirs[0].name}.zip`);
+  send("mvt:log", `📦 Comprimiendo ${folder} → ${zipPath}`);
+  await zipFolder(folder, zipPath);    // usa PowerShell en win32, zip en otros
+}
+```
+
+`zipFolder` se implementa con `spawn` invocando:
+- Windows: `powershell -Command "Compress-Archive -Path '<folder>\\*' -DestinationPath '<zip>' -Force"`
+- macOS/Linux: `zip -r <zip> .` con cwd en la carpeta.
+
+## Archivos a tocar
+
+- `desktop/electron/main.cjs` — los dos fixes anteriores
+- `desktop/package.json` — bump a `1.0.10`
+
+Después solo queda hacer **Run workflow** en `release.yml` para publicar 1.0.10; los usuarios con 1.0.9 recibirán el aviso de actualización al abrir la app.

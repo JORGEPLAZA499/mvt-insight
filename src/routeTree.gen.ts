@@ -18,6 +18,7 @@ import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsDesktopRouteImport } from './routes/settings.desktop'
 import { Route as AnalysisIdRouteImport } from './routes/analysis.$id'
 import { Route as ApiPublicScriptsFileRouteImport } from './routes/api/public/scripts/$file'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
@@ -71,6 +72,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsDesktopRoute = SettingsDesktopRouteImport.update({
+  id: '/settings/desktop',
+  path: '/settings/desktop',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalysisIdRoute = AnalysisIdRouteImport.update({
   id: '/analysis/$id',
   path: '/analysis/$id',
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/settings/desktop': typeof SettingsDesktopRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
   '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
   '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/settings/desktop': typeof SettingsDesktopRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
   '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
   '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
+  '/settings/desktop': typeof SettingsDesktopRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
   '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
   '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/setup-admin'
     | '/upload'
     | '/analysis/$id'
+    | '/settings/desktop'
     | '/api/public/cron/purge-inactive'
     | '/api/public/desktop/pair'
     | '/api/public/desktop/submit-analysis'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/setup-admin'
     | '/upload'
     | '/analysis/$id'
+    | '/settings/desktop'
     | '/api/public/cron/purge-inactive'
     | '/api/public/desktop/pair'
     | '/api/public/desktop/submit-analysis'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/setup-admin'
     | '/upload'
     | '/analysis/$id'
+    | '/settings/desktop'
     | '/api/public/cron/purge-inactive'
     | '/api/public/desktop/pair'
     | '/api/public/desktop/submit-analysis'
@@ -233,6 +245,7 @@ export interface RootRouteChildren {
   SetupAdminRoute: typeof SetupAdminRoute
   UploadRoute: typeof UploadRoute
   AnalysisIdRoute: typeof AnalysisIdRoute
+  SettingsDesktopRoute: typeof SettingsDesktopRoute
   ApiPublicCronPurgeInactiveRoute: typeof ApiPublicCronPurgeInactiveRoute
   ApiPublicDesktopPairRoute: typeof ApiPublicDesktopPairRoute
   ApiPublicDesktopSubmitAnalysisRoute: typeof ApiPublicDesktopSubmitAnalysisRoute
@@ -306,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/desktop': {
+      id: '/settings/desktop'
+      path: '/settings/desktop'
+      fullPath: '/settings/desktop'
+      preLoaderRoute: typeof SettingsDesktopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analysis/$id': {
       id: '/analysis/$id'
       path: '/analysis/$id'
@@ -369,6 +389,7 @@ const rootRouteChildren: RootRouteChildren = {
   SetupAdminRoute: SetupAdminRoute,
   UploadRoute: UploadRoute,
   AnalysisIdRoute: AnalysisIdRoute,
+  SettingsDesktopRoute: SettingsDesktopRoute,
   ApiPublicCronPurgeInactiveRoute: ApiPublicCronPurgeInactiveRoute,
   ApiPublicDesktopPairRoute: ApiPublicDesktopPairRoute,
   ApiPublicDesktopSubmitAnalysisRoute: ApiPublicDesktopSubmitAnalysisRoute,

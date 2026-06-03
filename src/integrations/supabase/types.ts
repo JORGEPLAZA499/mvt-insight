@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      analyses: {
+        Row: {
+          created_at: string
+          device: string
+          file_name: string
+          file_size: number
+          id: string
+          result: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device: string
+          file_name: string
+          file_size?: number
+          id?: string
+          result: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device?: string
+          file_name?: string
+          file_size?: number
+          id?: string
+          result?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       credit_recharges: {
         Row: {
           account_id: string
@@ -103,6 +133,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_credit_and_insert_analysis: {
+        Args: {
+          p_device: string
+          p_file_name: string
+          p_file_size: number
+          p_result: Json
+          p_user_id: string
+        }
+        Returns: {
+          analysis_id: string
+          remaining_credits: number
+        }[]
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

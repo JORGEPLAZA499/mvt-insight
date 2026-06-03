@@ -59,6 +59,7 @@ function Upload() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [device, setDevice] = useState<Device | null>(null);
   const [os, setOs] = useState<OS>("mac");
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {

@@ -40,13 +40,13 @@
     "productName": "MvtInsight",
     "directories": {
       "output": "release",
-      "buildResources": "build"
+      "buildResources": "build-resources"
     },
     "files": [
       "electron/**/*",
       "dist/**/*",
-      "build/icon.ico",
-      "build/icon.png",
+      "build-resources/icon.ico",
+      "build-resources/icon.png",
       "package.json"
     ],
     "publish": [
@@ -58,7 +58,7 @@
       }
     ],
     "win": {
-      "icon": "build/icon.ico",
+      "icon": "build-resources/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -75,12 +75,12 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "MvtInsight",
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico"
+      "installerIcon": "build-resources/icon.ico",
+      "uninstallerIcon": "build-resources/icon.ico",
+      "installerHeaderIcon": "build-resources/icon.ico"
     },
     "mac": {
-      "icon": "build/icon.png",
+      "icon": "build-resources/icon.png",
       "target": [
         {
           "target": "dmg",
@@ -94,7 +94,7 @@
       "category": "public.app-category.utilities"
     },
     "linux": {
-      "icon": "build/icon.png",
+      "icon": "build-resources/icon.png",
       "target": [
         {
           "target": "AppImage",

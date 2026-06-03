@@ -58,5 +58,16 @@
     "upload": "Upload to report →",
     "openFolder": "Open folder",
     "new": "New analysis"
+  },
+  "update": {
+    "check": "Check for updates",
+    "checking": "Checking…",
+    "upToDate": "You have the latest version",
+    "available": "New version available:",
+    "install": "Install",
+    "downloading": "Downloading…",
+    "readyToInstall": "Update ready to install",
+    "restart": "Restart and install",
+    "error": "Error checking for updates:"
   }
 }

@@ -24,6 +24,13 @@ export function App() {
   const [logs, setLogs] = useState<string[]>([]);
   const [zipPath, setZipPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [updateState, setUpdateState] = useState<{
+    state: "idle" | "checking" | "up-to-date" | "available" | "downloading" | "downloaded" | "error";
+    version?: string;
+    percent?: number;
+    error?: string;
+  }>({ state: "idle" });
   const logRef = useRef<HTMLDivElement>(null);
 
   const PHASES = [
@@ -44,8 +51,41 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (!window.mvt) return;
+    window.mvt.getVersion().then(setAppVersion).catch(() => {});
+    const off = window.mvt.onUpdaterStatus((s) => {
+      setUpdateState((prev) => ({ ...prev, ...s } as typeof prev));
+    });
+    return () => off();
+  }, []);
+
+  useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
+
+  const checkUpdates = async () => {
+    if (!window.mvt) return;
+    setUpdateState({ state: "checking" });
+    const r = await window.mvt.checkForUpdates();
+    if (r.error) {
+      setUpdateState({ state: "error", error: r.error });
+    } else if (r.updateAvailable) {
+      setUpdateState({ state: "available", version: r.latestVersion });
+    } else {
+      setUpdateState({ state: "up-to-date", version: r.currentVersion });
+    }
+  };
+
+  const installUpdate = async () => {
+    if (!window.mvt) return;
+    setUpdateState({ state: "downloading", percent: 0 });
+    const r = await window.mvt.downloadUpdate();
+    if (!r.ok) setUpdateState({ state: "error", error: r.error });
+  };
+
+  const restartAndInstall = async () => {
+    await window.mvt?.quitAndInstall();
+  };
 
   const start = async (d: Device) => {
     setDevice(d);
@@ -76,19 +116,29 @@ export function App() {
     />
   );
 
+  const VersionBadge = appVersion ? (
+    <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "SF Mono, Menlo, monospace" }}>
+      v{appVersion}
+    </span>
+  ) : null;
+
   const TopBar = (
-    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+      {VersionBadge}
       <LanguageSelector />
     </div>
   );
 
   const TopBarWithLogo = (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-      <img
-        src={logoUrl}
-        alt="Spyware Forensic Analyzer"
-        style={{ height: 40, objectFit: "contain", background: "transparent" }}
-      />
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <img
+          src={logoUrl}
+          alt="Spyware Forensic Analyzer"
+          style={{ height: 40, objectFit: "contain", background: "transparent" }}
+        />
+        {VersionBadge}
+      </div>
       <LanguageSelector />
     </div>
   );
@@ -124,6 +174,42 @@ export function App() {
             <div className="title">{tr("welcome.ios.title", "iPhone")}</div>
             <div className="sub">{tr("welcome.ios.sub", "Próximamente (solo macOS)")}</div>
           </button>
+        </div>
+
+        <div style={{ marginTop: 24, textAlign: "center", fontSize: 13, color: "var(--muted)" }}>
+          {updateState.state === "idle" && (
+            <button className="btn btn-secondary" onClick={checkUpdates}>
+              {tr("update.check", "Buscar actualizaciones")}
+            </button>
+          )}
+          {updateState.state === "checking" && <span>{tr("update.checking", "Comprobando…")}</span>}
+          {updateState.state === "up-to-date" && (
+            <span>✓ {tr("update.upToDate", "Ya tienes la última versión")} (v{updateState.version || appVersion})</span>
+          )}
+          {updateState.state === "available" && (
+            <span>
+              {tr("update.available", "Nueva versión disponible:")} <strong>v{updateState.version}</strong>{" "}
+              <button className="btn" style={{ marginLeft: 8 }} onClick={installUpdate}>
+                {tr("update.install", "Instalar")}
+              </button>
+            </span>
+          )}
+          {updateState.state === "downloading" && (
+            <span>{tr("update.downloading", "Descargando…")} {Math.round(updateState.percent ?? 0)}%</span>
+          )}
+          {updateState.state === "downloaded" && (
+            <span>
+              ✓ {tr("update.readyToInstall", "Actualización lista para instalar")}{" "}
+              <button className="btn" style={{ marginLeft: 8 }} onClick={restartAndInstall}>
+                {tr("update.restart", "Reiniciar e instalar")}
+              </button>
+            </span>
+          )}
+          {updateState.state === "error" && (
+            <span style={{ color: "var(--danger)" }}>
+              {tr("update.error", "Error al comprobar actualizaciones:")} {updateState.error}
+            </span>
+          )}
         </div>
       </div>
     );

@@ -108,7 +108,18 @@ function scheduleBackgroundUpdateCheck() {
   }, 30_000);
 }
 
+function sendUpdaterStatus(payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("updater:status", payload);
+  }
+}
+
+autoUpdater.on("checking-for-update", () => {
+  sendUpdaterStatus({ state: "checking" });
+});
+
 autoUpdater.on("update-available", (info) => {
+  sendUpdaterStatus({ state: "available", version: info.version });
   if (updatePromptShown || !mainWindow || mainWindow.isDestroyed()) return;
   updatePromptShown = true;
   dialog
@@ -135,17 +146,19 @@ autoUpdater.on("update-available", (info) => {
     .catch(() => {});
 });
 
-autoUpdater.on("update-not-available", () => {
-  // Silencio: no hay nada que avisar al usuario.
+autoUpdater.on("update-not-available", (info) => {
+  sendUpdaterStatus({ state: "up-to-date", version: info?.version });
 });
 
 autoUpdater.on("download-progress", (p) => {
+  sendUpdaterStatus({ state: "downloading", percent: p.percent || 0 });
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.setProgressBar(Math.max(0, Math.min(1, (p.percent || 0) / 100)));
   }
 });
 
-autoUpdater.on("update-downloaded", () => {
+autoUpdater.on("update-downloaded", (info) => {
+  sendUpdaterStatus({ state: "downloaded", version: info?.version });
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.setProgressBar(-1);
   }
@@ -170,7 +183,7 @@ autoUpdater.on("update-downloaded", () => {
 });
 
 autoUpdater.on("error", (err) => {
-  // No bloqueamos al usuario por un fallo de update.
+  sendUpdaterStatus({ state: "error", error: err?.message || String(err) });
   console.warn("[updater] error (ignored):", err?.message || err);
 });
 
@@ -561,4 +574,35 @@ ipcMain.handle("mvt:openFolder", async (_e, p) => {
 
 ipcMain.handle("mvt:openExternal", async (_e, url) => {
   shell.openExternal(url);
+});
+
+ipcMain.handle("app:getVersion", () => app.getVersion());
+
+ipcMain.handle("updater:check", async () => {
+  const currentVersion = app.getVersion();
+  if (isDev) {
+    return { currentVersion, updateAvailable: false, error: "dev-mode" };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    const latestVersion = result?.updateInfo?.version;
+    const updateAvailable = !!latestVersion && latestVersion !== currentVersion;
+    return { currentVersion, latestVersion, updateAvailable };
+  } catch (err) {
+    return { currentVersion, updateAvailable: false, error: err?.message || String(err) };
+  }
+});
+
+ipcMain.handle("updater:download", async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
+
+ipcMain.handle("updater:quitAndInstall", async () => {
+  autoUpdater.quitAndInstall(false, true);
+  return { ok: true };
 });

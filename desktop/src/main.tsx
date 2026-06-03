@@ -20,6 +20,11 @@ declare global {
       onPhase: (cb: (p: { phase: number; label: string; progress: number }) => void) => () => void;
       openFolder: (p: string) => Promise<void>;
       openExternal: (url: string) => Promise<void>;
+      getVersion: () => Promise<string>;
+      checkForUpdates: () => Promise<{ currentVersion: string; latestVersion?: string; updateAvailable: boolean; error?: string }>;
+      downloadUpdate: () => Promise<{ ok: boolean; error?: string }>;
+      quitAndInstall: () => Promise<{ ok: boolean }>;
+      onUpdaterStatus: (cb: (s: { state: string; version?: string; percent?: number; error?: string }) => void) => () => void;
     };
   }
 }

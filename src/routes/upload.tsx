@@ -32,7 +32,7 @@ export const Route = createFileRoute("/upload")({
 const MAX_SIZE = 500 * 1024 * 1024;
 const RELEASES_BASE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest/download";
 const RELEASES_PAGE_URL = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest";
-const APP_VERSION = "1.0.6";
+const APP_VERSION = "1.0.7";
 const TOTAL_STEPS = 4;
 
 type Device = "android" | "ios";

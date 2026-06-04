@@ -39,12 +39,13 @@ export function usePurchaseCardOpen() {
   );
 }
 
-const CREDIT_OPTIONS = Array.from({ length: 10 }, (_, i) => (i + 1) * 98);
+export const ANALYSIS_COST = 98;
+const CREDIT_OPTIONS = Array.from({ length: 10 }, (_, i) => (i + 1) * ANALYSIS_COST);
 
 export function PurchaseCard() {
   const { t } = useTranslation();
   const open = usePurchaseCardOpen();
-  const [credits, setCredits] = useState<number>(98);
+  const [credits, setCredits] = useState<number>(ANALYSIS_COST);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
 
@@ -120,7 +121,7 @@ export function PurchaseCard() {
                   className="text-4xl md:text-5xl font-bold tabular-nums bg-clip-text text-transparent"
                   style={{ backgroundImage: "var(--gradient-primary)" }}
                 >
-                  {t("purchase.pricePerAnalysis", { credits: 98 })}
+                  {t("purchase.pricePerAnalysis", { credits: ANALYSIS_COST })}
                 </span>
                 <span className="text-sm text-muted-foreground">{t("purchase.perAnalysis")}</span>
               </div>
@@ -136,7 +137,7 @@ export function PurchaseCard() {
                 >
                   {CREDIT_OPTIONS.map((c) => (
                     <option key={c} value={c}>
-                      {t("purchase.option", { credits: c, analyses: c / 98 })}
+                      {t("purchase.option", { credits: c, analyses: c / ANALYSIS_COST })}
                     </option>
                   ))}
                 </select>

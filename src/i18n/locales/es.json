@@ -74,7 +74,7 @@
       "tooBig": "{{name}} supera 500 MB",
       "filesLabel": "{{count}} archivos MVT",
       "genericError": "No se pudo procesar.",
-      "noCredits": "No tienes créditos disponibles. Compra créditos para generar el informe."
+      "noCredits": "No tienes créditos suficientes. Cada informe cuesta 98 créditos."
     },
     "redeem": {
       "title": "Comprar créditos",
@@ -237,8 +237,8 @@
       "android": { "title": "Android", "sub": "" },
       "ios": { "title": "iPhone", "sub": "" },
       "noCredits": {
-        "title": "No tienes créditos disponibles",
-        "body": "Necesitas al menos 1 crédito para iniciar un análisis. Recarga créditos desde tu panel para activar las opciones.",
+        "title": "No tienes créditos suficientes",
+        "body": "Cada informe cuesta 98 créditos. Recarga créditos desde tu panel para iniciar un análisis.",
         "cta": "Ir a recargar créditos"
       }
     },
@@ -341,7 +341,7 @@
         "unsupported": "Archivo no soportado: {{name}}. Solo .json o .zip generados por MVT.",
         "tooBig": "El archivo {{name}} supera el límite de 500 MB.",
         "generic": "No se pudieron procesar los archivos.",
-        "noCredits": "No tienes créditos disponibles. Compra créditos para generar el informe."
+        "noCredits": "No tienes créditos suficientes. Cada informe cuesta 98 créditos."
       },
       "filesLabel": "{{count}} archivos MVT",
       "consent": "Soy propietario del dispositivo o tengo <b>consentimiento explícito</b>. Los archivos se procesan localmente en mi navegador.",

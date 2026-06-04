@@ -25,6 +25,7 @@ import { UsbConnect } from "@/components/usb-connect";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { processAndStoreAnalysis } from "@/lib/analyses.functions";
+import { ANALYSIS_COST } from "@/components/purchase-card";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),
@@ -104,7 +105,7 @@ function Upload() {
   }, []);
 
   const isLoadingCredits = credits === null;
-  const hasCredits = !isLoadingCredits && (credits ?? 0) > 0;
+  const hasCredits = !isLoadingCredits && (credits ?? 0) >= ANALYSIS_COST;
 
   const next = () => setStep((s) => (Math.min(TOTAL_STEPS, s + 1) as 1 | 2 | 3 | 4));
   const back = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4));

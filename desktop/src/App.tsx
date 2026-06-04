@@ -347,7 +347,6 @@ export function App() {
           alt="Spyware Forensic Analyzer"
           style={{ height: 80, objectFit: "contain", background: "transparent" }}
         />
-        {VersionBadge}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {AccountBadge}

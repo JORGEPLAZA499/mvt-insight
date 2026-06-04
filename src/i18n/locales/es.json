@@ -263,7 +263,7 @@
       "progress": "Paso {{current}} de {{total}}",
       "prev": "Anterior",
       "next": "Hecho, siguiente →",
-      "done": "Ya tengo el ZIP",
+      "done": "Subir ZIP a mano",
       "substeps": {
         "preamble": {
           "title": "Prepara el cable y el móvil",

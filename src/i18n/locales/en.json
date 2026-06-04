@@ -351,6 +351,34 @@
       "local": "100% local",
       "processing": "Processing…",
       "analyze": "Analyze"
+    },
+    "desktopOnly": {
+      "badge": "Secure local analysis",
+      "title": "Analyze your device from the desktop app",
+      "intro": "For security and performance, the forensic analysis runs on your own computer. Your data never leaves your machine — only the report (a few tens of KB) syncs to your web account.",
+      "cardTitle": "MVT Insight desktop app",
+      "cardBody": "Available for macOS, Windows and Linux. Download it, link it to your account and start analysing with one click.",
+      "cta": "Download and link",
+      "step1": {
+        "title": "Download the desktop app",
+        "body": "Pick the build for your OS (macOS, Windows or Linux) and install it like any other application."
+      },
+      "step2": {
+        "title": "Link the app to your account",
+        "body": "Generate your code under Settings → Desktop app and paste it into the app. One-time step."
+      },
+      "step3": {
+        "title": "Connect your device and analyse",
+        "body": "Plug the phone in over USB and click «Start analysis». The app processes the full backup locally."
+      },
+      "step4": {
+        "title": "Get the report here",
+        "body": "When it finishes, the report syncs to your web account automatically and opens in your browser."
+      },
+      "security": {
+        "title": "Privacy by design",
+        "body": "The full device backup (which can weigh several GB) is processed exclusively on your computer using MVT (Mobile Verification Toolkit) from Amnesty International. Only the resulting report — indicators, detections and metadata — is uploaded encrypted to your account."
+      }
     }
   }
 }

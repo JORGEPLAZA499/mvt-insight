@@ -387,21 +387,21 @@ export function App() {
               </a>{" "}
               {tr("link.step1b", "(inicia sesión si hace falta).")}
             </li>
-            <li>{tr("link.step2", "Pulsa «Generar código».")}</li>
-            <li>{tr("link.step3", "Pega aquí el código de 8 caracteres:")}</li>
+            <li>{tr("link.step2", "Copia tu código de usuario.")}</li>
+            <li>{tr("link.step3", "Pégalo aquí (formato XXX-XXX-XXX):")}</li>
           </ol>
           <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
             <input
               type="text"
               value={linkCode}
-              onChange={(e) => setLinkCode(e.target.value.toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 8))}
-              placeholder="ABCD2345"
-              maxLength={8}
+              onChange={(e) => setLinkCode(formatUserCode(e.target.value))}
+              placeholder="ABC-123-XYZ"
+              maxLength={11}
               autoFocus
               style={{
                 fontFamily: "SF Mono, Menlo, monospace",
                 fontSize: 24,
-                letterSpacing: "0.3em",
+                letterSpacing: "0.2em",
                 textAlign: "center",
                 padding: "12px 16px",
                 borderRadius: 8,
@@ -414,7 +414,7 @@ export function App() {
               <div style={{ color: "var(--danger)", fontSize: 13 }}>{linkError}</div>
             )}
             <div className="row">
-              <button className="btn" onClick={handleLink} disabled={linkBusy || linkCode.length !== 8}>
+              <button className="btn" onClick={handleLink} disabled={linkBusy || linkCode.length !== 11}>
                 {linkBusy ? tr("link.linking", "Vinculando…") : tr("link.action", "Vincular")}
               </button>
               {account && (

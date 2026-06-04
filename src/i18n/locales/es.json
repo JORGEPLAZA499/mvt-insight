@@ -224,8 +224,7 @@
     },
     "empty": {
       "title": "Sin análisis todavía",
-      "desc": "Sube tu primer artefacto MVT para empezar.",
-      "cta": "Subir archivos"
+      "desc": "Ejecuta un análisis desde la app de escritorio para verlo aquí."
     }
   },
   "upload": {

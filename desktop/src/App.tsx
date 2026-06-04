@@ -411,9 +411,12 @@ export function App() {
               <button className="btn" onClick={handleLink} disabled={linkBusy || linkCode.length !== 8}>
                 {linkBusy ? tr("link.linking", "Vinculando…") : tr("link.action", "Vincular")}
               </button>
-              <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-                {tr("link.cancel", "Cancelar")}
-              </button>
+              {account && (
+                <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
+                  {tr("link.cancel", "Cancelar")}
+                </button>
+              )}
+
               <button
                 className="btn btn-secondary"
                 onClick={() => window.mvt?.openExternal(`${WEB_BASE_URL}/settings/desktop`)}

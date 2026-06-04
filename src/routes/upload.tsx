@@ -25,6 +25,7 @@ import { UsbConnect } from "@/components/usb-connect";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { processAndStoreAnalysis } from "@/lib/analyses.functions";
+import { ANALYSIS_COST } from "@/components/purchase-card";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),

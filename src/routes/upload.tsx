@@ -105,7 +105,7 @@ function Upload() {
   }, []);
 
   const isLoadingCredits = credits === null;
-  const hasCredits = !isLoadingCredits && (credits ?? 0) > 0;
+  const hasCredits = !isLoadingCredits && (credits ?? 0) >= ANALYSIS_COST;
 
   const next = () => setStep((s) => (Math.min(TOTAL_STEPS, s + 1) as 1 | 2 | 3 | 4));
   const back = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4));

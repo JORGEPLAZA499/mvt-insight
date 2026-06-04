@@ -137,7 +137,7 @@ export function PurchaseCard() {
                 >
                   {CREDIT_OPTIONS.map((c) => (
                     <option key={c} value={c}>
-                      {t("purchase.option", { credits: c, analyses: c / 98 })}
+                      {t("purchase.option", { credits: c, analyses: c / ANALYSIS_COST })}
                     </option>
                   ))}
                 </select>

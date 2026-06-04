@@ -504,6 +504,7 @@ export function App() {
             </span>
           )}
         </div>
+        {VersionCorner}
       </div>
     );
   }

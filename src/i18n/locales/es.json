@@ -70,10 +70,13 @@
       "upload": "Subir ZIP/JSON",
       "uploadHint": "Sube directamente los archivos MVT sin pasar por el asistente.",
       "buyCredits": "Comprar créditos",
-      "notSupported": "No soportado: {{name}}",
+      "notSupported": "Formato no soportado: {{name}}. Sube un archivo .zip o .json.",
       "tooBig": "{{name}} supera 500 MB",
+      "tooBigDesc": "El tamaño máximo permitido es 500 MB. Comprime la carpeta o divide los archivos antes de subirlos.",
       "filesLabel": "{{count}} archivos MVT",
-      "genericError": "No se pudo procesar.",
+      "processingToast": "Procesando análisis…",
+      "successToast": "Análisis listo. Abriendo informe…",
+      "genericError": "No se pudo procesar el archivo.",
       "noCredits": "No tienes créditos suficientes. Cada informe cuesta 98 créditos."
     },
     "redeem": {

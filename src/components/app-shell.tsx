@@ -1,14 +1,12 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Shield,
   LayoutDashboard,
   UploadCloud,
   FileSearch,
   History,
   LogOut,
   Sparkles,
-  Zap,
   Loader2,
   Coins,
   ShieldCheck,
@@ -17,11 +15,10 @@ import {
   Activity,
   Monitor,
 } from "lucide-react";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getAnalyses, upsertAnalysis, Analysis } from "@/lib/mock-store";
+import { getAnalyses } from "@/lib/mock-store";
 import { supabase } from "@/integrations/supabase/client";
-import { parseMvtFiles } from "@/lib/mvt-parser";
 import { LanguageSelector } from "@/components/language-selector";
 import logoAsset from "@/assets/logo.png.asset.json";
 import {
@@ -36,11 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { redeemCreditToken } from "@/lib/credits.functions";
-import { processAndStoreAnalysis } from "@/lib/analyses.functions";
 import { openPurchaseCard, PurchaseCard, usePurchaseCardOpen } from "@/components/purchase-card";
-import { toast } from "sonner";
-
-const QUICK_MAX_SIZE = 500 * 1024 * 1024;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
@@ -51,82 +44,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [credits, setCredits] = useState(0);
   const [userCode, setUserCode] = useState<string | null>(null);
   const [historyCount, setHistoryCount] = useState(0);
-  const quickInputRef = useRef<HTMLInputElement>(null);
-  const [quickBusy, setQuickBusy] = useState(false);
-  const processQuickAnalysis = useServerFn(processAndStoreAnalysis);
 
 
-  const handleQuickUpload = async (filesList: FileList | null) => {
-    if (!filesList || filesList.length === 0) return;
-    const incoming = Array.from(filesList);
-    const ok: File[] = [];
-    for (const f of incoming) {
-      const lower = f.name.toLowerCase();
-      if (!lower.endsWith(".json") && !lower.endsWith(".zip")) {
-        toast.error(t("shell.quick.notSupported", { name: f.name }));
-        continue;
-      }
-      if (f.size > QUICK_MAX_SIZE) {
-        toast.error(t("shell.quick.tooBig", { name: f.name }), {
-          description: t("shell.quick.tooBigDesc"),
-        });
-        continue;
-      }
-      ok.push(f);
-    }
-    if (!ok.length) {
-      if (quickInputRef.current) quickInputRef.current.value = "";
-      return;
-    }
 
-    setQuickBusy(true);
-    const sourceName = ok.length === 1 ? ok[0].name : t("shell.quick.filesLabel", { count: ok.length });
-    const totalSize = ok.reduce((s, f) => s + f.size, 0);
-    const toastId = toast.loading(t("shell.quick.processingToast"), {
-      description: sourceName,
-    });
 
-    try {
-      const result = await parseMvtFiles(ok, sourceName);
 
-      // Cobro atómico server-side: si falla no se guarda nada.
-      const res = await processQuickAnalysis({
-        data: {
-          device: (result as any)?.platform === "ios" ? "ios" : "android",
-          fileName: sourceName,
-          fileSize: totalSize,
-          result,
-        },
-      });
-
-      if (!res.ok) {
-        if (res.error === "INSUFFICIENT_CREDITS") {
-          toast.error(t("shell.quick.noCredits"), { id: toastId });
-        } else {
-          toast.error(t("shell.quick.genericError"), { id: toastId });
-        }
-        return;
-      }
-
-      const done: Analysis = {
-        id: res.analysisId,
-        fileName: sourceName,
-        fileSize: totalSize,
-        uploadedAt: new Date().toISOString(),
-        status: "completed",
-        progress: 100,
-        result,
-      };
-      upsertAnalysis(done);
-      toast.success(t("shell.quick.successToast"), { id: toastId });
-      navigate({ to: "/analysis/$id", params: { id: res.analysisId } });
-    } catch (e: any) {
-      toast.error(e?.message || t("shell.quick.genericError"), { id: toastId });
-    } finally {
-      setQuickBusy(false);
-      if (quickInputRef.current) quickInputRef.current.value = "";
-    }
-  };
 
   const isAdmin = userCode === "Admin";
   const isAdminRoute = path.startsWith("/admin");

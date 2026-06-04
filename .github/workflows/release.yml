@@ -1,5 +1,5 @@
 name: Build & Release Desktop App
-run-name: "Desktop ${{ github.ref_type == 'tag' && github.ref_name || github.event.head_commit.message }}"
+run-name: "Desktop v${{ github.ref_type == 'tag' && github.ref_name || 'build' }}"
 
 on:
   push:

@@ -48,6 +48,7 @@ export function App() {
     error?: string;
   }>({ state: "idle" });
   const logRef = useRef<HTMLDivElement>(null);
+  const [showLogs, setShowLogs] = useState(false);
 
   // Auth/account
   const [account, setAccount] = useState<Account | null>(null);

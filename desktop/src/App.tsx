@@ -232,8 +232,8 @@ export function App() {
   const handleLink = async () => {
     setLinkError(null);
     const code = linkCode.trim().toUpperCase();
-    if (!/^[A-Z2-9]{8}$/.test(code)) {
-      setLinkError(tr("link.errors.format", "El código debe tener 8 caracteres."));
+    if (!/^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(code)) {
+      setLinkError(tr("link.errors.format", "El código debe tener el formato XXX-XXX-XXX."));
       return;
     }
     setLinkBusy(true);
@@ -246,8 +246,8 @@ export function App() {
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data?.ok) {
         setLinkError(
-          data?.error === "CODE_INVALID_OR_EXPIRED"
-            ? tr("link.errors.invalid", "Código no válido o caducado.")
+          data?.error === "USER_CODE_NOT_FOUND" || data?.error === "INVALID_CODE"
+            ? tr("link.errors.invalid", "Código de usuario no válido.")
             : tr("link.errors.generic", "No se pudo vincular."),
         );
         return;
@@ -271,6 +271,12 @@ export function App() {
     } finally {
       setLinkBusy(false);
     }
+  };
+
+  const formatUserCode = (raw: string) => {
+    const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 9);
+    const parts = [clean.slice(0, 3), clean.slice(3, 6), clean.slice(6, 9)].filter(Boolean);
+    return parts.join("-");
   };
 
   const handleSignOut = async () => {

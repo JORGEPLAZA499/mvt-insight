@@ -96,6 +96,13 @@
     }
   },
   "upload": {
+    "uploading": "Uploading report to your account…",
+    "done": "Report uploaded",
+    "openingReport": "Opening report in your browser…",
+    "creditsLeft": "Credits left:",
+    "error": "Couldn't upload:",
+    "retry": "Retry",
+    "buyCredits": "Top up credits",
     "errors": {
       "unauth": "Session expired. Link the app again.",
       "credits": "You have no credits left.",

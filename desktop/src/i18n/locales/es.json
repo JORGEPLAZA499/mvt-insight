@@ -96,6 +96,13 @@
     }
   },
   "upload": {
+    "uploading": "Subiendo informe a tu cuenta…",
+    "done": "Informe subido",
+    "openingReport": "Abriendo informe en el navegador…",
+    "creditsLeft": "Créditos restantes:",
+    "error": "No se pudo subir:",
+    "retry": "Reintentar",
+    "buyCredits": "Recargar créditos",
     "errors": {
       "unauth": "Sesión caducada. Vincula la app de nuevo.",
       "credits": "No te quedan créditos.",

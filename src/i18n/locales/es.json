@@ -351,6 +351,34 @@
       "local": "100% local",
       "processing": "Procesando…",
       "analyze": "Analizar"
+    },
+    "desktopOnly": {
+      "badge": "Análisis seguro local",
+      "title": "Analiza tu dispositivo desde la app de escritorio",
+      "intro": "Por seguridad y rendimiento, el análisis forense se realiza en tu equipo. Tus datos nunca salen de tu ordenador: solo el informe (unas decenas de KB) se sincroniza con tu cuenta web.",
+      "cardTitle": "App de escritorio MVT Insight",
+      "cardBody": "Disponible para macOS, Windows y Linux. Descárgala, vincúlala con tu cuenta y comienza el análisis con un clic.",
+      "cta": "Descargar y vincular",
+      "step1": {
+        "title": "Descarga la app de escritorio",
+        "body": "Elige la versión para tu sistema (macOS, Windows o Linux) e instálala como cualquier otra aplicación."
+      },
+      "step2": {
+        "title": "Vincula la app con tu cuenta",
+        "body": "Genera tu código en Ajustes → App de escritorio y pégalo en la app. Solo se hace una vez."
+      },
+      "step3": {
+        "title": "Conecta el dispositivo y analiza",
+        "body": "Conecta el móvil por USB y pulsa «Iniciar análisis». La app procesa todo el backup localmente."
+      },
+      "step4": {
+        "title": "Recibe el informe aquí",
+        "body": "Al terminar, el informe se sincroniza con tu cuenta web automáticamente y se abre en el navegador."
+      },
+      "security": {
+        "title": "Privacidad por diseño",
+        "body": "El backup completo del dispositivo (que puede pesar varios GB) se procesa exclusivamente en tu equipo con MVT (Mobile Verification Toolkit) de Amnesty International. Solo el informe resultante —indicadores, detecciones y metadatos— se sube cifrado a tu cuenta."
+      }
     }
   }
 }

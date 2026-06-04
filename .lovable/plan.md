@@ -1,45 +1,56 @@
-## Problema
+## Contexto
 
-La tarjeta de compra define que **1 informe = 98 créditos** (`src/components/purchase-card.tsx`), pero la función RPC `consume_credit_and_insert_analysis` solo descuenta **1 crédito** por análisis. Resultado: el usuario ejecutó un análisis y solo se le restó 1 crédito en lugar de 98.
+La app desktop **ya implementa** el flujo correcto: cuando termina el análisis MVT, lee el ZIP local, lo parsea con `parseMvtFiles()` y envía solo el JSON resultante (pequeño, ~KB-MB) a `/api/public/desktop/submit-analysis`. Los 1.82 GB del backup nunca salen del equipo del usuario.
 
-## Solución
+Lo que falta es: (a) cerrar el círculo abriendo el informe en el navegador automáticamente, y (b) retirar de la web la subida manual de ZIP grandes que nunca funcionará por el límite de Cloudflare Workers.
 
-### 1. Migración SQL — actualizar la función RPC
+## Cambios
 
-Crear nueva migración que reemplaza `consume_credit_and_insert_analysis` para:
-- Definir constante `v_cost := 98`
-- Comparar `v_credits >= v_cost` (en vez de `>= 1`)
-- Restar `v_cost` (en vez de `1`)
-- Mantener firma, lock con `FOR UPDATE`, y el error `INSUFFICIENT_CREDITS`
+### 1. Desktop — apertura automática del informe (`desktop/src/App.tsx`)
 
-### 2. Centralizar el coste en frontend
+En el `useEffect` que dispara `autoUpload`, cuando `upload.state` pase a `"done"`:
+- Abrir `https://spyware.rpjsoftware.com/analysis/{analysisId}` con `window.mvt.openExternal(...)` automáticamente tras ~1.5s (delay corto para que el usuario vea el toast/mensaje de éxito).
+- Mantener un botón "Abrir informe" en la pantalla `done` por si el navegador no se abre (fallback).
 
-En `src/components/purchase-card.tsx` extraer `98` a una constante exportada `ANALYSIS_COST = 98` para que el resto del código (validaciones de "tienes créditos suficientes") use la misma fuente.
+Sin cambios en el parser ni en el endpoint — ya funcionan.
 
-### 3. Actualizar gating en `upload.tsx`
+### 2. Web — retirar subida manual
 
-Cambiar:
-```ts
-const hasCredits = !isLoadingCredits && (credits ?? 0) > 0;
-```
-por:
-```ts
-const hasCredits = !isLoadingCredits && (credits ?? 0) >= ANALYSIS_COST;
-```
+**`src/components/app-shell.tsx`** (sidebar):
+- Eliminar el botón "Subida rápida" (input file + `handleQuickUpload` + estado `quickBusy` + ref `quickInputRef`).
+- Eliminar imports ahora no usados: `parseMvtFiles`, `processAndStoreAnalysis`, `Zap`, `Loader2`, `UploadCloud` (donde solo se usaba ahí), constante `QUICK_MAX_SIZE`.
+- Mantener el botón "Comprar créditos" en el mismo bloque.
 
-Y actualizar el copy del estado `noCredits` en i18n (es/en) para indicar "Necesitas al menos 98 créditos" en vez de "no tienes créditos".
+**`src/routes/upload.tsx`**:
+- Reemplazar la página entera por una pantalla "Analiza tu dispositivo" que explica el flujo y promueve la app de escritorio:
+  - Título + explicación: "Por seguridad y rendimiento, el análisis se hace en tu equipo. Solo el informe (no tus datos) se sincroniza con la web."
+  - Botón principal → `/settings/desktop` ("Descargar / vincular app de escritorio").
+  - Lista corta de pasos (1. Descarga la app, 2. Vincúlala con tu cuenta, 3. Conecta el dispositivo, 4. Recibe el informe aquí).
+- Eliminar dropzone, parser cliente, llamada a `processAndStoreAnalysis`.
 
-### 4. (Opcional pero recomendado) Compensar al usuario actual
+**Entrada de navegación**: mantener el item "Nuevo análisis" del sidebar apuntando a `/upload` (ahora reconvertida en la página informativa). El badge "new" puede quedar.
 
-El usuario al que solo se le descontó 1 crédito en lugar de 98 quedó con un saldo "inflado" en 97 créditos. Decisión:
-- **Opción A**: dejarlo como está (cortesía por el bug).
-- **Opción B**: ajustar manualmente vía SQL su saldo (`UPDATE accounts SET credits = credits - 97 WHERE id = '<uuid>'`).
+### 3. i18n
 
-Por defecto propongo **Opción A** salvo que indiques lo contrario.
+- Añadir en `src/i18n/locales/es.json` y `en.json`:
+  - `upload.desktopOnly.title`, `upload.desktopOnly.intro`, `upload.desktopOnly.cta`, `upload.desktopOnly.step1..4`, `upload.desktopOnly.security`.
+- Eliminar/limpiar claves `shell.quick.*` que ya no se usen (o dejarlas si las usa otro sitio — revisar con grep antes de borrar).
+- En `desktop/src/i18n/locales/{es,en}.json`: añadir `upload.openingReport` ("Abriendo informe en el navegador…").
+
+### 4. Mantener intactos
+
+- `src/lib/analyses.functions.ts` → el server fn `processAndStoreAnalysis` se queda (no rompe nada y permitiría reactivar la subida web en el futuro si quisieras). Si prefieres limpieza total, también puede borrarse — dime y lo elimino.
+- Endpoint `/api/public/desktop/submit-analysis`: sin cambios.
+- Función RPC `consume_credit_and_insert_analysis`: sin cambios (98 créditos sigue siendo el coste).
 
 ## Archivos afectados
 
-- `supabase/migrations/<nuevo>.sql` — nueva versión de la función RPC
-- `src/components/purchase-card.tsx` — exportar constante `ANALYSIS_COST`
-- `src/routes/upload.tsx` — usar constante para gating
-- `src/i18n/locales/es.json` y `en.json` — copy de "créditos insuficientes"
+- `desktop/src/App.tsx`
+- `desktop/src/i18n/locales/es.json`, `en.json`
+- `src/components/app-shell.tsx`
+- `src/routes/upload.tsx`
+- `src/i18n/locales/es.json`, `en.json`
+
+## Versionado desktop
+
+Per memoria: **no bumpeo** `desktop/package.json` ahora. Cuando me digas "publica" agruparé este cambio (apertura automática del informe) en una sola release.

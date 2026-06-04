@@ -237,8 +237,8 @@
       "android": { "title": "Android", "sub": "" },
       "ios": { "title": "iPhone", "sub": "" },
       "noCredits": {
-        "title": "You have no credits available",
-        "body": "You need at least 1 credit to start an analysis. Top up credits from your dashboard to enable the options.",
+        "title": "Not enough credits",
+        "body": "Each report costs 98 credits. Top up credits from your dashboard to start an analysis.",
         "cta": "Go top up credits"
       }
     },

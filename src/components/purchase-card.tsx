@@ -39,12 +39,13 @@ export function usePurchaseCardOpen() {
   );
 }
 
-const CREDIT_OPTIONS = Array.from({ length: 10 }, (_, i) => (i + 1) * 98);
+export const ANALYSIS_COST = 98;
+const CREDIT_OPTIONS = Array.from({ length: 10 }, (_, i) => (i + 1) * ANALYSIS_COST);
 
 export function PurchaseCard() {
   const { t } = useTranslation();
   const open = usePurchaseCardOpen();
-  const [credits, setCredits] = useState<number>(98);
+  const [credits, setCredits] = useState<number>(ANALYSIS_COST);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
 

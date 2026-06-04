@@ -69,5 +69,35 @@
     "readyToInstall": "Actualización lista para instalar",
     "restart": "Reiniciar e instalar",
     "error": "Error al comprobar actualizaciones:"
+  },
+  "account": {
+    "credits": "créditos",
+    "signOut": "Desvincular",
+    "signOutConfirm": "¿Desvincular esta app de tu cuenta?",
+    "link": "Vincular cuenta"
+  },
+  "link": {
+    "title": "Vincular cuenta",
+    "subtitle": "Vincula esta app con tu cuenta web para subir los análisis automáticamente.",
+    "step1": "Abre",
+    "step1b": "(inicia sesión si hace falta).",
+    "step2": "Copia tu código de usuario.",
+    "step3": "Pégalo aquí (formato XXX-XXX-XXX):",
+    "action": "Vincular",
+    "linking": "Vinculando…",
+    "cancel": "Cancelar",
+    "openPage": "Abrir página",
+    "errors": {
+      "format": "El código debe tener el formato XXX-XXX-XXX.",
+      "invalid": "Código de usuario no válido.",
+      "generic": "No se pudo vincular."
+    }
+  },
+  "upload": {
+    "errors": {
+      "unauth": "Sesión caducada. Vincula la app de nuevo.",
+      "credits": "No te quedan créditos.",
+      "generic": "No se pudo subir el informe."
+    }
   }
 }

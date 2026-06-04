@@ -55,7 +55,7 @@
   },
   "done": {
     "title": "✓ Análisis completado",
-    "subtitle": "Los datos se han guardado en tu carpeta de Descargas.",
+    "subtitle": "Informe subido al dashboard. También se guardó una copia local en Descargas.",
     "filename": "Archivo generado:",
     "upload": "Subir al informe →",
     "openFolder": "Abrir carpeta",

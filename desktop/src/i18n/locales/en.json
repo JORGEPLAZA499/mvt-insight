@@ -55,7 +55,7 @@
   },
   "done": {
     "title": "✓ Analysis complete",
-    "subtitle": "The data has been saved to your Downloads folder.",
+    "subtitle": "Report uploaded to the dashboard. A local copy was also saved to your Downloads folder.",
     "filename": "Generated file:",
     "upload": "Upload to report →",
     "openFolder": "Open folder",

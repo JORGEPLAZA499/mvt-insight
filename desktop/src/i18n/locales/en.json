@@ -43,7 +43,9 @@
   },
   "details": {
     "toggle": "Show technical details",
-    "waiting": "Waiting for process output…"
+    "waiting": "Waiting for process output…",
+    "title": "Technical details",
+    "close": "Close"
   },
   "error": {
     "title": "Something went wrong:",

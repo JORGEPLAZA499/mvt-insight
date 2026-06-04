@@ -48,6 +48,7 @@ export function App() {
     error?: string;
   }>({ state: "idle" });
   const logRef = useRef<HTMLDivElement>(null);
+  const [showLogs, setShowLogs] = useState(false);
 
   // Auth/account
   const [account, setAccount] = useState<Account | null>(null);
@@ -120,7 +121,14 @@ export function App() {
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [logs]);
+  }, [logs, showLogs]);
+
+  useEffect(() => {
+    if (!showLogs) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowLogs(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showLogs]);
 
   const checkUpdates = async () => {
     if (!window.mvt) return;
@@ -552,12 +560,45 @@ export function App() {
         </div>
 
 
-        <details style={{ marginTop: 16 }}>
-          <summary>{tr("details.toggle", "Ver detalles técnicos")}</summary>
-          <div className="log" ref={logRef}>
-            {logs.length === 0 ? tr("details.waiting", "Esperando salida del proceso…") : logs.join("")}
+        <div className="row" style={{ marginTop: 16, justifyContent: "center" }}>
+          <button type="button" className="btn btn-secondary" onClick={() => setShowLogs(true)}>
+            {tr("details.toggle", "Ver detalles técnicos")}
+          </button>
+        </div>
+
+        {showLogs && (
+          <div
+            onClick={() => setShowLogs(false)}
+            style={{
+              position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 1000, padding: 20,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="card"
+              style={{
+                width: "min(900px, 100%)", maxHeight: "80vh",
+                display: "flex", flexDirection: "column", gap: 12, margin: 0,
+              }}
+            >
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                <strong style={{ fontSize: 15 }}>{tr("details.title", "Detalles técnicos")}</strong>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowLogs(false)}>
+                  {tr("details.close", "Cerrar")}
+                </button>
+              </div>
+              <div
+                className="log"
+                ref={logRef}
+                style={{ flex: 1, overflowY: "auto", maxHeight: "70vh", margin: 0 }}
+              >
+                {logs.length === 0 ? tr("details.waiting", "Esperando salida del proceso…") : logs.join("")}
+              </div>
+            </div>
           </div>
-        </details>
+        )}
 
         {error && (
           <div className="card" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>

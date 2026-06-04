@@ -90,7 +90,7 @@ export function App() {
       try {
         if (!window.mvt?.auth) { setAuthChecked(true); return; }
         const { token } = await window.mvt.auth.get();
-        if (!token) { setAuthChecked(true); return; }
+        if (!token) { if (!cancelled) setScreen("link"); setAuthChecked(true); return; }
         const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/whoami`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -101,9 +101,11 @@ export function App() {
             setAccount({ email: data.email, label: data.label, credits: data.credits });
           } else {
             await window.mvt.auth.clear();
+            setScreen("link");
           }
         } else if (r.status === 401) {
           await window.mvt.auth.clear();
+          setScreen("link");
         }
       } catch {
         // sin conexión: dejamos sin cuenta y seguimos
@@ -113,6 +115,7 @@ export function App() {
     })();
     return () => { cancelled = true; };
   }, []);
+
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -347,10 +350,19 @@ export function App() {
     setLogs([]);
   };
 
+  if (!authChecked) {
+    return (
+      <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <Logo size={140} />
+      </div>
+    );
+  }
+
   if (screen === "link") {
     return (
       <div className="app">
         {TopBar}
+
         <div className="header">
           <Logo size={140} />
           <h1>{tr("link.title", "Vincular cuenta")}</h1>
@@ -399,9 +411,12 @@ export function App() {
               <button className="btn" onClick={handleLink} disabled={linkBusy || linkCode.length !== 8}>
                 {linkBusy ? tr("link.linking", "Vinculando…") : tr("link.action", "Vincular")}
               </button>
-              <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-                {tr("link.cancel", "Cancelar")}
-              </button>
+              {account && (
+                <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
+                  {tr("link.cancel", "Cancelar")}
+                </button>
+              )}
+
               <button
                 className="btn btn-secondary"
                 onClick={() => window.mvt?.openExternal(`${WEB_BASE_URL}/settings/desktop`)}

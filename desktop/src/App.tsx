@@ -294,10 +294,20 @@ export function App() {
     />
   );
 
-  const VersionBadge = appVersion ? (
-    <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "SF Mono, Menlo, monospace" }}>
+  const VersionCorner = appVersion ? (
+    <div style={{
+      position: "fixed",
+      bottom: 8,
+      right: 12,
+      fontSize: 11,
+      color: "var(--muted)",
+      fontFamily: "SF Mono, Menlo, monospace",
+      opacity: 0.7,
+      pointerEvents: "none",
+      zIndex: 9999,
+    }}>
       v{appVersion}
-    </span>
+    </div>
   ) : null;
 
   const AccountBadge = account ? (

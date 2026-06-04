@@ -90,7 +90,7 @@ export function App() {
       try {
         if (!window.mvt?.auth) { setAuthChecked(true); return; }
         const { token } = await window.mvt.auth.get();
-        if (!token) { setAuthChecked(true); return; }
+        if (!token) { if (!cancelled) setScreen("link"); setAuthChecked(true); return; }
         const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/whoami`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -101,9 +101,11 @@ export function App() {
             setAccount({ email: data.email, label: data.label, credits: data.credits });
           } else {
             await window.mvt.auth.clear();
+            setScreen("link");
           }
         } else if (r.status === 401) {
           await window.mvt.auth.clear();
+          setScreen("link");
         }
       } catch {
         // sin conexión: dejamos sin cuenta y seguimos
@@ -113,6 +115,7 @@ export function App() {
     })();
     return () => { cancelled = true; };
   }, []);
+
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;

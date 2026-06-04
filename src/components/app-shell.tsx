@@ -53,32 +53,38 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [historyCount, setHistoryCount] = useState(0);
   const quickInputRef = useRef<HTMLInputElement>(null);
   const [quickBusy, setQuickBusy] = useState(false);
-  const [quickError, setQuickError] = useState<string | null>(null);
   const processQuickAnalysis = useServerFn(processAndStoreAnalysis);
 
 
   const handleQuickUpload = async (filesList: FileList | null) => {
     if (!filesList || filesList.length === 0) return;
-    setQuickError(null);
     const incoming = Array.from(filesList);
     const ok: File[] = [];
     for (const f of incoming) {
       const lower = f.name.toLowerCase();
       if (!lower.endsWith(".json") && !lower.endsWith(".zip")) {
-        setQuickError(t("shell.quick.notSupported", { name: f.name }));
+        toast.error(t("shell.quick.notSupported", { name: f.name }));
         continue;
       }
       if (f.size > QUICK_MAX_SIZE) {
-        setQuickError(t("shell.quick.tooBig", { name: f.name }));
+        toast.error(t("shell.quick.tooBig", { name: f.name }), {
+          description: t("shell.quick.tooBigDesc"),
+        });
         continue;
       }
       ok.push(f);
     }
-    if (!ok.length) return;
+    if (!ok.length) {
+      if (quickInputRef.current) quickInputRef.current.value = "";
+      return;
+    }
 
     setQuickBusy(true);
     const sourceName = ok.length === 1 ? ok[0].name : t("shell.quick.filesLabel", { count: ok.length });
     const totalSize = ok.reduce((s, f) => s + f.size, 0);
+    const toastId = toast.loading(t("shell.quick.processingToast"), {
+      description: sourceName,
+    });
 
     try {
       const result = await parseMvtFiles(ok, sourceName);
@@ -95,9 +101,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       if (!res.ok) {
         if (res.error === "INSUFFICIENT_CREDITS") {
-          setQuickError(t("shell.quick.noCredits"));
+          toast.error(t("shell.quick.noCredits"), { id: toastId });
         } else {
-          setQuickError(t("shell.quick.genericError"));
+          toast.error(t("shell.quick.genericError"), { id: toastId });
         }
         return;
       }
@@ -112,9 +118,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         result,
       };
       upsertAnalysis(done);
+      toast.success(t("shell.quick.successToast"), { id: toastId });
       navigate({ to: "/analysis/$id", params: { id: res.analysisId } });
     } catch (e: any) {
-      setQuickError(e?.message || t("shell.quick.genericError"));
+      toast.error(e?.message || t("shell.quick.genericError"), { id: toastId });
     } finally {
       setQuickBusy(false);
       if (quickInputRef.current) quickInputRef.current.value = "";

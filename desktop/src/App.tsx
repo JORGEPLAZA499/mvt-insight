@@ -254,7 +254,7 @@ export function App() {
         return;
       }
       await window.mvt!.auth.save(data.token);
-      setAccount({ email: data.email, label: data.label, credits: 0 });
+      setAccount({ email: data.email, label: data.label, credits: 0, userCode: data.userCode ?? null });
       // Refrescar créditos
       try {
         const me = await fetch(`${WEB_BASE_URL}/api/public/desktop/whoami`, {
@@ -262,7 +262,7 @@ export function App() {
         });
         const meData = await me.json().catch(() => ({}));
         if (meData?.ok) {
-          setAccount({ email: meData.email, label: meData.label, credits: meData.credits });
+          setAccount({ email: meData.email, label: meData.label, credits: meData.credits, userCode: meData.userCode ?? null });
         }
       } catch {}
       setLinkCode("");

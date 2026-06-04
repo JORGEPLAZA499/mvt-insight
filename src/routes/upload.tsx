@@ -542,9 +542,14 @@ function StepRun({
   const uploadStep = {
     title: t("upload.step3.substeps.upload.title"),
     content: (
-      <p>
-        <Trans i18nKey="upload.step3.substeps.upload.body" components={transComponents} />
-      </p>
+      <>
+        <p>
+          <Trans i18nKey="upload.step3.substeps.upload.body" components={transComponents} />
+        </p>
+        <p className="mt-3 text-xs text-muted-foreground">
+          <Trans i18nKey="upload.step3.substeps.upload.fallback" components={transComponents} />
+        </p>
+      </>
     ),
   };
 

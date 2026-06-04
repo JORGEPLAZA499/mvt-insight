@@ -224,8 +224,7 @@
     },
     "empty": {
       "title": "No analyses yet",
-      "desc": "Upload your first MVT artifact to get started.",
-      "cta": "Upload files"
+      "desc": "Run an analysis from the desktop app to see it here."
     }
   },
   "upload": {

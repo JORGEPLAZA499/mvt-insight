@@ -6,7 +6,6 @@ import { getAnalyses, Analysis, riskColor, riskLabel } from "@/lib/mock-store";
 import { Button } from "@/components/ui/button";
 import {
   ShieldCheck,
-  UploadCloud,
   Activity,
   FileSearch,
   Clock,
@@ -269,18 +268,9 @@ function StatusBadge({ status }: { status: Analysis["status"] }) {
 function EmptyState() {
   const { t } = useTranslation();
   return (
-    <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center">
-      <div className="mx-auto h-12 w-12 rounded-lg bg-secondary grid place-items-center mb-4">
-        <UploadCloud className="h-6 w-6 text-primary" />
-      </div>
+    <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center">
       <h3 className="font-semibold">{t("dashboard.empty.title")}</h3>
       <p className="text-sm text-muted-foreground mt-1">{t("dashboard.empty.desc")}</p>
-      <Button
-        asChild
-        className="mt-6 bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-      >
-        <Link to="/upload">{t("dashboard.empty.cta")}</Link>
-      </Button>
     </div>
   );
 }

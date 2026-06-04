@@ -313,7 +313,7 @@ export function App() {
 
   const AccountBadge = account ? (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--muted)" }}>
-      <span>{account.email ?? account.label}</span>
+      <span>{account.userCode ?? account.label}</span>
       <span style={{ color: "var(--primary, #6ea8ff)" }}>· {account.credits} {tr("account.credits", "créditos")}</span>
       <button
         className="btn btn-secondary"

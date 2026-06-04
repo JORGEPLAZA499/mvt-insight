@@ -569,6 +569,7 @@ export function App() {
             </div>
           </div>
         )}
+        {VersionCorner}
       </div>
     );
   }

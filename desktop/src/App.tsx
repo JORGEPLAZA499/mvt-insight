@@ -374,6 +374,7 @@ export function App() {
   const handleCancel = async () => {
     const msg = tr("running.cancelConfirm", "¿Cancelar el análisis en curso?");
     if (!window.confirm(msg)) return;
+    cancelledRef.current = true;
     try { await window.mvt?.cancel(); } catch {}
     setScreen("welcome");
     setError(null);

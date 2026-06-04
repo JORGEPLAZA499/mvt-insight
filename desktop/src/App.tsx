@@ -19,6 +19,7 @@ interface Account {
   email: string | null;
   label: string;
   credits: number;
+  userCode: string | null;
 }
 
 type UploadState =

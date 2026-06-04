@@ -416,10 +416,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               <p className="px-2 mt-1.5 text-[10px] text-muted-foreground/70 leading-tight">
                 {t("shell.quick.uploadHint")}
               </p>
-
-              {quickError && (
-                <p className="mt-2 px-2 text-[11px] text-destructive">{quickError}</p>
-              )}
             </div>
           )}
         </div>

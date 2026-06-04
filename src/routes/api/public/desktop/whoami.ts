@@ -33,7 +33,7 @@ export const Route = createFileRoute("/api/public/desktop/whoami")({
         }
 
         const [{ data: account }, { data: userRes }] = await Promise.all([
-          supabaseAdmin.from("accounts").select("credits").eq("id", row.user_id).maybeSingle(),
+          supabaseAdmin.from("accounts").select("credits, user_code").eq("id", row.user_id).maybeSingle(),
           supabaseAdmin.auth.admin.getUserById(row.user_id),
         ]);
 
@@ -43,6 +43,7 @@ export const Route = createFileRoute("/api/public/desktop/whoami")({
             email: userRes?.user?.email ?? null,
             label: row.label,
             credits: account?.credits ?? 0,
+            userCode: account?.user_code ?? null,
           }),
           { status: 200, headers: { "content-type": "application/json" } },
         );

@@ -263,7 +263,7 @@
       "progress": "Step {{current}} of {{total}}",
       "prev": "Previous",
       "next": "Done, next →",
-      "done": "I have the ZIP",
+      "done": "Upload ZIP manually",
       "substeps": {
         "preamble": {
           "title": "Get the cable and phone ready",

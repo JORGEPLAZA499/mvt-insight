@@ -334,7 +334,7 @@ export function App() {
 
   const TopBar = (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>{VersionBadge}{AccountBadge}</div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>{AccountBadge}</div>
       <LanguageSelector />
     </div>
   );

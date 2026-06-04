@@ -2,31 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-// Base32 sin caracteres ambiguos (0/O/1/I/L)
-const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-function generateCode(len = 8): string {
-  let out = "";
-  const bytes = new Uint8Array(len);
-  crypto.getRandomValues(bytes);
-  for (let i = 0; i < len; i++) out += ALPHABET[bytes[i] % ALPHABET.length];
-  return out;
-}
-
-/**
- * Genera un código de un solo uso (caduca a los 10 min) que el usuario
- * pegará en la app de escritorio para vincularla con su cuenta.
- */
-export const createPairingCode = createServerFn({ method: "POST" })
+/** Devuelve el user_code de la cuenta del usuario autenticado. */
+export const getMyUserCode = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const code = generateCode(8);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    const { error } = await supabaseAdmin
-      .from("desktop_pairing_codes")
-      .insert({ code, user_id: context.userId, expires_at: expiresAt });
+    const { data, error } = await supabaseAdmin
+      .from("accounts")
+      .select("user_code")
+      .eq("id", context.userId)
+      .maybeSingle();
     if (error) throw new Error(error.message);
-    return { code, expiresAt };
+    return { userCode: data?.user_code ?? null };
   });
 
 /** Lista los tokens de escritorio activos del usuario. */
@@ -41,7 +28,6 @@ export const listDesktopTokens = createServerFn({ method: "GET" })
       .is("revoked_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    // Devolvemos solo los últimos 4 chars del token como id visual.
     return {
       tokens: (data ?? []).map((t) => ({
         id: t.token,

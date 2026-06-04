@@ -2,7 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 const Body = z.object({
-  code: z.string().trim().length(8).regex(/^[A-Z2-9]+$/),
+  code: z
+    .string()
+    .trim()
+    .transform((s) => s.toUpperCase())
+    .pipe(z.string().regex(/^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/)),
 });
 
 function generateToken(): string {
@@ -37,10 +41,11 @@ export const Route = createFileRoute("/api/public/desktop/pair")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        const { data: codeRow, error: selErr } = await supabaseAdmin
-          .from("desktop_pairing_codes")
-          .select("code, user_id, expires_at, used_at")
-          .eq("code", parsed.data.code)
+        // Buscar la cuenta por user_code
+        const { data: account, error: selErr } = await supabaseAdmin
+          .from("accounts")
+          .select("id, user_code")
+          .eq("user_code", parsed.data.code)
           .maybeSingle();
         if (selErr) {
           return new Response(JSON.stringify({ ok: false, error: "SERVER_ERROR" }), {
@@ -48,24 +53,9 @@ export const Route = createFileRoute("/api/public/desktop/pair")({
             headers: { "content-type": "application/json" },
           });
         }
-        if (!codeRow || codeRow.used_at || new Date(codeRow.expires_at) < new Date()) {
-          return new Response(JSON.stringify({ ok: false, error: "CODE_INVALID_OR_EXPIRED" }), {
+        if (!account) {
+          return new Response(JSON.stringify({ ok: false, error: "USER_CODE_NOT_FOUND" }), {
             status: 404,
-            headers: { "content-type": "application/json" },
-          });
-        }
-
-        // Marcar usado de forma atómica (solo si sigue sin usar).
-        const { data: claimed, error: updErr } = await supabaseAdmin
-          .from("desktop_pairing_codes")
-          .update({ used_at: new Date().toISOString() })
-          .eq("code", parsed.data.code)
-          .is("used_at", null)
-          .select("code")
-          .maybeSingle();
-        if (updErr || !claimed) {
-          return new Response(JSON.stringify({ ok: false, error: "CODE_INVALID_OR_EXPIRED" }), {
-            status: 409,
             headers: { "content-type": "application/json" },
           });
         }
@@ -73,7 +63,7 @@ export const Route = createFileRoute("/api/public/desktop/pair")({
         const token = generateToken();
         const { error: insErr } = await supabaseAdmin
           .from("desktop_tokens")
-          .insert({ token, user_id: codeRow.user_id, label: "Desktop" });
+          .insert({ token, user_id: account.id, label: "Desktop" });
         if (insErr) {
           return new Response(JSON.stringify({ ok: false, error: "SERVER_ERROR" }), {
             status: 500,
@@ -84,7 +74,7 @@ export const Route = createFileRoute("/api/public/desktop/pair")({
         // Email del usuario (best-effort).
         let email: string | null = null;
         try {
-          const { data: u } = await supabaseAdmin.auth.admin.getUserById(codeRow.user_id);
+          const { data: u } = await supabaseAdmin.auth.admin.getUserById(account.id);
           email = u?.user?.email ?? null;
         } catch {}
 

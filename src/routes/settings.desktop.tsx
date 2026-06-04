@@ -4,11 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import {
-  createPairingCode,
+  getMyUserCode,
   listDesktopTokens,
   revokeDesktopToken,
 } from "@/lib/desktop-pairing.functions";
-import { Monitor, Copy, Check, X, Clock, RefreshCw } from "lucide-react";
+import { Monitor, Copy, Check, X, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/settings/desktop")({
   head: () => ({ meta: [{ title: "App de escritorio — Spyware Forensic Analyzer" }] }),
@@ -24,23 +24,22 @@ type TokenRow = {
 };
 
 function SettingsDesktop() {
-  const createFn = useServerFn(createPairingCode);
+  const getCodeFn = useServerFn(getMyUserCode);
   const listFn = useServerFn(listDesktopTokens);
   const revokeFn = useServerFn(revokeDesktopToken);
 
   const [tokens, setTokens] = useState<TokenRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [code, setCode] = useState<{ code: string; expiresAt: string } | null>(null);
-  const [now, setNow] = useState(Date.now());
+  const [userCode, setUserCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = async () => {
     setLoading(true);
     try {
-      const r = await listFn();
-      setTokens(r.tokens as TokenRow[]);
+      const [tokensRes, codeRes] = await Promise.all([listFn(), getCodeFn()]);
+      setTokens(tokensRes.tokens as TokenRow[]);
+      setUserCode(codeRes.userCode);
     } catch (e: any) {
       setError(e?.message ?? "Error");
     } finally {
@@ -49,35 +48,11 @@ function SettingsDesktop() {
   };
 
   useEffect(() => { refresh(); }, []);
-  useEffect(() => {
-    if (!code) return;
-    const i = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(i);
-  }, [code]);
-
-  const remainingMs = code ? Math.max(0, new Date(code.expiresAt).getTime() - now) : 0;
-  const remaining = Math.floor(remainingMs / 1000);
-  const expired = code && remainingMs <= 0;
-
-  const generate = async () => {
-    setError(null);
-    setGenerating(true);
-    setCode(null);
-    setCopied(false);
-    try {
-      const r = await createFn();
-      setCode(r);
-    } catch (e: any) {
-      setError(e?.message ?? "Error");
-    } finally {
-      setGenerating(false);
-    }
-  };
 
   const copy = async () => {
-    if (!code) return;
+    if (!userCode) return;
     try {
-      await navigator.clipboard.writeText(code.code);
+      await navigator.clipboard.writeText(userCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {}
@@ -113,46 +88,25 @@ function SettingsDesktop() {
         )}
 
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Vincular una nueva app</h2>
-            <Button onClick={generate} disabled={generating} size="sm">
-              {generating ? "Generando…" : code ? "Generar otro código" : "Generar código"}
-            </Button>
-          </div>
-          {!code && (
-            <ol className="text-sm text-muted-foreground space-y-2 list-decimal pl-5">
-              <li>Pulsa <strong>Generar código</strong>.</li>
-              <li>Abre MVT Insight Desktop y pega el código en la pantalla de vinculación.</li>
-              <li>El código caduca a los 10 minutos.</li>
-            </ol>
-          )}
-          {code && (
-            <div className="space-y-3">
-              <div className="rounded-lg bg-background/60 border border-border p-4 text-center">
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
-                  Código de vinculación
-                </div>
-                <div
-                  className="font-mono text-4xl font-bold tracking-[0.3em] select-all"
-                  style={{ color: expired ? "var(--muted-foreground)" : "var(--primary)" }}
-                >
-                  {code.code}
-                </div>
-                <div className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  {expired ? (
-                    <span className="text-destructive">Caducado — genera otro</span>
-                  ) : (
-                    <span>Caduca en {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</span>
-                  )}
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={copy} className="gap-2">
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copiado" : "Copiar"}
-              </Button>
+          <h2 className="font-semibold">Tu código de usuario</h2>
+          <p className="text-sm text-muted-foreground">
+            Introduce este código en la app de escritorio para vincularla. Puedes usarlo en varios dispositivos.
+          </p>
+          <div className="rounded-lg bg-background/60 border border-border p-4 text-center">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
+              Código de usuario
             </div>
-          )}
+            <div
+              className="font-mono text-4xl font-bold tracking-[0.2em] select-all"
+              style={{ color: "var(--primary)" }}
+            >
+              {userCode ?? "—"}
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={copy} disabled={!userCode} className="gap-2">
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copied ? "Copiado" : "Copiar"}
+          </Button>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6 space-y-3">

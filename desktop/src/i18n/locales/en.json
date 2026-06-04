@@ -69,5 +69,35 @@
     "readyToInstall": "Update ready to install",
     "restart": "Restart and install",
     "error": "Error checking for updates:"
+  },
+  "account": {
+    "credits": "credits",
+    "signOut": "Unlink",
+    "signOutConfirm": "Unlink this app from your account?",
+    "link": "Link account"
+  },
+  "link": {
+    "title": "Link account",
+    "subtitle": "Link this app to your web account to upload analyses automatically.",
+    "step1": "Open",
+    "step1b": "(sign in if needed).",
+    "step2": "Copy your user code.",
+    "step3": "Paste it here (format XXX-XXX-XXX):",
+    "action": "Link",
+    "linking": "Linking…",
+    "cancel": "Cancel",
+    "openPage": "Open page",
+    "errors": {
+      "format": "The code must have the format XXX-XXX-XXX.",
+      "invalid": "Invalid user code.",
+      "generic": "Couldn't link the app."
+    }
+  },
+  "upload": {
+    "errors": {
+      "unauth": "Session expired. Link the app again.",
+      "credits": "You have no credits left.",
+      "generic": "Couldn't upload the report."
+    }
   }
 }

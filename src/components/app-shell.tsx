@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { redeemCreditToken } from "@/lib/credits.functions";
 import { processAndStoreAnalysis } from "@/lib/analyses.functions";
 import { openPurchaseCard, PurchaseCard, usePurchaseCardOpen } from "@/components/purchase-card";
+import { toast } from "sonner";
 
 const QUICK_MAX_SIZE = 500 * 1024 * 1024;
 

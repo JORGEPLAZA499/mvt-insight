@@ -49,6 +49,7 @@ export function App() {
   }>({ state: "idle" });
   const logRef = useRef<HTMLDivElement>(null);
   const [showLogs, setShowLogs] = useState(false);
+  const cancelledRef = useRef(false);
 
   // Auth/account
   const [account, setAccount] = useState<Account | null>(null);
@@ -161,12 +162,14 @@ export function App() {
     setError(null);
     setUpload({ state: "idle" });
     setPhase({ num: 1, label: tr("running.starting", "Iniciando…"), progress: 0 });
+    cancelledRef.current = false;
 
     if (!window.mvt) {
       setError(tr("error.browserOnly", "Esta función solo está disponible en la app de escritorio."));
       return;
     }
     const result = await window.mvt.start(d);
+    if (cancelledRef.current) return;
     if (result.ok && result.zipPath) {
       setZipPath(result.zipPath);
       setScreen("done");
@@ -371,6 +374,7 @@ export function App() {
   const handleCancel = async () => {
     const msg = tr("running.cancelConfirm", "¿Cancelar el análisis en curso?");
     if (!window.confirm(msg)) return;
+    cancelledRef.current = true;
     try { await window.mvt?.cancel(); } catch {}
     setScreen("welcome");
     setError(null);

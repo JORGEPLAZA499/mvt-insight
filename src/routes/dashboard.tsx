@@ -6,7 +6,6 @@ import { getAnalyses, Analysis, riskColor, riskLabel } from "@/lib/mock-store";
 import { Button } from "@/components/ui/button";
 import {
   ShieldCheck,
-  UploadCloud,
   Activity,
   FileSearch,
   Clock,

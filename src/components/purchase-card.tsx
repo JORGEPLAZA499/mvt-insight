@@ -121,7 +121,7 @@ export function PurchaseCard() {
                   className="text-4xl md:text-5xl font-bold tabular-nums bg-clip-text text-transparent"
                   style={{ backgroundImage: "var(--gradient-primary)" }}
                 >
-                  {t("purchase.pricePerAnalysis", { credits: 98 })}
+                  {t("purchase.pricePerAnalysis", { credits: ANALYSIS_COST })}
                 </span>
                 <span className="text-sm text-muted-foreground">{t("purchase.perAnalysis")}</span>
               </div>

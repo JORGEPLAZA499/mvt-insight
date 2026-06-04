@@ -99,7 +99,7 @@ export function App() {
         if (r.ok) {
           const data = await r.json();
           if (data?.ok) {
-            setAccount({ email: data.email, label: data.label, credits: data.credits });
+            setAccount({ email: data.email, label: data.label, credits: data.credits, userCode: data.userCode ?? null });
           } else {
             await window.mvt.auth.clear();
             setScreen("link");

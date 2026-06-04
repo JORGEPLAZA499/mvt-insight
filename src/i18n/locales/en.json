@@ -74,7 +74,7 @@
       "tooBig": "{{name}} exceeds 500 MB",
       "filesLabel": "{{count}} MVT files",
       "genericError": "Could not process.",
-      "noCredits": "You don't have any credits. Purchase credits to generate the report."
+      "noCredits": "You don't have enough credits. Each report costs 98 credits."
     },
     "redeem": {
       "title": "Buy credits",

@@ -298,46 +298,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          {/* Quick upload */}
+          {/* Acciones rápidas */}
           {!inAdminMode && (
             <div className="mt-5 px-2">
-              <div className="px-2 mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60 font-medium">
-                {t("shell.quick.title")}
-              </div>
-              <input
-                ref={quickInputRef}
-                type="file"
-                multiple
-                accept=".json,.zip"
-                className="hidden"
-                onChange={(e) => handleQuickUpload(e.target.files)}
-              />
-              <button
-                onClick={() => quickInputRef.current?.click()}
-                disabled={quickBusy}
-                className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 disabled:opacity-70 disabled:cursor-not-allowed transition cursor-pointer"
-              >
-                {quickBusy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Zap className="h-4 w-4" />
-                )}
-                <span className="flex-1 text-left font-medium">
-                  {quickBusy ? t("shell.quick.processing") : t("shell.quick.upload")}
-                </span>
-                <UploadCloud className="h-4 w-4 opacity-80" />
-              </button>
               <button
                 onClick={() => openPurchaseCard()}
-                className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 transition mt-2 cursor-pointer"
+                className="w-full relative group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-primary-foreground bg-gradient-primary shadow-glow hover:opacity-95 transition cursor-pointer"
               >
                 <Coins className="h-4 w-4" />
                 <span className="flex-1 text-left font-medium">{t("shell.quick.buyCredits")}</span>
                 <Sparkles className="h-4 w-4 opacity-80" />
               </button>
-              <p className="px-2 mt-1.5 text-[10px] text-muted-foreground/70 leading-tight">
-                {t("shell.quick.uploadHint")}
-              </p>
             </div>
           )}
         </div>

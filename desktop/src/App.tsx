@@ -350,10 +350,19 @@ export function App() {
     setLogs([]);
   };
 
+  if (!authChecked) {
+    return (
+      <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <Logo size={140} />
+      </div>
+    );
+  }
+
   if (screen === "link") {
     return (
       <div className="app">
         {TopBar}
+
         <div className="header">
           <Logo size={140} />
           <h1>{tr("link.title", "Vincular cuenta")}</h1>

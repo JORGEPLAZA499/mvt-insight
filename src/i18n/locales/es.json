@@ -324,11 +324,12 @@
         },
         "run": {
           "title": "Abre la app y ejecuta el análisis",
-          "body": "Con el móvil ya conectado por USB y desbloqueado, vuelve a la app <b>MVT Insight Desktop</b> y pulsa <b>«Iniciar análisis»</b>. Verás barras de progreso para cada fase (descarga de herramientas y recolección de datos del móvil). Al terminar, la app te indicará dónde se ha guardado el ZIP."
+          "body": "Con el móvil ya conectado por USB y desbloqueado, vuelve a la app <b>MVT Insight Desktop</b> y pulsa <b>«Iniciar análisis»</b>. Verás barras de progreso para cada fase (descarga de herramientas y recolección de datos del móvil). Cuando termine, <b>la app subirá los resultados a tu cuenta automáticamente</b> y abrirá el informe en el navegador."
         },
         "upload": {
-          "title": "Sube el ZIP generado por la app",
-          "body": "La app te mostrará un botón <b>«Subir al informe»</b> y la ruta del archivo <code>mvt-resultados-AAAAMMDD.zip</code> (normalmente en <b>Descargas</b>). Pulsa el botón de abajo para subirlo y ver el informe."
+          "title": "La app subirá el informe sola",
+          "body": "Al terminar el análisis, la app de escritorio <b>sube los resultados automáticamente</b> a tu cuenta y abre el informe en el navegador. Si aún no has vinculado el escritorio con tu cuenta, hazlo en <b>Ajustes → Escritorio</b> usando el botón «Generar código».",
+          "fallback": "¿La app no lo subió? Pulsa el botón de abajo para subir el <code>.zip</code> a mano."
         }
       }
     },

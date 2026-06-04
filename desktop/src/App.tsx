@@ -294,10 +294,20 @@ export function App() {
     />
   );
 
-  const VersionBadge = appVersion ? (
-    <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "SF Mono, Menlo, monospace" }}>
+  const VersionCorner = appVersion ? (
+    <div style={{
+      position: "fixed",
+      bottom: 8,
+      right: 12,
+      fontSize: 11,
+      color: "var(--muted)",
+      fontFamily: "SF Mono, Menlo, monospace",
+      opacity: 0.7,
+      pointerEvents: "none",
+      zIndex: 9999,
+    }}>
       v{appVersion}
-    </span>
+    </div>
   ) : null;
 
   const AccountBadge = account ? (
@@ -324,7 +334,7 @@ export function App() {
 
   const TopBar = (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>{VersionBadge}{AccountBadge}</div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>{AccountBadge}</div>
       <LanguageSelector />
     </div>
   );
@@ -337,7 +347,6 @@ export function App() {
           alt="Spyware Forensic Analyzer"
           style={{ height: 80, objectFit: "contain", background: "transparent" }}
         />
-        {VersionBadge}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {AccountBadge}
@@ -360,6 +369,7 @@ export function App() {
     return (
       <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
         <Logo size={140} />
+        {VersionCorner}
       </div>
     );
   }
@@ -432,6 +442,7 @@ export function App() {
             </div>
           </div>
         </div>
+        {VersionCorner}
       </div>
     );
   }
@@ -493,6 +504,7 @@ export function App() {
             </span>
           )}
         </div>
+        {VersionCorner}
       </div>
     );
   }
@@ -557,6 +569,7 @@ export function App() {
             </div>
           </div>
         )}
+        {VersionCorner}
       </div>
     );
   }
@@ -659,6 +672,7 @@ export function App() {
             </a>
           </div>
         )}
+        {VersionCorner}
       </div>
     </div>
   );

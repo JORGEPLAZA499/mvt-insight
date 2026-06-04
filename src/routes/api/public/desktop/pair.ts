@@ -79,7 +79,7 @@ export const Route = createFileRoute("/api/public/desktop/pair")({
         } catch {}
 
         return new Response(
-          JSON.stringify({ ok: true, token, email, label: "Desktop" }),
+          JSON.stringify({ ok: true, token, email, label: "Desktop", userCode: account.user_code }),
           { status: 200, headers: { "content-type": "application/json" } },
         );
       },

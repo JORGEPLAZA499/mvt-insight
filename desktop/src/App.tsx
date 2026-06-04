@@ -19,6 +19,7 @@ interface Account {
   email: string | null;
   label: string;
   credits: number;
+  userCode: string | null;
 }
 
 type UploadState =
@@ -98,7 +99,7 @@ export function App() {
         if (r.ok) {
           const data = await r.json();
           if (data?.ok) {
-            setAccount({ email: data.email, label: data.label, credits: data.credits });
+            setAccount({ email: data.email, label: data.label, credits: data.credits, userCode: data.userCode ?? null });
           } else {
             await window.mvt.auth.clear();
             setScreen("link");
@@ -253,7 +254,7 @@ export function App() {
         return;
       }
       await window.mvt!.auth.save(data.token);
-      setAccount({ email: data.email, label: data.label, credits: 0 });
+      setAccount({ email: data.email, label: data.label, credits: 0, userCode: data.userCode ?? null });
       // Refrescar créditos
       try {
         const me = await fetch(`${WEB_BASE_URL}/api/public/desktop/whoami`, {
@@ -261,7 +262,7 @@ export function App() {
         });
         const meData = await me.json().catch(() => ({}));
         if (meData?.ok) {
-          setAccount({ email: meData.email, label: meData.label, credits: meData.credits });
+          setAccount({ email: meData.email, label: meData.label, credits: meData.credits, userCode: meData.userCode ?? null });
         }
       } catch {}
       setLinkCode("");
@@ -312,7 +313,7 @@ export function App() {
 
   const AccountBadge = account ? (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--muted)" }}>
-      <span>{account.email ?? account.label}</span>
+      <span>{account.userCode ?? account.label}</span>
       <span style={{ color: "var(--primary, #6ea8ff)" }}>· {account.credits} {tr("account.credits", "créditos")}</span>
       <button
         className="btn btn-secondary"

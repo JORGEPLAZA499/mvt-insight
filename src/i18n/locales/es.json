@@ -237,8 +237,8 @@
       "android": { "title": "Android", "sub": "" },
       "ios": { "title": "iPhone", "sub": "" },
       "noCredits": {
-        "title": "No tienes créditos disponibles",
-        "body": "Necesitas al menos 1 crédito para iniciar un análisis. Recarga créditos desde tu panel para activar las opciones.",
+        "title": "No tienes créditos suficientes",
+        "body": "Cada informe cuesta 98 créditos. Recarga créditos desde tu panel para iniciar un análisis.",
         "cta": "Ir a recargar créditos"
       }
     },

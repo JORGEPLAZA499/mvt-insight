@@ -369,6 +369,7 @@ export function App() {
     return (
       <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
         <Logo size={140} />
+        {VersionCorner}
       </div>
     );
   }

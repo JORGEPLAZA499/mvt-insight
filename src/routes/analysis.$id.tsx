@@ -92,6 +92,9 @@ function AnalysisPage() {
             <div className="text-xs text-muted-foreground uppercase tracking-wider">Resultado de análisis</div>
             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mt-1 truncate max-w-2xl">{analysis.fileName}</h1>
             <p className="text-sm text-muted-foreground mt-1">{platformLabel(r.platform)} · {new Date(analysis.uploadedAt).toLocaleString()}</p>
+            {formatDeviceLine(r.deviceInfo) && (
+              <p className="text-sm text-foreground/80 mt-1">{formatDeviceLine(r.deviceInfo)}</p>
+            )}
           </div>
           <div className="flex gap-2">
             <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(analysis)}>
@@ -249,6 +252,11 @@ function UserReport({ analysis }: { analysis: Analysis }) {
           <strong>{r.totalDetections}</strong> indicios técnicos. El nivel de riesgo estimado es{" "}
           <strong className={riskColor(r.risk)}>{riskLabel(r.risk)}</strong>.
         </p>
+        {formatDeviceLine(r.deviceInfo) && (
+          <p className="text-sm text-foreground/90 mt-2">
+            Dispositivo identificado: <strong>{formatDeviceLine(r.deviceInfo)}</strong>.
+          </p>
+        )}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
           <SmallStat icon={AlertOctagon} label="Indicios" value={r.totalDetections} />
           <SmallStat icon={Layers} label="Módulos con indicios" value={r.modules.filter((m) => m.detected > 0).length} />

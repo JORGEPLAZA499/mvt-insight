@@ -20,6 +20,15 @@ export interface MvtModuleResult {
   description: string;
 }
 
+export interface MvtDeviceInfo {
+  brand?: string;
+  manufacturer?: string;
+  model?: string;
+  deviceName?: string;
+  osVersion?: string;
+  buildId?: string;
+}
+
 export interface MvtParsedResult {
   platform: Platform;
   totalEntries: number;
@@ -30,6 +39,7 @@ export interface MvtParsedResult {
   risk: RiskLevel;
   parsedAt: string;
   sourceName: string;
+  deviceInfo?: MvtDeviceInfo;
 }
 
 // Strip path & .json, return { key, isDetected }

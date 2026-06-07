@@ -178,6 +178,8 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
   const detections: MvtDetection[] = [];
   const timeline: MvtParsedResult["timeline"] = [];
 
+  let deviceInfo: MvtDeviceInfo | undefined;
+
   for (const { name, text } of entries) {
     const meta = parseFileName(name);
     if (!meta) continue;
@@ -207,6 +209,10 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
       }
     } else {
       existing.entries += count;
+      if (!deviceInfo) {
+        if (meta.key === "getprop") deviceInfo = cleanDeviceInfo(extractAndroidGetprop(data));
+        else if (meta.key === "info") deviceInfo = cleanDeviceInfo(extractIosInfo(data));
+      }
     }
     moduleMap.set(meta.key, existing);
   }

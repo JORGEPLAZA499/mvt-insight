@@ -105,7 +105,7 @@
   "upload": {
     "uploading": "Subiendo informe a tu cuenta…",
     "done": "Informe subido",
-    "openingReport": "Abriendo informe en el navegador…",
+    "openingReport": "El informe ya está disponible en tu panel de control.",
     "creditsLeft": "Créditos restantes:",
     "error": "No se pudo subir:",
     "retry": "Reintentar",

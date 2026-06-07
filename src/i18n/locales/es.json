@@ -365,7 +365,7 @@
       },
       "step2": {
         "title": "Vincula la app con tu cuenta",
-        "body": "Genera tu código en Ajustes → App de escritorio y pégalo en la app. Solo se hace una vez."
+        "body": "Copia tu código de usuario desde Ajustes → App de escritorio y pégalo en la app. Solo se hace una vez."
       },
       "step3": {
         "title": "Conecta el dispositivo y analiza",

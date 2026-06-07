@@ -11,7 +11,15 @@ import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses
 import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Trash2, Activity, User, Code2, ChevronDown, ChevronRight } from "lucide-react";
 import { generatePdfReport } from "@/lib/pdf-report";
 import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, explainSeverity, buildVerdict, nextSteps, buildModuleHighlights, CROSS_CHECK_STEPS, CATEGORY_LABEL, CATEGORY_DESC, type Category } from "@/lib/mvt-translate";
-import type { MvtDetection, RiskLevel } from "@/lib/mvt-parser";
+import type { MvtDetection, MvtDeviceInfo, RiskLevel } from "@/lib/mvt-parser";
+
+function formatDeviceLine(d?: MvtDeviceInfo): string {
+  if (!d) return "";
+  const maker = d.manufacturer || d.brand;
+  const left = [maker, d.model].filter(Boolean).join(" ").trim();
+  const right = d.osVersion ? `Android/iOS ${d.osVersion}`.replace("Android/iOS", maker?.toLowerCase() === "apple" ? "iOS" : "Android") : "";
+  return [left, right].filter(Boolean).join(" · ");
+}
 
 export const Route = createFileRoute("/analysis/$id")({
   head: () => ({ meta: [{ title: "Resultado de análisis — Spyware Forensic Analyzer" }] }),

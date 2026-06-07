@@ -360,19 +360,19 @@
       "cardBody": "Available for macOS, Windows and Linux. Download it, link it to your account and start analysing with one click.",
       "cta": "Download and link",
       "step1": {
-        "title": "Download the desktop app",
+        "title": "Step 1: Download the desktop app",
         "body": "Pick the build for your OS (macOS, Windows or Linux) and install it like any other application."
       },
       "step2": {
-        "title": "Link the app to your account",
+        "title": "Step 2: Link the app to your account",
         "body": "Copy your user code from Settings → Desktop app and paste it into the app. Only needed once."
       },
       "step3": {
-        "title": "Connect your device and analyse",
+        "title": "Step 3: Connect your device and analyse",
         "body": "Plug the phone in over USB and click «Start analysis». The app processes the full backup locally."
       },
       "step4": {
-        "title": "Get the report here",
+        "title": "Step 4: Get the report here",
         "body": "When it finishes, the report syncs to your web account automatically and opens in your browser."
       },
       "security": {

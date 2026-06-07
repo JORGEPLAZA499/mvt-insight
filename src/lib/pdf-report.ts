@@ -1,6 +1,14 @@
 import jsPDF from "jspdf";
 import { Analysis, riskLabel, platformLabel } from "./mock-store";
-import type { RiskLevel } from "./mvt-parser";
+import type { MvtDeviceInfo, RiskLevel } from "./mvt-parser";
+
+function formatDeviceForPdf(d?: MvtDeviceInfo): string {
+  if (!d) return "";
+  const maker = d.manufacturer || d.brand;
+  const left = [maker, d.model].filter(Boolean).join(" ").trim();
+  const os = d.osVersion ? `${maker?.toLowerCase() === "apple" ? "iOS" : "Android"} ${d.osVersion}` : "";
+  return [left, os].filter(Boolean).join(" · ");
+}
 import {
   humanizeModule,
   humanizeDetection,
@@ -163,11 +171,13 @@ export function generatePdfReport(a: Analysis) {
   setFill([22, 32, 52]);
   doc.roundedRect(M.left, cardY, CW, cardH, 6, 6, "F");
 
+  const deviceStr = formatDeviceForPdf(r?.deviceInfo);
   const metaCover: [string, string][] = [
     ["Archivo analizado", a.fileName],
     ["Identificador del informe", ctx.reportId],
     ["Fecha del análisis", new Date(a.uploadedAt).toLocaleString()],
     ["Plataforma detectada", r ? platformLabel(r.platform) : "—"],
+    ...(deviceStr ? [["Dispositivo", deviceStr] as [string, string]] : []),
     ["Tamaño del origen", `${(a.fileSize / 1024).toFixed(1)} KB`],
     ["Estado", a.status],
   ];
@@ -245,8 +255,9 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += 86 + 14;
   }
 
+  const deviceSentence = deviceStr ? ` Dispositivo identificado: ${deviceStr}.` : "";
   const baseSummary = r
-    ? `Se ha analizado el archivo "${a.fileName}". La plataforma detectada es ${platformLabel(r.platform)}. Se procesaron ${r.modules.length} módulos MVT con un total de ${r.totalEntries.toLocaleString()} entradas y se identificaron ${r.totalDetections} indicios técnicos. El nivel de riesgo estimado es ${riskLabel(r.risk)}.`
+    ? `Se ha analizado el archivo "${a.fileName}". La plataforma detectada es ${platformLabel(r.platform)}.${deviceSentence} Se procesaron ${r.modules.length} módulos MVT con un total de ${r.totalEntries.toLocaleString()} entradas y se identificaron ${r.totalDetections} indicios técnicos. El nivel de riesgo estimado es ${riskLabel(r.risk)}.`
     : `Análisis de "${a.fileName}". Estado actual: ${a.status}.`;
   paragraph(baseSummary);
   ctx.y += 8;
@@ -303,6 +314,7 @@ export function generatePdfReport(a: Analysis) {
     ["Archivo de origen", a.fileName],
     ["Tamaño", `${(a.fileSize / 1024).toFixed(1)} KB`],
     ["Plataforma", r ? platformLabel(r.platform) : "—"],
+    ...(deviceStr ? [["Dispositivo", deviceStr] as [string, string]] : []),
     ["Módulos analizados", String(r?.modules.length ?? 0)],
     ["Entradas totales", String(r?.totalEntries ?? 0)],
     ["Indicios detectados", String(r?.totalDetections ?? 0)],

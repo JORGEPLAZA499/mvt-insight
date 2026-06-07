@@ -227,10 +227,6 @@ export function App() {
         remainingCredits: data.remainingCredits ?? 0,
       });
       setAccount((a) => a ? { ...a, credits: data.remainingCredits ?? a.credits } : a);
-      // Abrir el informe en el navegador automáticamente tras un breve delay
-      setTimeout(() => {
-        try { window.mvt?.openExternal(`${WEB_BASE_URL}/analysis/${data.analysisId}`); } catch {}
-      }, 1500);
     } catch (e: any) {
       setUpload({ state: "error", error: e?.message || tr("upload.errors.generic", "No se pudo subir el informe.") });
     }

@@ -109,7 +109,8 @@
     "creditsLeft": "Credits left:",
     "error": "Couldn't upload:",
     "retry": "Retry",
-    "buyCredits": "Top up credits",
+    "uploadButton": "Upload data to report",
+    "noCreditsMessage": "You have no credits left. Open your dashboard on the web and top up credits to upload the report.",
     "errors": {
       "unauth": "Session expired. Link the app again.",
       "credits": "You have no credits left.",

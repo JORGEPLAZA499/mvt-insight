@@ -12,6 +12,7 @@ const WEB_BASE_URL = "https://spyware.rpjsoftware.com";
 interface PhaseState {
   num: number;
   label: string;
+  statusKey?: string;
   progress: number;
 }
 
@@ -47,8 +48,6 @@ export function App() {
     percent?: number;
     error?: string;
   }>({ state: "idle" });
-  const logRef = useRef<HTMLDivElement>(null);
-  const [showLogs, setShowLogs] = useState(false);
   const cancelledRef = useRef(false);
 
   // Auth/account
@@ -71,8 +70,9 @@ export function App() {
     const offLog = window.mvt.onLog((msg) => {
       setLogs((prev) => [...prev.slice(-200), msg]);
     });
-    const offPhase = window.mvt.onPhase(({ phase: num, label, progress }) => {
-      setPhase({ num, label, progress });
+    const offPhase = window.mvt.onPhase((payload: any) => {
+      const { phase: num, label, statusKey, progress } = payload || {};
+      setPhase({ num, label, statusKey, progress });
     });
     return () => { offLog(); offPhase(); };
   }, []);

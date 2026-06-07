@@ -612,6 +612,8 @@ export function generatePdfReport(a: Analysis) {
   ctx.y += 2;
   paragraph("Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.", { size: 9 });
   ctx.y += 2;
+  paragraph("Familias de spyware cubiertas por los IOCs públicos de MVT: Pegasus (NSO Group), Predator (Intellexa/Cytrox), Reign (QuaDream), Hermit (RCS Lab), la operación Triangulation contra iOS y diversas familias de stalkerware comercial identificadas por nombre de paquete. La lista exacta evoluciona con cada actualización de los repositorios públicos de Amnesty International, Citizen Lab y Google TAG, por lo que la cobertura real depende de la versión de MVT y de los indicadores vigentes en el momento del análisis.", { size: 9 });
+  ctx.y += 2;
   paragraph("La ausencia de indicios no garantiza que el dispositivo esté limpio: MVT solo cubre amenazas con firma pública conocida. Spyware nuevo o muestras privadas pueden no detectarse.", { size: 9 });
   ctx.y += 2;
   paragraph("Los archivos se procesan localmente en el navegador. No se transmite información del dispositivo analizado a terceros. El análisis se realiza con el consentimiento del propietario del dispositivo.", { size: 9, italic: true, color: MUTED });

@@ -363,7 +363,26 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         <div className="space-y-3 text-xs text-muted-foreground">
           <p>Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.</p>
           <p>Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.</p>
+          <div>
+            <p className="font-semibold text-foreground mb-2">Familias de spyware cubiertas por los IOCs públicos de MVT</p>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {[
+                "Pegasus (NSO Group)",
+                "Predator (Intellexa/Cytrox)",
+                "Reign (QuaDream)",
+                "Hermit (RCS Lab)",
+                "Triangulation (iOS)",
+                "Stalkerware comercial",
+              ].map((name) => (
+                <span key={name} className="px-2 py-0.5 rounded-md border border-border bg-muted/40 text-[11px] text-foreground">
+                  {name}
+                </span>
+              ))}
+            </div>
+            <p>La lista exacta evoluciona con cada actualización de los repositorios públicos de Amnesty International, Citizen Lab y Google TAG, por lo que la cobertura real depende de la versión de MVT y de los indicadores vigentes en el momento del análisis.</p>
+          </div>
           <p>La ausencia de indicios no garantiza que el dispositivo esté limpio: MVT solo cubre amenazas con firma pública conocida. Spyware nuevo o muestras privadas pueden no detectarse.</p>
+
           <p className="italic">Los archivos se procesan localmente en el navegador. No se transmite información del dispositivo analizado a terceros. El análisis se realiza con el consentimiento del propietario del dispositivo.</p>
         </div>
       </section>

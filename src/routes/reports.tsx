@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/app-shell";
-import { Analysis, getAnalyses, riskColor, riskLabel } from "@/lib/mock-store";
+import { Analysis, riskColor, riskLabel } from "@/lib/mock-store";
+import { listMyAnalyses } from "@/lib/analyses.functions";
+import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { Button } from "@/components/ui/button";
 import { Download, FileText } from "lucide-react";
 import { generatePdfReport } from "@/lib/pdf-report";
@@ -13,7 +16,18 @@ export const Route = createFileRoute("/reports")({
 
 function Reports() {
   const [items, setItems] = useState<Analysis[]>([]);
-  useEffect(() => { setItems(getAnalyses().filter((a) => a.status === "completed")); }, []);
+  const fetchAnalyses = useServerFn(listMyAnalyses);
+  useEffect(() => {
+    let alive = true;
+    fetchAnalyses()
+      .then((r) => {
+        if (!alive) return;
+        const mapped = ((r?.analyses ?? []) as ServerAnalysisRow[]).map(mapServerAnalysis);
+        setItems(mapped.filter((a) => a.status === "completed"));
+      })
+      .catch(() => { if (alive) setItems([]); });
+    return () => { alive = false; };
+  }, [fetchAnalyses]);
 
   return (
     <AppShell>

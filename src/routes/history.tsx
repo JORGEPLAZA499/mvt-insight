@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/app-shell";
-import { Analysis, getAnalyses, deleteAnalysis, riskColor, riskLabel } from "@/lib/mock-store";
+import { Analysis, riskColor, riskLabel } from "@/lib/mock-store";
+import { listMyAnalyses } from "@/lib/analyses.functions";
+import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/history")({
   head: () => ({ meta: [{ title: "Historial — Spyware Forensic Analyzer" }] }),
@@ -12,7 +14,17 @@ export const Route = createFileRoute("/history")({
 
 function HistoryPage() {
   const [items, setItems] = useState<Analysis[]>([]);
-  useEffect(() => { setItems(getAnalyses()); }, []);
+  const fetchAnalyses = useServerFn(listMyAnalyses);
+  useEffect(() => {
+    let alive = true;
+    fetchAnalyses()
+      .then((r) => {
+        if (!alive) return;
+        setItems(((r?.analyses ?? []) as ServerAnalysisRow[]).map(mapServerAnalysis));
+      })
+      .catch(() => { if (alive) setItems([]); });
+    return () => { alive = false; };
+  }, [fetchAnalyses]);
 
   return (
     <AppShell>
@@ -43,9 +55,6 @@ function HistoryPage() {
                     <td className={`px-4 py-3 font-semibold ${riskColor(a.result?.risk)}`}>{riskLabel(a.result?.risk)}</td>
                     <td className="px-4 py-3 text-right space-x-2">
                       <Button asChild variant="ghost" size="sm"><Link to="/analysis/$id" params={{ id: a.id }}>Ver</Link></Button>
-                      <Button variant="ghost" size="sm" onClick={() => { deleteAnalysis(a.id); setItems(getAnalyses()); }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </td>
                   </tr>
                 ))}

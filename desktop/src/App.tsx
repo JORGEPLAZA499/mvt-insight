@@ -168,9 +168,14 @@ export function App() {
     }
   };
 
-  // La subida al servidor ahora es manual: el usuario pulsa "Subir datos al informe"
-  // desde la pantalla "done". Así puede revisar el zip local antes y evitamos
-  // intentos automáticos cuando no hay créditos.
+  // Subida automática al servidor cuando entramos en "done" con cuenta vinculada.
+  // El usuario también puede subirlo manualmente desde el botón "Subir datos al informe".
+  useEffect(() => {
+    if (screen !== "done" || !zipPath || !account) return;
+    if (upload.state !== "idle") return;
+    void autoUpload(zipPath, device ?? "android");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, zipPath, account]);
 
   const autoUpload = async (path: string, dev: Device) => {
     setUpload({ state: "uploading" });

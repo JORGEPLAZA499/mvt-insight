@@ -365,7 +365,7 @@
       },
       "step2": {
         "title": "Link the app to your account",
-        "body": "Generate your code under Settings → Desktop app and paste it into the app. One-time step."
+        "body": "Copy your user code from Settings → Desktop app and paste it into the app. Only needed once."
       },
       "step3": {
         "title": "Connect your device and analyse",

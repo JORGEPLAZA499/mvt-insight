@@ -94,9 +94,6 @@ function AnalysisPage() {
             <p className="text-sm text-muted-foreground mt-1">{platformLabel(r.platform)} · {new Date(analysis.uploadedAt).toLocaleString()}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => { deleteAnalysis(analysis.id); navigate({ to: "/dashboard" }); }}>
-              <Trash2 className="h-4 w-4 mr-2" /> Eliminar
-            </Button>
             <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(analysis)}>
               <Download className="h-4 w-4 mr-2" /> Descargar PDF
             </Button>

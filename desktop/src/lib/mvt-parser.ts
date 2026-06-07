@@ -240,5 +240,6 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
     risk,
     parsedAt: new Date().toISOString(),
     sourceName,
+    deviceInfo,
   };
 }

@@ -120,16 +120,6 @@ export function App() {
   }, []);
 
 
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [logs, showLogs]);
-
-  useEffect(() => {
-    if (!showLogs) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowLogs(false); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [showLogs]);
 
   const checkUpdates = async () => {
     if (!window.mvt) return;

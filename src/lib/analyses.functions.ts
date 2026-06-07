@@ -66,10 +66,26 @@ export const listMyAnalyses = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await supabaseAdmin
       .from("analyses")
-      .select("id, device, file_name, file_size, created_at")
+      .select("id, device, file_name, file_size, result, created_at")
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
     return { analyses: data ?? [] };
+  });
+
+export const getAnalysisById = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await supabaseAdmin
+      .from("analyses")
+      .select("id, device, file_name, file_size, result, created_at, user_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row || row.user_id !== context.userId) return { analysis: null };
+    return { analysis: row };
   });

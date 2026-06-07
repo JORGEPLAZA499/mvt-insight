@@ -358,7 +358,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 function SectionTitle({ num, title }: { num: string; title: string }) {
   return (
     <div className="flex items-baseline gap-3 mb-4 pb-2 border-b border-border">
-      <span className="text-xs font-semibold text-muted-foreground tabular-nums">{num}</span>
+      <span className="text-lg font-semibold text-muted-foreground tabular-nums">{num}</span>
       <h2 className="text-lg font-semibold">{title}</h2>
     </div>
   );

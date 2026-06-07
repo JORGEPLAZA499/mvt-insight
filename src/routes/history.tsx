@@ -6,7 +6,6 @@ import { Analysis, riskColor, riskLabel } from "@/lib/mock-store";
 import { listMyAnalyses } from "@/lib/analyses.functions";
 import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/history")({
   head: () => ({ meta: [{ title: "Historial — Spyware Forensic Analyzer" }] }),

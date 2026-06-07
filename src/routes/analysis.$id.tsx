@@ -1,10 +1,13 @@
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { getAnalysis, deleteAnalysis, riskColor, riskLabel, platformLabel, Analysis } from "@/lib/mock-store";
+import { riskColor, riskLabel, platformLabel, Analysis } from "@/lib/mock-store";
+import { getAnalysisById } from "@/lib/analyses.functions";
+import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Trash2, Activity, User, Code2, ChevronDown, ChevronRight } from "lucide-react";
 import { generatePdfReport } from "@/lib/pdf-report";
 import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, explainSeverity, buildVerdict, nextSteps, buildModuleHighlights, CROSS_CHECK_STEPS, CATEGORY_LABEL, CATEGORY_DESC, type Category } from "@/lib/mvt-translate";
@@ -19,9 +22,31 @@ function AnalysisPage() {
   const { t } = useTranslation();
   const { id } = useParams({ from: "/analysis/$id" });
   const [analysis, setAnalysis] = useState<Analysis | undefined>();
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const fetchOne = useServerFn(getAnalysisById);
 
-  useEffect(() => { setAnalysis(getAnalysis(id)); }, [id]);
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    fetchOne({ data: { id } })
+      .then((r) => {
+        if (!alive) return;
+        const row = r?.analysis as ServerAnalysisRow | null;
+        setAnalysis(row ? mapServerAnalysis(row) : undefined);
+      })
+      .catch(() => { if (alive) setAnalysis(undefined); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [id, fetchOne]);
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="p-10 text-center text-muted-foreground">Cargando análisis…</div>
+      </AppShell>
+    );
+  }
 
   if (!analysis) {
     return (

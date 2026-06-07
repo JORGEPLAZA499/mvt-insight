@@ -72,9 +72,11 @@ function Upload() {
             </div>
             <div className="flex-1">
               <h2 className="text-xl font-semibold">{t(`upload.desktopOnly.${key}.title`)}</h2>
-              <p className="text-muted-foreground mt-3 leading-relaxed">
-                {t(`upload.desktopOnly.${key}.body`)}
-              </p>
+              {t(`upload.desktopOnly.${key}.body`) && (
+                <p className="text-muted-foreground mt-3 leading-relaxed">
+                  {t(`upload.desktopOnly.${key}.body`)}
+                </p>
+              )}
 
               {key === "step1" && (
                 <Link

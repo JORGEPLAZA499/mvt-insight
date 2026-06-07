@@ -56,9 +56,6 @@ function HistoryPage() {
                     <td className={`px-4 py-3 font-semibold ${riskColor(a.result?.risk)}`}>{riskLabel(a.result?.risk)}</td>
                     <td className="px-4 py-3 text-right space-x-2">
                       <Button asChild variant="ghost" size="sm"><Link to="/analysis/$id" params={{ id: a.id }}>Ver</Link></Button>
-                      <Button variant="ghost" size="sm" onClick={() => { deleteAnalysis(a.id); setItems(getAnalyses()); }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </td>
                   </tr>
                 ))}

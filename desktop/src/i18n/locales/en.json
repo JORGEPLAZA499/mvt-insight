@@ -105,7 +105,7 @@
   "upload": {
     "uploading": "Uploading report to your account…",
     "done": "Report uploaded",
-    "openingReport": "Opening report in your browser…",
+    "openingReport": "Your report is now available in your dashboard.",
     "creditsLeft": "Credits left:",
     "error": "Couldn't upload:",
     "retry": "Retry",

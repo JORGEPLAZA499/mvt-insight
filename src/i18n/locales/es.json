@@ -369,7 +369,7 @@
       },
       "step3": {
         "title": "Paso 3: Conecta el dispositivo y analiza",
-        "body": "Conecta el móvil por USB y pulsa «Iniciar análisis». La app procesa todo el backup localmente."
+        "body": "Pon el teléfono en modo avión para evitar que lleguen nuevos mensajes o notificaciones durante el análisis. Luego conecta el móvil por USB y pulsa «Iniciar análisis». La app procesa todo el backup localmente."
       },
       "step4": {
         "title": "Paso 4: Recibe el informe aquí",

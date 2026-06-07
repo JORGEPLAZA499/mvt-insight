@@ -369,7 +369,7 @@
       },
       "step3": {
         "title": "Step 3: Connect your device and analyse",
-        "body": "Plug the phone in over USB and click «Start analysis». The app processes the full backup locally."
+        "body": "Turn on airplane mode to prevent new messages or notifications from arriving during the analysis. Then plug the phone in over USB and click «Start analysis». The app processes the full backup locally."
       },
       "step4": {
         "title": "Step 4: Get the report here",

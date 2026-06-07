@@ -360,19 +360,19 @@
       "cardBody": "Disponible para macOS, Windows y Linux. Descárgala, vincúlala con tu cuenta y comienza el análisis con un clic.",
       "cta": "Descargar y vincular",
       "step1": {
-        "title": "Descarga la app de escritorio",
+        "title": "Paso 1: Descarga la app de escritorio",
         "body": "Elige la versión para tu sistema (macOS, Windows o Linux) e instálala como cualquier otra aplicación."
       },
       "step2": {
-        "title": "Vincula la app con tu cuenta",
+        "title": "Paso 2: Vincula la app con tu cuenta",
         "body": "Copia tu código de usuario desde Ajustes → App de escritorio y pégalo en la app. Solo se hace una vez."
       },
       "step3": {
-        "title": "Conecta el dispositivo y analiza",
+        "title": "Paso 3: Conecta el dispositivo y analiza",
         "body": "Conecta el móvil por USB y pulsa «Iniciar análisis». La app procesa todo el backup localmente."
       },
       "step4": {
-        "title": "Recibe el informe aquí",
+        "title": "Paso 4: Recibe el informe aquí",
         "body": "Al terminar, el informe se sincroniza con tu cuenta web automáticamente y se abre en el navegador."
       },
       "security": {

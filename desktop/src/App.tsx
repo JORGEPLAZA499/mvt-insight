@@ -620,7 +620,7 @@ export function App() {
                   ✓ {tr("upload.done", "Informe subido")}
                 </div>
                 <div style={{ color: "var(--muted)", marginBottom: 4 }}>
-                  {tr("upload.openingReport", "Abriendo informe en el navegador…")}
+                  {tr("upload.openingReport", "El informe ya está disponible en tu panel de control.")}
                 </div>
                 <div style={{ color: "var(--muted)" }}>
                   {tr("upload.creditsLeft", "Créditos restantes:")} {upload.remainingCredits}

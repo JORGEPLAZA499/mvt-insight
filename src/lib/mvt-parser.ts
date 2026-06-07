@@ -20,6 +20,15 @@ export interface MvtModuleResult {
   description: string;
 }
 
+export interface MvtDeviceInfo {
+  brand?: string;
+  manufacturer?: string;
+  model?: string;
+  deviceName?: string;
+  osVersion?: string;
+  buildId?: string;
+}
+
 export interface MvtParsedResult {
   platform: Platform;
   totalEntries: number;
@@ -30,6 +39,7 @@ export interface MvtParsedResult {
   risk: RiskLevel;
   parsedAt: string;
   sourceName: string;
+  deviceInfo?: MvtDeviceInfo;
 }
 
 // Strip path & .json, return { key, isDetected }
@@ -118,11 +128,57 @@ async function readFileEntries(files: File[]): Promise<{ name: string; text: str
   return out;
 }
 
+function extractAndroidGetprop(data: any): MvtDeviceInfo {
+  const map = new Map<string, string>();
+  const add = (k: any, v: any) => {
+    if (typeof k === "string" && typeof v === "string") map.set(k.trim(), v.trim());
+  };
+  if (Array.isArray(data)) {
+    for (const it of data) {
+      if (it && typeof it === "object") add(it.name ?? it.key ?? it.property, it.value ?? it.val);
+    }
+  } else if (data && typeof data === "object") {
+    for (const [k, v] of Object.entries(data)) add(k, v as any);
+  }
+  const get = (k: string) => map.get(k);
+  return {
+    brand: get("ro.product.brand"),
+    manufacturer: get("ro.product.manufacturer"),
+    model: get("ro.product.model"),
+    deviceName: get("ro.product.device"),
+    osVersion: get("ro.build.version.release"),
+    buildId: get("ro.build.display.id") || get("ro.build.id"),
+  };
+}
+
+function extractIosInfo(data: any): MvtDeviceInfo {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+  const d: any = data;
+  return {
+    brand: "Apple",
+    manufacturer: "Apple",
+    model: d.ProductType || d.HardwareModel,
+    deviceName: d.DeviceName,
+    osVersion: d.ProductVersion,
+    buildId: d.BuildVersion,
+  };
+}
+
+function cleanDeviceInfo(info: MvtDeviceInfo): MvtDeviceInfo | undefined {
+  const out: MvtDeviceInfo = {};
+  for (const [k, v] of Object.entries(info)) {
+    if (typeof v === "string" && v.trim()) (out as any)[k] = v.trim();
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 export async function parseMvtFiles(files: File[], sourceName: string): Promise<MvtParsedResult> {
   const entries = await readFileEntries(files);
   const moduleMap = new Map<string, MvtModuleResult>();
   const detections: MvtDetection[] = [];
   const timeline: MvtParsedResult["timeline"] = [];
+
+  let deviceInfo: MvtDeviceInfo | undefined;
 
   for (const { name, text } of entries) {
     const meta = parseFileName(name);
@@ -153,6 +209,10 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
       }
     } else {
       existing.entries += count;
+      if (!deviceInfo) {
+        if (meta.key === "getprop") deviceInfo = cleanDeviceInfo(extractAndroidGetprop(data));
+        else if (meta.key === "info") deviceInfo = cleanDeviceInfo(extractIosInfo(data));
+      }
     }
     moduleMap.set(meta.key, existing);
   }
@@ -180,5 +240,6 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
     risk,
     parsedAt: new Date().toISOString(),
     sourceName,
+    deviceInfo,
   };
 }

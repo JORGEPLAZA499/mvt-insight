@@ -168,13 +168,9 @@ export function App() {
     }
   };
 
-  // Subida automática al servidor cuando entramos en "done" con cuenta vinculada
-  useEffect(() => {
-    if (screen !== "done" || !zipPath || !account) return;
-    if (upload.state !== "idle") return;
-    void autoUpload(zipPath, device ?? "android");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screen, zipPath, account]);
+  // La subida al servidor ahora es manual: el usuario pulsa "Subir datos al informe"
+  // desde la pantalla "done". Así puede revisar el zip local antes y evitamos
+  // intentos automáticos cuando no hay créditos.
 
   const autoUpload = async (path: string, dev: Device) => {
     setUpload({ state: "uploading" });
@@ -598,9 +594,19 @@ export function App() {
           {zipPath}
         </div>
 
-        {/* Estado de subida automática */}
+        {/* Estado de subida (manual) */}
         {account && (
           <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: "var(--bg-soft, #1a1a22)", border: "1px solid var(--border, #333)" }}>
+            {upload.state === "idle" && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, color: "var(--muted)" }}>
+                  {tr("done.uploadHint", "Sube el informe a tu cuenta para verlo en el panel web.")}
+                </span>
+                <button className="btn" onClick={() => zipPath && autoUpload(zipPath, device ?? "android")}>
+                  {tr("upload.uploadButton", "Subir datos al informe")}
+                </button>
+              </div>
+            )}
             {upload.state === "uploading" && (
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
                 <span className="phase-spinner" />
@@ -622,20 +628,22 @@ export function App() {
             )}
             {upload.state === "error" && (
               <div style={{ fontSize: 13 }}>
-                <div style={{ color: "var(--danger)", fontWeight: 600, marginBottom: 4 }}>
-                  {tr("upload.error", "No se pudo subir:")} {upload.error}
-                </div>
-                <div className="row" style={{ marginTop: 8 }}>
-                  {upload.code === "INSUFFICIENT_CREDITS" ? (
-                    <button className="btn" onClick={() => window.mvt?.openExternal(`${WEB_BASE_URL}/dashboard`)}>
-                      {tr("upload.buyCredits", "Recargar créditos")}
-                    </button>
-                  ) : (
-                    <button className="btn" onClick={() => zipPath && autoUpload(zipPath, device ?? "android")}>
-                      {tr("upload.retry", "Reintentar")}
-                    </button>
-                  )}
-                </div>
+                {upload.code === "INSUFFICIENT_CREDITS" ? (
+                  <div style={{ color: "var(--danger)" }}>
+                    {tr("upload.noCreditsMessage", "No te quedan créditos. Accede a tu panel de control en la web y recarga créditos para poder subir el informe.")}
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ color: "var(--danger)", fontWeight: 600, marginBottom: 4 }}>
+                      {tr("upload.error", "No se pudo subir:")} {upload.error}
+                    </div>
+                    <div className="row" style={{ marginTop: 8 }}>
+                      <button className="btn" onClick={() => zipPath && autoUpload(zipPath, device ?? "android")}>
+                        {tr("upload.retry", "Reintentar")}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -665,6 +673,7 @@ export function App() {
             {tr("done.new", "Nuevo análisis")}
           </button>
         </div>
+
 
         {!account && (
           <div style={{ marginTop: 12, fontSize: 12, color: "var(--muted)" }}>

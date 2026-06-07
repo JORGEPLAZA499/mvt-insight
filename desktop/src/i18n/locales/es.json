@@ -109,7 +109,8 @@
     "creditsLeft": "Créditos restantes:",
     "error": "No se pudo subir:",
     "retry": "Reintentar",
-    "buyCredits": "Recargar créditos",
+    "uploadButton": "Subir datos al informe",
+    "noCreditsMessage": "No te quedan créditos. Accede a tu panel de control en la web y recarga créditos para poder subir el informe.",
     "errors": {
       "unauth": "Sesión caducada. Vincula la app de nuevo.",
       "credits": "No te quedan créditos.",

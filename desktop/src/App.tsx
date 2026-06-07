@@ -12,6 +12,7 @@ const WEB_BASE_URL = "https://spyware.rpjsoftware.com";
 interface PhaseState {
   num: number;
   label: string;
+  statusKey?: string;
   progress: number;
 }
 
@@ -47,8 +48,6 @@ export function App() {
     percent?: number;
     error?: string;
   }>({ state: "idle" });
-  const logRef = useRef<HTMLDivElement>(null);
-  const [showLogs, setShowLogs] = useState(false);
   const cancelledRef = useRef(false);
 
   // Auth/account
@@ -71,8 +70,9 @@ export function App() {
     const offLog = window.mvt.onLog((msg) => {
       setLogs((prev) => [...prev.slice(-200), msg]);
     });
-    const offPhase = window.mvt.onPhase(({ phase: num, label, progress }) => {
-      setPhase({ num, label, progress });
+    const offPhase = window.mvt.onPhase((payload: any) => {
+      const { phase: num, label, statusKey, progress } = payload || {};
+      setPhase({ num, label, statusKey, progress });
     });
     return () => { offLog(); offPhase(); };
   }, []);
@@ -120,16 +120,6 @@ export function App() {
   }, []);
 
 
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [logs, showLogs]);
-
-  useEffect(() => {
-    if (!showLogs) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowLogs(false); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [showLogs]);
 
   const checkUpdates = async () => {
     if (!window.mvt) return;
@@ -549,7 +539,9 @@ export function App() {
                   <div className="phase-label">{label}</div>
                   {active && (
                     <div className="phase-sub">
-                      {phase.label || tr("running.working", "Analizando")}
+                      {phase.statusKey
+                        ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"))
+                        : (phase.label || tr("running.working", "Analizando"))}
                       <span className="dot-pulse">
                         <span /><span /><span />
                       </span>
@@ -568,45 +560,6 @@ export function App() {
         </div>
 
 
-        <div className="row" style={{ marginTop: 16, justifyContent: "center" }}>
-          <button type="button" className="btn btn-secondary" onClick={() => setShowLogs(true)}>
-            {tr("details.toggle", "Ver detalles técnicos")}
-          </button>
-        </div>
-
-        {showLogs && (
-          <div
-            onClick={() => setShowLogs(false)}
-            style={{
-              position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              zIndex: 1000, padding: 20,
-            }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="card"
-              style={{
-                width: "min(900px, 100%)", maxHeight: "80vh",
-                display: "flex", flexDirection: "column", gap: 12, margin: 0,
-              }}
-            >
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                <strong style={{ fontSize: 15 }}>{tr("details.title", "Detalles técnicos")}</strong>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowLogs(false)}>
-                  {tr("details.close", "Cerrar")}
-                </button>
-              </div>
-              <div
-                className="log"
-                ref={logRef}
-                style={{ flex: 1, overflowY: "auto", maxHeight: "70vh", margin: 0 }}
-              >
-                {logs.length === 0 ? tr("details.waiting", "Esperando salida del proceso…") : logs.join("")}
-              </div>
-            </div>
-          </div>
-        )}
 
         {error && (
           <div className="card" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>

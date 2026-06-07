@@ -41,11 +41,18 @@
     "connect": "Conectando con el dispositivo",
     "collect": "Recolectando datos"
   },
-  "details": {
-    "toggle": "Ver detalles técnicos",
-    "waiting": "Esperando salida del proceso…",
-    "title": "Detalles técnicos",
-    "close": "Cerrar"
+  "phaseStatus": {
+    "resolvingVersion": "Buscando la última versión disponible…",
+    "downloadingBinary": "Descargando herramienta de análisis…",
+    "binaryReady": "Herramienta lista",
+    "waitingUsbAuth": "Esperando autorización en el móvil. Acepta «Permitir depuración USB».",
+    "starting": "Iniciando análisis en el dispositivo…",
+    "backup": "Creando copia de seguridad del dispositivo…",
+    "downloadingApks": "Descargando aplicaciones instaladas…",
+    "analyzingApps": "Analizando aplicaciones instaladas…",
+    "collectingSystemInfo": "Recolectando información del sistema…",
+    "compressing": "Comprimiendo resultados…",
+    "done": "Análisis finalizado"
   },
   "error": {
     "title": "Algo salió mal:",

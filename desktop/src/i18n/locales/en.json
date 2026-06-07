@@ -41,11 +41,18 @@
     "connect": "Connecting to the device",
     "collect": "Collecting data"
   },
-  "details": {
-    "toggle": "Show technical details",
-    "waiting": "Waiting for process output…",
-    "title": "Technical details",
-    "close": "Close"
+  "phaseStatus": {
+    "resolvingVersion": "Looking up the latest version…",
+    "downloadingBinary": "Downloading the analysis tool…",
+    "binaryReady": "Tool ready",
+    "waitingUsbAuth": "Waiting for authorization on your phone. Accept «Allow USB debugging».",
+    "starting": "Starting analysis on the device…",
+    "backup": "Creating device backup…",
+    "downloadingApks": "Downloading installed apps…",
+    "analyzingApps": "Analyzing installed apps…",
+    "collectingSystemInfo": "Collecting system info…",
+    "compressing": "Compressing results…",
+    "done": "Analysis complete"
   },
   "error": {
     "title": "Something went wrong:",

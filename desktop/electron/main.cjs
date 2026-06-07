@@ -337,7 +337,7 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
 
     if (device === "android") {
       // 1. Descargar AndroidQF
-      send("mvt:phase", { phase: 1, label: "Descargando AndroidQF", progress: 0 });
+      send("mvt:phase", { phase: 1, statusKey: "phaseStatus.resolvingVersion", label: "Descargando AndroidQF", progress: 0 });
       const platform = process.platform;
       if (!["win32", "linux", "darwin"].includes(platform)) {
         throw new Error(`Plataforma no soportada: ${platform}`);
@@ -362,7 +362,7 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         const url = await resolveAndroidqfUrl();
         send("mvt:log", `⬇️ Descargando ${url}`);
         await download(url, binPath, (p) =>
-          send("mvt:phase", { phase: 1, label: "Descargando AndroidQF", progress: p })
+          send("mvt:phase", { phase: 1, statusKey: "phaseStatus.downloadingBinary", label: "Descargando AndroidQF", progress: p })
         );
         if (platform !== "win32") fs.chmodSync(binPath, 0o755);
         // Tras descargar, Windows Defender suele bloquear el .exe unos segundos.
@@ -372,7 +372,7 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
           await new Promise((r) => setTimeout(r, 3000));
         }
       }
-      send("mvt:phase", { phase: 1, label: "AndroidQF listo", progress: 1 });
+      send("mvt:phase", { phase: 1, statusKey: "phaseStatus.binaryReady", label: "AndroidQF listo", progress: 1 });
 
       // En Windows, si quedó un androidqf.exe colgado de un intento previo,
       // lo cerramos para evitar EBUSY al volver a ejecutarlo.
@@ -409,11 +409,11 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
 
 
       // 2. Conectar y autorizar
-      send("mvt:phase", { phase: 2, label: "Esperando autorización USB", progress: 0 });
+      send("mvt:phase", { phase: 2, statusKey: "phaseStatus.waitingUsbAuth", label: "Esperando autorización USB", progress: 0 });
       send("mvt:log", "🔌 Conecta el móvil y acepta «Permitir depuración USB» en la pantalla.");
 
       // 3. Ejecutar AndroidQF respondiendo automáticamente a sus prompts
-      send("mvt:phase", { phase: 3, label: "Recolectando datos del dispositivo", progress: 0 });
+      send("mvt:phase", { phase: 3, statusKey: "phaseStatus.starting", label: "Recolectando datos del dispositivo", progress: 0 });
 
       // Cargamos node-pty bajo demanda: si falla, damos un mensaje claro
       // (típicamente falta el Visual C++ Redistributable en Windows).
@@ -509,10 +509,12 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         const clean = stripAnsi(text);
 
         // Heurística de progreso por sección detectada
-        if (/backup/i.test(clean)) send("mvt:phase", { phase: 3, label: "Backup", progress: 0.2 });
-        if (/Downloading APKs/i.test(clean)) send("mvt:phase", { phase: 3, label: "Descargando APKs", progress: 0.5 });
+        if (/backup/i.test(clean)) send("mvt:phase", { phase: 3, statusKey: "phaseStatus.backup", label: "Backup", progress: 0.2 });
+        if (/Downloading APKs/i.test(clean)) send("mvt:phase", { phase: 3, statusKey: "phaseStatus.downloadingApks", label: "Descargando APKs", progress: 0.4 });
         if (/Collecting information on installed apps/i.test(clean))
-          send("mvt:phase", { phase: 3, label: "Analizando apps", progress: 0.8 });
+          send("mvt:phase", { phase: 3, statusKey: "phaseStatus.analyzingApps", label: "Analizando apps", progress: 0.6 });
+        if (/(getprop|processes|services|dumpsys|SMS|settings|logcat)/i.test(clean))
+          send("mvt:phase", { phase: 3, statusKey: "phaseStatus.collectingSystemInfo", label: "Recolectando información del sistema", progress: 0.8 });
 
         // Esperamos 300 ms sin nuevos datos antes de responder, para no
         // contestar a un prompt que aún se está renderizando.
@@ -557,6 +559,7 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       } else if (freshDir) {
         zipPath = path.join(dir, `${freshDir.name}.zip`);
         send("mvt:log", `📦 Comprimiendo carpeta de resultados "${freshDir.name}" → ${path.basename(zipPath)}`);
+        send("mvt:phase", { phase: 3, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.95 });
         await zipFolder(freshDir.full, zipPath);
       } else {
         const listing = entries.map((e) => (e.isDir ? `${e.name}/` : e.name)).join(", ") || "(vacío)";
@@ -565,7 +568,7 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         );
       }
 
-      send("mvt:phase", { phase: 3, label: "Listo", progress: 1 });
+      send("mvt:phase", { phase: 3, statusKey: "phaseStatus.done", label: "Listo", progress: 1 });
       return { ok: true, zipPath };
     }
 

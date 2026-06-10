@@ -306,7 +306,57 @@ async function download(url, dest, onProgress) {
   }
 }
 
+/* ---------- ADB helpers ---------- */
+
+// Busca un binario `adb` utilizable: PATH, ANDROID_HOME, o un `adb` colocado
+// junto al binario de AndroidQF (algunos paquetes lo extraen ahí).
+function resolveAdbPath(workDir) {
+  const name = process.platform === "win32" ? "adb.exe" : "adb";
+  const candidates = [
+    workDir ? path.join(workDir, name) : null,
+    process.env.ANDROID_HOME ? path.join(process.env.ANDROID_HOME, "platform-tools", name) : null,
+    process.env.ANDROID_SDK_ROOT ? path.join(process.env.ANDROID_SDK_ROOT, "platform-tools", name) : null,
+    name, // PATH
+  ].filter(Boolean);
+  for (const c of candidates) {
+    try {
+      if (c === name) {
+        // Sondea PATH con --version (rápido). Si no existe, spawn lanza ENOENT.
+        const r = require("child_process").spawnSync(c, ["version"], { windowsHide: true });
+        if (!r.error && r.status === 0) return c;
+      } else if (fs.existsSync(c)) {
+        return c;
+      }
+    } catch {}
+  }
+  return null;
+}
+
+// Devuelve el "mejor" estado entre los dispositivos listados por `adb devices`.
+// Prioridad: device > unauthorized > offline > "none".
+async function adbDeviceState(adbBin) {
+  return new Promise((resolve) => {
+    const p = spawn(adbBin, ["devices"], { windowsHide: true });
+    let out = "";
+    p.stdout?.on("data", (d) => { out += d.toString(); });
+    p.on("error", () => resolve("none"));
+    p.on("close", () => {
+      const states = out
+        .split(/\r?\n/)
+        .slice(1)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((l) => l.split(/\s+/)[1] || "");
+      if (states.includes("device")) return resolve("device");
+      if (states.includes("unauthorized")) return resolve("unauthorized");
+      if (states.includes("offline")) return resolve("offline");
+      return resolve("none");
+    });
+  });
+}
+
 /* ---------- IPC handlers ---------- */
+
 
 let currentChild = null;
 let cancelled = false;

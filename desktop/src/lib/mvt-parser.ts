@@ -124,6 +124,10 @@ function pickLevel(obj: any, fallback: RiskLevel): RiskLevel {
 
 async function readFileEntries(files: File[]): Promise<{ name: string; text: string }[]> {
   const out: { name: string; text: string }[] = [];
+  const accept = (p: string) => {
+    const l = p.toLowerCase();
+    return l.endsWith(".json") || l.endsWith(".txt");
+  };
   for (const f of files) {
     const lower = f.name.toLowerCase();
     if (lower.endsWith(".zip")) {
@@ -132,11 +136,11 @@ async function readFileEntries(files: File[]): Promise<{ name: string; text: str
       const tasks: Promise<void>[] = [];
       zip.forEach((path, entry) => {
         if (entry.dir) return;
-        if (!path.toLowerCase().endsWith(".json")) return;
+        if (!accept(path)) return;
         tasks.push(entry.async("string").then((text) => { out.push({ name: path, text }); }));
       });
       await Promise.all(tasks);
-    } else if (lower.endsWith(".json")) {
+    } else if (accept(lower)) {
       const text = await f.text();
       out.push({ name: f.name, text });
     }

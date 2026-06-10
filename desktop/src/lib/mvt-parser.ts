@@ -42,17 +42,33 @@ export interface MvtParsedResult {
   deviceInfo?: MvtDeviceInfo;
 }
 
-// Strip path & .json, return { key, isDetected }
-function parseFileName(name: string): { key: string; isDetected: boolean } | null {
+// Strip path & extension, return { key, isDetected, ext }
+function parseFileName(name: string): { key: string; isDetected: boolean; ext: "json" | "txt" } | null {
   const base = name.split("/").pop() || name;
-  if (!base.toLowerCase().endsWith(".json")) return null;
-  let key = base.slice(0, -5);
+  const lower = base.toLowerCase();
+  let ext: "json" | "txt";
+  let stem: string;
+  if (lower.endsWith(".json")) { ext = "json"; stem = base.slice(0, -5); }
+  else if (lower.endsWith(".txt")) { ext = "txt"; stem = base.slice(0, -4); }
+  else return null;
+  let key = stem;
   let isDetected = false;
   if (key.endsWith("_detected")) {
     isDetected = true;
     key = key.slice(0, -"_detected".length);
   }
-  return { key, isDetected };
+  return { key, isDetected, ext };
+}
+
+// Parse `[ro.product.brand]: [Samsung]` lines from `getprop` text output.
+function parseGetpropText(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const re = /^\[([^\]]+)\]:\s*\[([^\]]*)\]\s*$/;
+  for (const line of text.split(/\r?\n/)) {
+    const m = re.exec(line);
+    if (m) out[m[1]] = m[2];
+  }
+  return out;
 }
 
 function countEntries(data: any): number {

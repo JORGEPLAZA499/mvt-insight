@@ -589,6 +589,12 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         }
       };
 
+      // Mientras AndroidQF está en su survey interactivo (modules/backup/…),
+      // seguimos en fase 2 con un sub-status veraz. Sólo subimos a fase 3
+      // cuando vemos un marcador real de recolección.
+      let inSurvey = false;
+      let collectionStarted = false;
+
       child.onData((data) => {
         const text = data.toString();
         buffer += text;
@@ -598,19 +604,32 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
 
         const clean = stripAnsi(text);
 
-        // Heurística de progreso por sección detectada
-        if (/backup/i.test(clean)) send("mvt:phase", { phase: 3, statusKey: "phaseStatus.backup", label: "Backup", progress: 0.2 });
-        if (/Downloading APKs/i.test(clean)) send("mvt:phase", { phase: 3, statusKey: "phaseStatus.downloadingApks", label: "Descargando APKs", progress: 0.4 });
+        // Detectar inicio de survey (prompt "? Modules:") → fase 2, sub-status "configuring".
+        if (!collectionStarted && /\?\s+(Modules|Backup|Download|Remove|Acquire|Collect)/i.test(clean)) {
+          if (!inSurvey) {
+            inSurvey = true;
+            send("mvt:phase", { phase: 2, statusKey: "phaseStatus.configuring", label: "Configurando análisis", progress: 0.7 });
+          }
+        }
+
+        // Heurística de progreso por sección detectada → marca inicio real de fase 3.
+        const markCollect = (statusKey, label, progress) => {
+          collectionStarted = true;
+          send("mvt:phase", { phase: 3, statusKey, label, progress });
+        };
+        if (/backup/i.test(clean)) markCollect("phaseStatus.backup", "Backup", 0.2);
+        if (/Downloading APKs/i.test(clean)) markCollect("phaseStatus.downloadingApks", "Descargando APKs", 0.4);
         if (/Collecting information on installed apps/i.test(clean))
-          send("mvt:phase", { phase: 3, statusKey: "phaseStatus.analyzingApps", label: "Analizando apps", progress: 0.6 });
+          markCollect("phaseStatus.analyzingApps", "Analizando apps", 0.6);
         if (/(getprop|processes|services|dumpsys|SMS|settings|logcat)/i.test(clean))
-          send("mvt:phase", { phase: 3, statusKey: "phaseStatus.collectingSystemInfo", label: "Recolectando información del sistema", progress: 0.8 });
+          markCollect("phaseStatus.collectingSystemInfo", "Recolectando información del sistema", 0.8);
 
         // Esperamos 300 ms sin nuevos datos antes de responder, para no
         // contestar a un prompt que aún se está renderizando.
         if (stableTimer) clearTimeout(stableTimer);
         stableTimer = setTimeout(tryAnswerPrompt, 300);
       });
+
 
       const exitCode = await new Promise((resolve) => {
         child.onExit(({ exitCode: code }) => resolve(code ?? 0));

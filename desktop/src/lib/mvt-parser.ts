@@ -203,8 +203,21 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
   for (const { name, text } of entries) {
     const meta = parseFileName(name);
     if (!meta) continue;
+
     let data: any;
-    try { data = JSON.parse(text); } catch { continue; }
+    let countOverride: number | null = null;
+    if (meta.ext === "json") {
+      try { data = JSON.parse(text); } catch { continue; }
+    } else {
+      // Plain text artefact (AndroidQF dumps getprop/services/processes as .txt).
+      // We don't try to model rows — only use it for device info and an entry count.
+      if (meta.key === "getprop") {
+        data = parseGetpropText(text);
+      } else {
+        data = null;
+      }
+      countOverride = text.split(/\r?\n/).filter((l) => l.trim()).length;
+    }
 
     const info = lookupModule(meta.key);
     const existing = moduleMap.get(meta.key) || {
@@ -216,7 +229,7 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
       description: info?.description || "Módulo MVT.",
     };
 
-    const count = countEntries(data);
+    const count = countOverride ?? countEntries(data);
     if (meta.isDetected) {
       existing.detected += count;
       const items: any[] = Array.isArray(data) ? data : data && typeof data === "object" ? Object.values(data) : [];

@@ -45,7 +45,11 @@
     "resolvingVersion": "Looking up the latest version…",
     "downloadingBinary": "Downloading the analysis tool…",
     "binaryReady": "Tool ready",
+    "waitingDevice": "Connect your phone via USB. No device detected.",
     "waitingUsbAuth": "Waiting for authorization on your phone. Accept «Allow USB debugging».",
+    "deviceDetected": "Device connected and authorized.",
+    "deviceOffline": "Device connected but not responding. Unlock it.",
+    "configuring": "Configuring analysis…",
     "starting": "Starting analysis on the device…",
     "backup": "Creating device backup…",
     "downloadingApks": "Downloading installed apps…",
@@ -54,6 +58,7 @@
     "compressing": "Compressing results…",
     "done": "Analysis complete"
   },
+
   "error": {
     "title": "Something went wrong:",
     "back": "Back to start",

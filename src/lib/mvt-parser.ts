@@ -42,17 +42,33 @@ export interface MvtParsedResult {
   deviceInfo?: MvtDeviceInfo;
 }
 
-// Strip path & .json, return { key, isDetected }
-function parseFileName(name: string): { key: string; isDetected: boolean } | null {
+// Strip path & extension, return { key, isDetected, ext }
+function parseFileName(name: string): { key: string; isDetected: boolean; ext: "json" | "txt" } | null {
   const base = name.split("/").pop() || name;
-  if (!base.toLowerCase().endsWith(".json")) return null;
-  let key = base.slice(0, -5);
+  const lower = base.toLowerCase();
+  let ext: "json" | "txt";
+  let stem: string;
+  if (lower.endsWith(".json")) { ext = "json"; stem = base.slice(0, -5); }
+  else if (lower.endsWith(".txt")) { ext = "txt"; stem = base.slice(0, -4); }
+  else return null;
+  let key = stem;
   let isDetected = false;
   if (key.endsWith("_detected")) {
     isDetected = true;
     key = key.slice(0, -"_detected".length);
   }
-  return { key, isDetected };
+  return { key, isDetected, ext };
+}
+
+// Parse `[ro.product.brand]: [Samsung]` lines from `getprop` text output.
+function parseGetpropText(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const re = /^\[([^\]]+)\]:\s*\[([^\]]*)\]\s*$/;
+  for (const line of text.split(/\r?\n/)) {
+    const m = re.exec(line);
+    if (m) out[m[1]] = m[2];
+  }
+  return out;
 }
 
 function countEntries(data: any): number {
@@ -108,6 +124,10 @@ function pickLevel(obj: any, fallback: RiskLevel): RiskLevel {
 
 async function readFileEntries(files: File[]): Promise<{ name: string; text: string }[]> {
   const out: { name: string; text: string }[] = [];
+  const accept = (p: string) => {
+    const l = p.toLowerCase();
+    return l.endsWith(".json") || l.endsWith(".txt");
+  };
   for (const f of files) {
     const lower = f.name.toLowerCase();
     if (lower.endsWith(".zip")) {
@@ -116,11 +136,11 @@ async function readFileEntries(files: File[]): Promise<{ name: string; text: str
       const tasks: Promise<void>[] = [];
       zip.forEach((path, entry) => {
         if (entry.dir) return;
-        if (!path.toLowerCase().endsWith(".json")) return;
+        if (!accept(path)) return;
         tasks.push(entry.async("string").then((text) => { out.push({ name: path, text }); }));
       });
       await Promise.all(tasks);
-    } else if (lower.endsWith(".json")) {
+    } else if (accept(lower)) {
       const text = await f.text();
       out.push({ name: f.name, text });
     }
@@ -183,8 +203,21 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
   for (const { name, text } of entries) {
     const meta = parseFileName(name);
     if (!meta) continue;
+
     let data: any;
-    try { data = JSON.parse(text); } catch { continue; }
+    let countOverride: number | null = null;
+    if (meta.ext === "json") {
+      try { data = JSON.parse(text); } catch { continue; }
+    } else {
+      // Plain text artefact (AndroidQF dumps getprop/services/processes as .txt).
+      // We don't try to model rows — only use it for device info and an entry count.
+      if (meta.key === "getprop") {
+        data = parseGetpropText(text);
+      } else {
+        data = null;
+      }
+      countOverride = text.split(/\r?\n/).filter((l) => l.trim()).length;
+    }
 
     const info = lookupModule(meta.key);
     const existing = moduleMap.get(meta.key) || {
@@ -196,7 +229,7 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
       description: info?.description || "Módulo MVT.",
     };
 
-    const count = countEntries(data);
+    const count = countOverride ?? countEntries(data);
     if (meta.isDetected) {
       existing.detected += count;
       const items: any[] = Array.isArray(data) ? data : data && typeof data === "object" ? Object.values(data) : [];

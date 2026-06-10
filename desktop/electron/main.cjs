@@ -306,7 +306,57 @@ async function download(url, dest, onProgress) {
   }
 }
 
+/* ---------- ADB helpers ---------- */
+
+// Busca un binario `adb` utilizable: PATH, ANDROID_HOME, o un `adb` colocado
+// junto al binario de AndroidQF (algunos paquetes lo extraen ahí).
+function resolveAdbPath(workDir) {
+  const name = process.platform === "win32" ? "adb.exe" : "adb";
+  const candidates = [
+    workDir ? path.join(workDir, name) : null,
+    process.env.ANDROID_HOME ? path.join(process.env.ANDROID_HOME, "platform-tools", name) : null,
+    process.env.ANDROID_SDK_ROOT ? path.join(process.env.ANDROID_SDK_ROOT, "platform-tools", name) : null,
+    name, // PATH
+  ].filter(Boolean);
+  for (const c of candidates) {
+    try {
+      if (c === name) {
+        // Sondea PATH con --version (rápido). Si no existe, spawn lanza ENOENT.
+        const r = require("child_process").spawnSync(c, ["version"], { windowsHide: true });
+        if (!r.error && r.status === 0) return c;
+      } else if (fs.existsSync(c)) {
+        return c;
+      }
+    } catch {}
+  }
+  return null;
+}
+
+// Devuelve el "mejor" estado entre los dispositivos listados por `adb devices`.
+// Prioridad: device > unauthorized > offline > "none".
+async function adbDeviceState(adbBin) {
+  return new Promise((resolve) => {
+    const p = spawn(adbBin, ["devices"], { windowsHide: true });
+    let out = "";
+    p.stdout?.on("data", (d) => { out += d.toString(); });
+    p.on("error", () => resolve("none"));
+    p.on("close", () => {
+      const states = out
+        .split(/\r?\n/)
+        .slice(1)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((l) => l.split(/\s+/)[1] || "");
+      if (states.includes("device")) return resolve("device");
+      if (states.includes("unauthorized")) return resolve("unauthorized");
+      if (states.includes("offline")) return resolve("offline");
+      return resolve("none");
+    });
+  });
+}
+
 /* ---------- IPC handlers ---------- */
+
 
 let currentChild = null;
 let cancelled = false;
@@ -408,12 +458,52 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       }
 
 
-      // 2. Conectar y autorizar
-      send("mvt:phase", { phase: 2, statusKey: "phaseStatus.waitingUsbAuth", label: "Esperando autorización USB", progress: 0 });
-      send("mvt:log", "🔌 Conecta el móvil y acepta «Permitir depuración USB» en la pantalla.");
+      // 2. Esperar a que el usuario conecte y autorice el móvil.
+      //    Sondeamos `adb devices` si está disponible para reflejar la realidad
+      //    en la UI; si no lo está, mantenemos la fase 2 activa hasta que
+      //    AndroidQF empiece a hablar con el dispositivo de verdad.
+      send("mvt:phase", { phase: 2, statusKey: "phaseStatus.waitingDevice", label: "Esperando que conectes el móvil", progress: 0 });
+      send("mvt:log", "🔌 Conecta el móvil por USB y acepta «Permitir depuración USB» en la pantalla.");
 
-      // 3. Ejecutar AndroidQF respondiendo automáticamente a sus prompts
-      send("mvt:phase", { phase: 3, statusKey: "phaseStatus.starting", label: "Recolectando datos del dispositivo", progress: 0 });
+      const adbBin = resolveAdbPath(dir);
+      if (adbBin) {
+        const WAIT_DEVICE_TIMEOUT_MS = 120_000;
+        const POLL_MS = 1500;
+        const tStart = Date.now();
+        let lastState = "";
+        while (true) {
+          if (cancelled) return { ok: false, error: "cancelled" };
+          const state = await adbDeviceState(adbBin);
+          if (state !== lastState) {
+            lastState = state;
+            if (state === "device") {
+              send("mvt:phase", { phase: 2, statusKey: "phaseStatus.deviceDetected", label: "Dispositivo conectado", progress: 1 });
+              send("mvt:log", "✅ Dispositivo detectado y autorizado.");
+            } else if (state === "unauthorized") {
+              send("mvt:phase", { phase: 2, statusKey: "phaseStatus.waitingUsbAuth", label: "Esperando autorización USB", progress: 0.5 });
+              send("mvt:log", "⏳ Dispositivo detectado. Acepta «Permitir depuración USB» en la pantalla del móvil.");
+            } else if (state === "offline") {
+              send("mvt:phase", { phase: 2, statusKey: "phaseStatus.deviceOffline", label: "Dispositivo conectado pero sin responder", progress: 0.3 });
+            } else {
+              send("mvt:phase", { phase: 2, statusKey: "phaseStatus.waitingDevice", label: "Esperando que conectes el móvil", progress: 0 });
+            }
+          }
+          if (state === "device") break;
+          if (Date.now() - tStart > WAIT_DEVICE_TIMEOUT_MS) {
+            throw new Error(
+              "Dispositivo no detectado. Conecta el móvil por USB con la depuración activada y vuelve a intentarlo."
+            );
+          }
+          await new Promise((r) => setTimeout(r, POLL_MS));
+        }
+      } else {
+        send("mvt:log", "ℹ️ `adb` no disponible para sondear el dispositivo; AndroidQF lo gestionará internamente.");
+      }
+
+      // 3. Ejecutar AndroidQF. La fase 3 sólo se anunciará cuando detectemos
+      //    salida real de recolección (heurística más abajo); mientras tanto
+      //    seguimos en fase 2 con un sub-status veraz.
+
 
       // Cargamos node-pty bajo demanda: si falla, damos un mensaje claro
       // (típicamente falta el Visual C++ Redistributable en Windows).
@@ -499,6 +589,12 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
         }
       };
 
+      // Mientras AndroidQF está en su survey interactivo (modules/backup/…),
+      // seguimos en fase 2 con un sub-status veraz. Sólo subimos a fase 3
+      // cuando vemos un marcador real de recolección.
+      let inSurvey = false;
+      let collectionStarted = false;
+
       child.onData((data) => {
         const text = data.toString();
         buffer += text;
@@ -508,19 +604,32 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
 
         const clean = stripAnsi(text);
 
-        // Heurística de progreso por sección detectada
-        if (/backup/i.test(clean)) send("mvt:phase", { phase: 3, statusKey: "phaseStatus.backup", label: "Backup", progress: 0.2 });
-        if (/Downloading APKs/i.test(clean)) send("mvt:phase", { phase: 3, statusKey: "phaseStatus.downloadingApks", label: "Descargando APKs", progress: 0.4 });
+        // Detectar inicio de survey (prompt "? Modules:") → fase 2, sub-status "configuring".
+        if (!collectionStarted && /\?\s+(Modules|Backup|Download|Remove|Acquire|Collect)/i.test(clean)) {
+          if (!inSurvey) {
+            inSurvey = true;
+            send("mvt:phase", { phase: 2, statusKey: "phaseStatus.configuring", label: "Configurando análisis", progress: 0.7 });
+          }
+        }
+
+        // Heurística de progreso por sección detectada → marca inicio real de fase 3.
+        const markCollect = (statusKey, label, progress) => {
+          collectionStarted = true;
+          send("mvt:phase", { phase: 3, statusKey, label, progress });
+        };
+        if (/backup/i.test(clean)) markCollect("phaseStatus.backup", "Backup", 0.2);
+        if (/Downloading APKs/i.test(clean)) markCollect("phaseStatus.downloadingApks", "Descargando APKs", 0.4);
         if (/Collecting information on installed apps/i.test(clean))
-          send("mvt:phase", { phase: 3, statusKey: "phaseStatus.analyzingApps", label: "Analizando apps", progress: 0.6 });
+          markCollect("phaseStatus.analyzingApps", "Analizando apps", 0.6);
         if (/(getprop|processes|services|dumpsys|SMS|settings|logcat)/i.test(clean))
-          send("mvt:phase", { phase: 3, statusKey: "phaseStatus.collectingSystemInfo", label: "Recolectando información del sistema", progress: 0.8 });
+          markCollect("phaseStatus.collectingSystemInfo", "Recolectando información del sistema", 0.8);
 
         // Esperamos 300 ms sin nuevos datos antes de responder, para no
         // contestar a un prompt que aún se está renderizando.
         if (stableTimer) clearTimeout(stableTimer);
         stableTimer = setTimeout(tryAnswerPrompt, 300);
       });
+
 
       const exitCode = await new Promise((resolve) => {
         child.onExit(({ exitCode: code }) => resolve(code ?? 0));

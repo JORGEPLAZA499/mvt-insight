@@ -45,7 +45,11 @@
     "resolvingVersion": "Buscando la última versión disponible…",
     "downloadingBinary": "Descargando herramienta de análisis…",
     "binaryReady": "Herramienta lista",
+    "waitingDevice": "Conecta el móvil por USB. No se detecta ningún dispositivo.",
     "waitingUsbAuth": "Esperando autorización en el móvil. Acepta «Permitir depuración USB».",
+    "deviceDetected": "Dispositivo conectado y autorizado.",
+    "deviceOffline": "Dispositivo conectado, pero no responde. Desbloquéalo.",
+    "configuring": "Configurando análisis…",
     "starting": "Iniciando análisis en el dispositivo…",
     "backup": "Creando copia de seguridad del dispositivo…",
     "downloadingApks": "Descargando aplicaciones instaladas…",
@@ -54,6 +58,7 @@
     "compressing": "Comprimiendo resultados…",
     "done": "Análisis finalizado"
   },
+
   "error": {
     "title": "Algo salió mal:",
     "back": "Volver al inicio",

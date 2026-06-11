@@ -308,24 +308,6 @@ async function readFileEntries(files: File[]): Promise<{ name: string; text: str
   }
   return out;
 }
-    const lower = f.name.toLowerCase();
-    if (lower.endsWith(".zip")) {
-      const buf = await f.arrayBuffer();
-      const zip = await JSZip.loadAsync(buf);
-      const tasks: Promise<void>[] = [];
-      zip.forEach((path, entry) => {
-        if (entry.dir) return;
-        if (!accept(path)) return;
-        tasks.push(entry.async("string").then((text) => { out.push({ name: path, text }); }));
-      });
-      await Promise.all(tasks);
-    } else if (accept(lower)) {
-      const text = await f.text();
-      out.push({ name: f.name, text });
-    }
-  }
-  return out;
-}
 
 function extractAndroidGetprop(data: any): MvtDeviceInfo {
   const map = new Map<string, string>();

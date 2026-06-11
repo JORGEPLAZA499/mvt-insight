@@ -671,28 +671,49 @@ export function App() {
             <div style={{ marginTop: 8, fontSize: 13, color: "var(--muted)" }}>
               {tr(
                 "iosDrivers.body",
-                "Para que el ordenador reconozca el iPhone necesitamos los drivers de Apple Mobile Device. No podemos incluirlos en nuestra app por la licencia de Apple; instálalos en 1 clic desde la Microsoft Store (recomendado) o desde el instalador oficial de iTunes."
+                "Para que el ordenador reconozca el iPhone necesitamos los drivers de Apple Mobile Device. No podemos incluirlos en nuestra app por la licencia de Apple. La forma más rápida es instalar la app gratuita «Apple Devices» desde la Microsoft Store."
               )}
             </div>
-            <div className="row" style={{ marginTop: 12, flexWrap: "wrap", gap: 8 }}>
+            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
               <button
                 className="btn"
+                style={{ justifyContent: "center" }}
                 onClick={() => window.mvt?.openExternal("ms-windows-store://pdp/?productid=9NP83LWLPZ9K")}
               >
                 {tr("iosDrivers.installStore", "Instalar «Apple Devices» (Microsoft Store)")}
               </button>
-              <button
-                className="btn btn-secondary"
-                onClick={() => window.mvt?.openExternal("https://www.apple.com/itunes/download/win64")}
-              >
-                {tr("iosDrivers.installItunes", "Descargar iTunes (apple.com)")}
-              </button>
-              <button className="btn btn-secondary" onClick={retryIosAfterDrivers}>
-                {tr("iosDrivers.retry", "Ya lo he instalado — reintentar")}
-              </button>
-              <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-                {tr("error.back", "Volver al inicio")}
-              </button>
+
+              {!showItunesFallback ? (
+                <button
+                  className="btn btn-secondary"
+                  style={{ fontSize: 12, padding: "6px 10px" }}
+                  onClick={() => setShowItunesFallback(true)}
+                >
+                  {tr("iosDrivers.fallbackHint", "¿No puedes usar la Microsoft Store?")}
+                </button>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, color: "var(--muted)", textAlign: "center" }}>
+                    {tr("iosDrivers.fallbackBody", "Si la Microsoft Store no está disponible en tu equipo, puedes usar el instalador oficial de iTunes como alternativa.")}
+                  </div>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ justifyContent: "center" }}
+                    onClick={() => window.mvt?.openExternal("https://www.apple.com/itunes/download/win64")}
+                  >
+                    {tr("iosDrivers.installItunes", "Descargar iTunes (apple.com)")}
+                  </button>
+                </>
+              )}
+
+              <div className="row" style={{ flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                <button className="btn btn-secondary" onClick={retryIosAfterDrivers}>
+                  {tr("iosDrivers.retry", "Ya lo he instalado — reintentar")}
+                </button>
+                <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
+                  {tr("error.back", "Volver al inicio")}
+                </button>
+              </div>
             </div>
           </div>
         ) : error && (

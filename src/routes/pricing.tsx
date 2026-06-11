@@ -109,9 +109,6 @@ function PricingPage() {
                       <ShieldCheck className="h-3.5 w-3.5" />
                       {t("purchase.badge")}
                     </div>
-                    <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
-                      {t("landing.nav.pricing")}
-                    </h1>
                   </div>
                   <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">
                     {t("purchase.title")}

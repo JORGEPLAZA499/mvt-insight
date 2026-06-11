@@ -584,7 +584,6 @@ export function generatePdfReport(a: Analysis) {
 
   // 07 · Verificación cruzada
   sectionTitle("07", "Cómo verificar este resultado");
-  paragraph("MVT solo detecta amenazas con firma conocida. Si tienes una sospecha real, no te quedes solo con este informe: contrasta el resultado con la herramienta oficial y, si es necesario, con un equipo especializado.", { size: 10 });
   ctx.y += 6;
   CROSS_CHECK_STEPS.forEach((step) => {
     const titleLines = doc.splitTextToSize(step.title, CW - 24);

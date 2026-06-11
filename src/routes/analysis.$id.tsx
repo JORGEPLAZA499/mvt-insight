@@ -366,7 +366,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 04 · Cómo leer este informe */}
       <section>
-        <SectionTitle num="04" title="Cómo leer este informe" />
+        <SectionTitle num={sec()} title="Cómo leer este informe" />
         <p className="text-sm text-foreground/80">
           MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo.
           Un indicio no equivale a una infección confirmada: puede tratarse de una app legítima instalada por el propio usuario.
@@ -388,7 +388,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 05 · Áreas del dispositivo analizadas */}
       <section>
-        <SectionTitle num="05" title="Áreas del dispositivo analizadas" />
+        <SectionTitle num={sec()} title="Áreas del dispositivo analizadas" />
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
             <div className="col-span-6">Área</div>
@@ -407,7 +407,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 06 · Indicios detectados */}
       <section>
-        <SectionTitle num="06" title="Indicios detectados" />
+        <SectionTitle num={sec()} title="Indicios detectados" />
         {r.detections.length === 0 ? (
           <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm">
             <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
@@ -421,7 +421,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* 07 · Apps con más actividad sospechosa */}
       {topApps.length > 0 && (
         <section>
-          <SectionTitle num="07" title="Apps con más actividad sospechosa" />
+          <SectionTitle num={sec()} title="Apps con más actividad sospechosa" />
           <p className="text-sm text-muted-foreground mb-4">
             Apps que más veces aparecen en los indicios técnicos. Si no reconoces alguna marcada como "Origen no reconocido", revísala con calma.
           </p>
@@ -436,7 +436,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* 08 · Cronología de eventos clave */}
       {humanTimeline.length > 0 && (
         <section>
-          <SectionTitle num="08" title="Cronología de eventos clave" />
+          <SectionTitle num={sec()} title="Cronología de eventos clave" />
           <p className="text-sm text-muted-foreground mb-4">
             Reconstrucción en lenguaje natural de los eventos más relevantes detectados, ordenados por fecha.
           </p>
@@ -459,7 +459,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 09 · Próximos pasos recomendados */}
       <section>
-        <SectionTitle num="09" title="Próximos pasos recomendados" />
+        <SectionTitle num={sec()} title="Próximos pasos recomendados" />
         <ol className="space-y-3">
           {recs.map((rec, i) => (
             <li key={i} className="flex gap-3">
@@ -472,7 +472,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 10 · Cómo verificar este resultado */}
       <section>
-        <SectionTitle num="10" title="Cómo verificar este resultado" />
+        <SectionTitle num={sec()} title="Cómo verificar este resultado" />
         <div className="space-y-3">
           {CROSS_CHECK_STEPS.map((step) => (
             <div key={step.title} className="rounded-lg border border-border bg-card p-4 border-l-4 border-l-primary">
@@ -485,7 +485,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 11 · Glosario */}
       <section>
-        <SectionTitle num="11" title="Glosario de términos" />
+        <SectionTitle num={sec()} title="Glosario de términos" />
         <p className="text-sm text-muted-foreground mb-4">
           Pequeño diccionario para entender los términos técnicos que aparecen en este informe.
         </p>
@@ -504,7 +504,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 12 · Aviso legal */}
       <section>
-        <SectionTitle num="12" title="Aviso legal y metodología" />
+        <SectionTitle num={sec()} title="Aviso legal y metodología" />
         <div className="space-y-3 text-xs text-muted-foreground">
           <p>Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.</p>
           <p>Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.</p>

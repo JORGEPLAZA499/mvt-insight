@@ -806,7 +806,170 @@ export const GLOSSARY: { term: string; definition: string }[] = [
   { term: "Servicio de accesibilidad", definition: "Permiso muy potente pensado para personas con discapacidad: permite a una app leer la pantalla y simular toques. Es muy usado por stalkerware." },
   { term: "Bootloader", definition: "Programa que arranca el sistema operativo del móvil. Si está desbloqueado, el sistema podría haber sido modificado." },
   { term: "Root", definition: "Acceso de administrador total al sistema Android. Si está activo, las apps pueden saltarse muchas protecciones." },
+  { term: "SELinux", definition: "Mecanismo de seguridad de Android que aísla las apps entre sí. Debe estar en modo 'enforcing' (estricto) para proteger correctamente el dispositivo." },
+  { term: "Perfil de configuración (MDM)", definition: "En iOS, archivo que aplica ajustes al dispositivo (VPN, certificados, restricciones). Si lo instala alguien que no eres tú, puede interceptar tu tráfico." },
+  { term: "Exfiltración de datos", definition: "Envío silencioso de información del dispositivo (mensajes, contactos, ubicación) hacia un servidor externo controlado por un atacante." },
   { term: "Parche de seguridad", definition: "Actualización del fabricante que corrige fallos de seguridad. Si lleva muchos meses sin instalarse, el dispositivo es más vulnerable." },
   { term: "Stalkerware", definition: "Apps comerciales legales de vigilancia (control parental, seguimiento de pareja). No son malware en sentido estricto, pero permiten espiar." },
   { term: "Spyware mercenario", definition: "Malware avanzado de uso dirigido vendido a gobiernos (Pegasus, Predator, FinFisher). Trátalo siempre como emergencia." },
 ];
+
+// ============================================================
+// Estado de seguridad del sistema (Android)
+// ============================================================
+
+export interface SystemIntegrityCard {
+  rootBinaries: string[];
+  selinux?: { status: SelinuxStatus; label: string; explanation: string; severity: RiskLevel };
+  bootloader?: { label: string; severity: RiskLevel };
+  combinedAlert?: string;
+  hasAny: boolean;
+}
+
+export function buildSystemIntegrity(result: MvtParsedResult): SystemIntegrityCard {
+  const card: SystemIntegrityCard = { rootBinaries: result.rootBinaries ?? [], hasAny: false };
+  if (card.rootBinaries.length) card.hasAny = true;
+
+  if (result.selinuxStatus) {
+    const map: Record<SelinuxStatus, { label: string; explanation: string; severity: RiskLevel }> = {
+      enforcing: { label: "Enforcing (estricto)", explanation: "El aislamiento entre apps está activo. Es el estado recomendado.", severity: "low" },
+      permissive: { label: "Permissive (relajado)", explanation: "El sistema registra las violaciones pero no las bloquea. Protección reducida.", severity: "high" },
+      disabled: { label: "Disabled (desactivado)", explanation: "El aislamiento entre apps está desactivado. Una app maliciosa puede acceder a datos de otras.", severity: "critical" },
+    };
+    card.selinux = { status: result.selinuxStatus, ...map[result.selinuxStatus] };
+    card.hasAny = true;
+  }
+
+  const boot = result.deviceInfo?.bootloaderState?.toLowerCase();
+  if (boot) {
+    if (boot === "orange" || boot === "unlocked" || boot === "0" || boot === "false") {
+      card.bootloader = { label: "Desbloqueado", severity: "high" };
+      card.hasAny = true;
+    } else if (boot === "yellow" || boot === "red") {
+      card.bootloader = { label: boot === "red" ? "Estado no verificable" : "Modificado con clave propia", severity: "high" };
+      card.hasAny = true;
+    }
+  }
+
+  const debuggable = result.deviceInfo?.debuggable === true;
+  const bootUnlocked = card.bootloader && card.bootloader.severity !== "low";
+  const hasRoot = card.rootBinaries.length > 0;
+  if (hasRoot && bootUnlocked && debuggable) {
+    card.combinedAlert = "El dispositivo tiene a la vez bootloader desbloqueado, modo desarrollador activo y binarios de root. La combinación deja al móvil prácticamente sin protecciones — actúa solo si reconoces haberlo configurado tú.";
+  } else if (hasRoot) {
+    card.combinedAlert = "Se han encontrado binarios de root: cualquier app con permisos de superusuario puede saltarse las protecciones del sistema.";
+  }
+  return card;
+}
+
+// ============================================================
+// Servicios de accesibilidad activos (Android)
+// ============================================================
+
+export interface AccessibilityRow {
+  packageName: string;
+  service: string;
+  displayName: string;
+  origin: AppOrigin;
+  originLabel: string;
+}
+
+export function buildAccessibilityList(result: MvtParsedResult): AccessibilityRow[] {
+  const list = result.accessibilityServices ?? [];
+  return list.map((a: AccessibilityServiceEntry) => {
+    const oc = classifyOrigin(a.package);
+    return {
+      packageName: a.package,
+      service: a.service,
+      displayName: KNOWN_PACKAGES[a.package] || a.package.split(".").slice(-1)[0],
+      origin: oc.origin,
+      originLabel: oc.label,
+    };
+  }).sort((a, b) => {
+    const order = { unknown: 0, known: 1, system: 2 } as const;
+    return order[a.origin] - order[b.origin];
+  });
+}
+
+// ============================================================
+// Perfiles de configuración instalados (iOS)
+// ============================================================
+
+export interface ConfigProfileRow {
+  name: string;
+  org?: string;
+  uuid?: string;
+  type?: string;
+  installDate?: string;
+  typeLabel: string;
+  severity: RiskLevel;
+  warning?: string;
+}
+
+const PROFILE_TYPE_LABELS: Record<string, string> = {
+  "com.apple.vpn.managed": "VPN gestionada",
+  "com.apple.security.root": "Certificado raíz",
+  "com.apple.security.pem": "Certificado",
+  "com.apple.mdm": "Gestión MDM",
+  "com.apple.wifi.managed": "Wi-Fi gestionada",
+  "com.apple.webClip.managed": "Acceso directo (web clip)",
+  "com.apple.email.account": "Cuenta de correo",
+  "com.apple.profileRemovalPassword": "Bloqueo de eliminación",
+};
+
+export function buildConfigProfiles(result: MvtParsedResult): ConfigProfileRow[] {
+  const list = result.iosConfigProfiles ?? [];
+  return list.map((p: IosConfigProfile): ConfigProfileRow => {
+    const type = p.type || "";
+    const typeLabel = PROFILE_TYPE_LABELS[type] || (type ? type.split(".").pop() || type : "Perfil de configuración");
+    let severity: RiskLevel = "low";
+    let warning: string | undefined;
+    if (type.includes("vpn")) {
+      severity = "high";
+      warning = "Este perfil configura una VPN: todo el tráfico de internet puede pasar por servidores controlados por quien instaló el perfil.";
+    } else if (type.includes("root") || type.includes("pem")) {
+      severity = "critical";
+      warning = "Este perfil instala un certificado raíz: permite a quien lo controle leer tráfico HTTPS supuestamente cifrado.";
+    } else if (type.includes("mdm")) {
+      severity = "high";
+      warning = "Este perfil instala gestión remota (MDM): permite controlar el dispositivo de forma remota.";
+    }
+    return { name: p.name, org: p.org, uuid: p.uuid?.slice(0, 8), type, installDate: p.installDate, typeLabel, severity, warning };
+  }).sort((a, b) => (SEV_ORDER[b.severity] ?? 0) - (SEV_ORDER[a.severity] ?? 0));
+}
+
+// ============================================================
+// Apps con más tráfico de red (iOS)
+// ============================================================
+
+function formatBytes(n: number): string {
+  if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(2)} GB`;
+  if (n >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(1)} MB`;
+  if (n >= 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${n} B`;
+}
+
+export interface NetworkAppRow {
+  displayName: string;
+  packageName: string;
+  origin: AppOrigin;
+  originLabel: string;
+  totalBytes: number;
+  totalLabel: string;
+}
+
+export function buildTopNetwork(result: MvtParsedResult): NetworkAppRow[] {
+  const list = result.topNetworkProcs ?? [];
+  return list.map((p: NetworkProcUsage): NetworkAppRow => {
+    const id = p.bundle || p.name;
+    const oc = classifyOrigin(id);
+    return {
+      displayName: KNOWN_PACKAGES[id] || p.name,
+      packageName: id,
+      origin: oc.origin,
+      originLabel: oc.label,
+      totalBytes: p.totalBytes,
+      totalLabel: formatBytes(p.totalBytes),
+    };
+  });
+}

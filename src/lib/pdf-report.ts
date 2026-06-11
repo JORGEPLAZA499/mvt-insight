@@ -234,12 +234,8 @@ export function generatePdfReport(a: Analysis) {
   // ============================================================
   newPage();
 
-  // 01 · Resumen ejecutivo
-  sectionTitle("01", "Resumen ejecutivo");
-
-  // Bloque de VEREDICTO en una frase
-  // 01 · Veredicto
-  sectionTitle("01", "Veredicto");
+  // Veredicto
+  sectionTitle(NEXT(), "Veredicto");
   if (r) {
     const v = buildVerdict(r);
     const verdictColor: [number, number, number] =

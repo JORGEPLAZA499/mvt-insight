@@ -372,7 +372,11 @@
         "body": "Turn on airplane mode to prevent new messages or notifications from arriving during the analysis. Then plug the phone in over USB and in the app click «Start analysis». The app processes the full backup locally."
       },
       "step4": {
-        "title": "Step 4: Get the report here",
+        "title": "Step 4: Enable developer mode",
+        "body": "On your phone, go to Settings → About phone and tap 7 times on «Build number». Then go to Settings → System → Developer options and turn on «USB Debugging»."
+      },
+      "step5": {
+        "title": "Step 5: Get the report here",
         "body": "When it finishes, the report syncs to your web account automatically and opens in your browser."
       },
       "security": {

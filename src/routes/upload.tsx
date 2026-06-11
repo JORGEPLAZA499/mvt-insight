@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   ArrowLeft,
   ArrowRight,
+  Settings,
 } from "lucide-react";
 
 export const Route = createFileRoute("/upload")({
@@ -28,7 +29,8 @@ function Upload() {
     { icon: Download, key: "step1" },
     { icon: Monitor, key: "step2" },
     { icon: Smartphone, key: "step3" },
-    { icon: FileSearch, key: "step4" },
+    { icon: Settings, key: "step4" },
+    { icon: FileSearch, key: "step5" },
   ];
 
   const total = steps.length;

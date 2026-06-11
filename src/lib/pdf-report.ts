@@ -300,7 +300,7 @@ export function generatePdfReport(a: Analysis) {
       doc.setFont("helvetica", "normal"); doc.setFontSize(8);
       doc.text(label.toUpperCase(), x + 10, ctx.y + 16);
       setText(color);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(20);
       doc.text(value, x + 10, ctx.y + 42);
     });
     ctx.y += 72;

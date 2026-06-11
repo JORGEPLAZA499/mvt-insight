@@ -471,6 +471,71 @@ export function App() {
     );
   }
 
+  if (screen === "iosSetup") {
+    return (
+      <div className="app">
+        {TopBar}
+        <div className="header">
+          <Logo size={140} />
+          <h1>{tr("ios.title", "Analizar iPhone")}</h1>
+          <p>{tr("ios.subtitle", "Define una contraseña para cifrar el backup. Es obligatoria para poder analizar SMS, llamadas, Salud y Llavero.")}</p>
+        </div>
+        <div className="card">
+          <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "var(--muted)", lineHeight: 1.7 }}>
+            <li>{tr("ios.step1", "Conecta el iPhone al ordenador con un cable USB.")}</li>
+            <li>{tr("ios.step2", "Desbloquea el iPhone y, si aparece, pulsa «Confiar» en la pantalla del teléfono.")}</li>
+            <li>{tr("ios.step3", "Elige una contraseña para el backup cifrado. Guárdala: si el iPhone ya tenía un backup cifrado, debe ser la misma de iTunes/Finder.")}</li>
+          </ol>
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <input
+              type="password"
+              value={iosPassword}
+              onChange={(e) => setIosPassword(e.target.value)}
+              placeholder={tr("ios.passwordPlaceholder", "Contraseña del backup")}
+              autoFocus
+              style={{
+                fontFamily: "SF Mono, Menlo, monospace",
+                fontSize: 16,
+                padding: "10px 14px",
+                borderRadius: 8,
+                border: "1px solid var(--border, #333)",
+                background: "var(--bg-soft, #1a1a22)",
+                color: "var(--fg, #fff)",
+              }}
+            />
+            <input
+              type="password"
+              value={iosPasswordConfirm}
+              onChange={(e) => setIosPasswordConfirm(e.target.value)}
+              placeholder={tr("ios.passwordConfirmPlaceholder", "Repite la contraseña")}
+              style={{
+                fontFamily: "SF Mono, Menlo, monospace",
+                fontSize: 16,
+                padding: "10px 14px",
+                borderRadius: 8,
+                border: "1px solid var(--border, #333)",
+                background: "var(--bg-soft, #1a1a22)",
+                color: "var(--fg, #fff)",
+              }}
+            />
+            {iosPasswordError && (
+              <div style={{ color: "var(--danger)", fontSize: 13 }}>{iosPasswordError}</div>
+            )}
+            <div className="row">
+              <button className="btn" onClick={handleIosStart} disabled={!iosPassword || !iosPasswordConfirm}>
+                {tr("ios.startAnalysis", "Iniciar análisis")}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
+                {tr("ios.cancel", "Cancelar")}
+              </button>
+            </div>
+          </div>
+        </div>
+        {VersionCorner}
+      </div>
+    );
+  }
+
   if (screen === "welcome") {
     return (
       <div className="app">

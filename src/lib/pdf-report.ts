@@ -782,7 +782,7 @@ export function generatePdfReport(a: Analysis) {
         : app.origin === "known" ? "App popular conocida"
         : "Origen no reconocido — revísala";
       const catLine = app.categories.length ? `Visto en: ${app.categories.join(", ")}` : "";
-      const cardH3 = 16 + 14 + 12 + (catLine ? 12 : 0) + 14;
+      const cardH3 = 18 + 16 + 12 + (catLine ? 12 : 0) + 14;
       ensure(cardH3 + 4);
       setFill(SOFT_BG);
       doc.roundedRect(M.left, ctx.y, CW, cardH3, 4, 4, "F");
@@ -792,7 +792,7 @@ export function generatePdfReport(a: Analysis) {
       let yy = ctx.y + 16;
       const chipW = severityChip(app.severity, M.left + 12, yy);
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
       doc.text(`${i + 1}. ${app.displayName}  ·  ${app.count} indicio(s)`, M.left + 12 + chipW + 6, yy);
       yy += 12;
       setText(MUTED);

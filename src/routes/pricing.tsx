@@ -63,12 +63,12 @@ function PricingPage() {
           }}
         />
 
-        <section className="relative max-w-5xl mx-auto px-6 py-16 md:py-24">
+        <section className="relative max-w-5xl mx-auto px-6 pt-6 pb-16 md:pt-8 md:pb-24">
           <div className="text-center mb-10">
-            <h1 className="mt-5 text-4xl md:text-5xl font-semibold tracking-tight">
+            <h1 className="text-4xl md:text-5xl font-semibold tracking-tight">
               {t("landing.nav.pricing")}
             </h1>
-            <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
+            <p className="mt-3 text-muted-foreground max-w-4xl mx-auto">
               {t("purchase.description")}
             </p>
           </div>

@@ -231,6 +231,10 @@ function UserReport({ analysis }: { analysis: Analysis }) {
   const deviceCard = useMemo(() => buildDeviceCard(r.deviceInfo), [r.deviceInfo]);
   const topApps = useMemo(() => buildTopApps(r.detections, 10), [r.detections]);
   const humanTimeline = useMemo(() => buildHumanTimeline(r.timeline, r.detections, 20), [r.timeline, r.detections]);
+  const systemIntegrity = useMemo(() => buildSystemIntegrity(r), [r]);
+  const accessibility = useMemo(() => buildAccessibilityList(r), [r]);
+  const configProfiles = useMemo(() => buildConfigProfiles(r), [r]);
+  const topNetwork = useMemo(() => buildTopNetwork(r), [r]);
   const verdictBorder =
     verdict.level === "mercenary" ? "border-destructive/40 bg-destructive/5"
     : verdict.level === "stalkerware" ? "border-destructive/30 bg-destructive/5"
@@ -240,11 +244,15 @@ function UserReport({ analysis }: { analysis: Analysis }) {
     verdict.level === "clean" ? "text-success" :
     verdict.level === "suspicious" ? "text-warning" : "text-destructive";
 
+  // Numeración dinámica de secciones: solo se incrementa cuando la sección se renderiza.
+  let __n = 0;
+  const sec = () => String(++__n).padStart(2, "0");
+
   return (
     <div className="space-y-10">
-      {/* 01 · Veredicto */}
+      {/* Veredicto */}
       <section>
-        <SectionTitle num="01" title="Veredicto" />
+        <SectionTitle num={sec()} title="Veredicto" />
         <div className={`rounded-xl border p-6 ${verdictBorder}`}>
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Veredicto</div>
           <div className={`text-xl font-semibold mt-1 ${verdictTitle}`}>{verdict.headline}</div>
@@ -252,9 +260,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         </div>
       </section>
 
-      {/* 02 · Resumen ejecutivo */}
+      {/* Resumen ejecutivo */}
       <section>
-        <SectionTitle num="02" title="Resumen ejecutivo" />
+        <SectionTitle num={sec()} title="Resumen ejecutivo" />
         <p className="text-sm text-foreground/90">
           Se ha analizado el archivo <strong>"{analysis.fileName}"</strong>. La plataforma detectada es{" "}
           <strong>{platformLabel(r.platform)}</strong>. Se procesaron{" "}
@@ -271,10 +279,10 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         </div>
       </section>
 
-      {/* 03 · Ficha del dispositivo */}
+      {/* Ficha del dispositivo */}
       {deviceCard.length > 0 && (
         <section>
-          <SectionTitle num="03" title="Ficha del dispositivo" />
+          <SectionTitle num={sec()} title="Ficha del dispositivo" />
           <p className="text-sm text-muted-foreground mb-4">
             Información del terminal extraída automáticamente del análisis. Por privacidad, números de serie e identificadores se muestran parcialmente.
           </p>
@@ -298,6 +306,63 @@ function UserReport({ analysis }: { analysis: Analysis }) {
           </div>
         </section>
       )}
+
+      {/* Estado de seguridad del sistema (Android) */}
+      {systemIntegrity.hasAny && (
+        <section>
+          <SectionTitle num={sec()} title="Estado de seguridad del sistema" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Comprobaciones que indican si el sistema operativo conserva sus protecciones de fábrica o ha sido modificado.
+          </p>
+          <SystemIntegrityCardView card={systemIntegrity} />
+        </section>
+      )}
+
+      {/* Servicios de accesibilidad activos (Android) */}
+      {accessibility.length > 0 && (
+        <section>
+          <SectionTitle num={sec()} title="Servicios de accesibilidad activos" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Los servicios de accesibilidad pueden leer la pantalla y simular toques. Es el permiso que utilizan la mayoría de apps de vigilancia (stalkerware). Si no reconoces alguno marcado como "Origen no reconocido", revísalo y desactívalo en Ajustes → Accesibilidad.
+          </p>
+          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {accessibility.map((row) => (
+              <AccessibilityRowView key={`${row.packageName}/${row.service}`} row={row} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Perfiles de configuración instalados (iOS) */}
+      {configProfiles.length > 0 && (
+        <section>
+          <SectionTitle num={sec()} title="Perfiles de configuración instalados" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Los perfiles de configuración pueden cambiar ajustes profundos del dispositivo (VPN, certificados, gestión remota). Revisa los que no hayas instalado tú mismo o tu empresa.
+          </p>
+          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {configProfiles.map((p) => (
+              <ConfigProfileRowView key={p.uuid || p.name} profile={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Apps con más tráfico de red (iOS) */}
+      {topNetwork.length > 0 && (
+        <section>
+          <SectionTitle num={sec()} title="Apps con más tráfico de red" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Procesos o apps que más datos han enviado o recibido (Wi-Fi + datos móviles). Un proceso desconocido con mucho tráfico en segundo plano puede estar enviando información del dispositivo a un servidor externo.
+          </p>
+          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {topNetwork.map((app, i) => (
+              <NetworkAppRowView key={app.packageName} app={app} index={i + 1} />
+            ))}
+          </div>
+        </section>
+      )}
+
 
       {/* 04 · Cómo leer este informe */}
       <section>

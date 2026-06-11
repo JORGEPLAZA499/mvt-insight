@@ -193,10 +193,21 @@ export function App() {
       return;
     }
     const pwd = iosPassword;
+    lastIosPasswordRef.current = pwd;
     setIosPassword("");
     setIosPasswordConfirm("");
     void start("ios", { password: pwd });
   };
+
+  const retryIosAfterDrivers = () => {
+    const pwd = lastIosPasswordRef.current;
+    if (!pwd) {
+      setScreen("welcome");
+      return;
+    }
+    void start("ios", { password: pwd });
+  };
+
 
   // Subida automática al servidor cuando entramos en "done" con cuenta vinculada.
   // El usuario también puede subirlo manualmente desde el botón "Subir datos al informe".

@@ -32,6 +32,12 @@ export function PublicHeader({ anchorsToHome = false }: PublicHeaderProps) {
             </span>
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300 shadow-[0_0_8px_var(--primary)]" />
           </a>
+          <Link to="/pricing" className="relative text-muted-foreground hover:text-primary transition-colors duration-300 group">
+            <span className="drop-shadow-[0_0_6px_rgba(0,0,0,0)] group-hover:drop-shadow-[0_0_8px_var(--primary)] transition-all duration-300">
+              {t("landing.nav.pricing")}
+            </span>
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300 shadow-[0_0_8px_var(--primary)]" />
+          </Link>
           <Link to="/legal" className="relative text-muted-foreground hover:text-primary transition-colors duration-300 group">
             <span className="drop-shadow-[0_0_6px_rgba(0,0,0,0)] group-hover:drop-shadow-[0_0_8px_var(--primary)] transition-all duration-300">
               {t("landing.nav.legal")}

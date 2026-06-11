@@ -280,4 +280,6 @@ module.exports = {
   runMvtIos,
   iosBinPath,
   iosToolsDir,
+  checkAppleDriversWindows,
 };
+

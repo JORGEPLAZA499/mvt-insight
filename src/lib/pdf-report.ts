@@ -461,7 +461,7 @@ export function generatePdfReport(a: Analysis) {
       uniqueTotal += arr.length;
     });
 
-    sectionTitle("05", `Indicios detectados · ${uniqueTotal} entidad${uniqueTotal === 1 ? "" : "es"} (${r.detections.length} ocurrencias)`);
+    sectionTitle("06", `Indicios detectados · ${uniqueTotal} entidad${uniqueTotal === 1 ? "" : "es"} (${r.detections.length} ocurrencias)`);
 
     // Distribución
     const distLine = (["mercenary", "stalkerware", "suspicious"] as Category[])
@@ -569,8 +569,76 @@ export function generatePdfReport(a: Analysis) {
   }
 
 
-  // 06 · Próximos pasos
-  sectionTitle("06", "Próximos pasos recomendados");
+  // 07 · Apps con más actividad sospechosa
+  const topApps = r ? buildTopApps(r.detections, 10) : [];
+  if (topApps.length > 0) {
+    sectionTitle("07", "Apps con más actividad sospechosa");
+    paragraph("Apps que más veces aparecen en los indicios técnicos. Revisa con calma las marcadas como 'Origen no reconocido'.", { size: 9, color: MUTED });
+    ctx.y += 4;
+    topApps.forEach((app, i) => {
+      const originText =
+        app.origin === "system" ? "App del sistema o del fabricante"
+        : app.origin === "known" ? "App popular conocida"
+        : "Origen no reconocido — revísala";
+      const catLine = app.categories.length ? `Visto en: ${app.categories.join(", ")}` : "";
+      const cardH3 = 16 + 14 + 12 + (catLine ? 12 : 0) + 14;
+      ensure(cardH3 + 4);
+      setFill(SOFT_BG);
+      doc.roundedRect(M.left, ctx.y, CW, cardH3, 4, 4, "F");
+      const [sr, sg, sb] = SEV_COLOR[app.severity] ?? MUTED;
+      setFill([sr, sg, sb]);
+      doc.rect(M.left, ctx.y, 3, cardH3, "F");
+      let yy = ctx.y + 16;
+      const chipW = severityChip(app.severity, M.left + 12, yy);
+      setText(INK);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.text(`${i + 1}. ${app.displayName}  ·  ${app.count} indicio(s)`, M.left + 12 + chipW + 6, yy);
+      yy += 12;
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.text(app.packageName, M.left + 12, yy);
+      yy += 11;
+      doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+      doc.text(originText, M.left + 12, yy);
+      if (catLine) {
+        yy += 11;
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+        doc.text(doc.splitTextToSize(catLine, CW - 24)[0], M.left + 12, yy);
+      }
+      ctx.y += cardH3 + 6;
+    });
+    ctx.y += 4;
+  }
+
+  // 08 · Cronología de eventos clave
+  const humanEvents = r ? buildHumanTimeline(r.timeline, r.detections, 20) : [];
+  if (humanEvents.length > 0) {
+    sectionTitle("08", "Cronología de eventos clave");
+    paragraph("Reconstrucción en lenguaje natural de los eventos más relevantes, ordenados por fecha.", { size: 9, color: MUTED });
+    ctx.y += 6;
+    humanEvents.forEach((e) => {
+      const whenLines = doc.splitTextToSize(e.when, CW - 24);
+      const sentLines = doc.splitTextToSize(e.sentence, CW - 24);
+      const boxH = 6 + whenLines.length * 10 + sentLines.length * 12 + 8;
+      ensure(boxH + 4);
+      const [sr, sg, sb] = SEV_COLOR[e.severity] ?? MUTED;
+      setFill([sr, sg, sb]);
+      doc.rect(M.left, ctx.y, 3, boxH, "F");
+      let yy = ctx.y + 12;
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.text(whenLines, M.left + 12, yy);
+      yy += whenLines.length * 10 + 2;
+      setText(INK);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      doc.text(sentLines, M.left + 12, yy);
+      ctx.y += boxH + 4;
+    });
+    ctx.y += 4;
+  }
+
+  // 09 · Próximos pasos
+  sectionTitle("09", "Próximos pasos recomendados");
   const recs = r ? nextSteps(r) : [
     "Aislar el dispositivo de redes sensibles hasta completar la verificación.",
     "Actualizar el sistema operativo y revocar credenciales potencialmente expuestas.",
@@ -589,8 +657,8 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += Math.max(20, lines.length * 13 + 4);
   });
 
-  // 07 · Verificación cruzada
-  sectionTitle("07", "Cómo verificar este resultado");
+  // 10 · Verificación cruzada
+  sectionTitle("10", "Cómo verificar este resultado");
   ctx.y += 6;
   CROSS_CHECK_STEPS.forEach((step) => {
     const titleLines = doc.splitTextToSize(step.title, CW - 24);
@@ -612,8 +680,33 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += boxH + 6;
   });
 
-  // 08 · Aviso legal
-  sectionTitle("08", "Aviso legal y metodología");
+  // 11 · Glosario de términos
+  sectionTitle("11", "Glosario de términos");
+  paragraph("Pequeño diccionario para entender los términos técnicos que aparecen en este informe.", { size: 9, color: MUTED });
+  ctx.y += 4;
+  GLOSSARY.forEach((g, i) => {
+    const termLines = doc.splitTextToSize(g.term, CW - 20);
+    const defLines = doc.splitTextToSize(g.definition, CW - 20);
+    const boxH = 6 + termLines.length * 12 + defLines.length * 11 + 8;
+    ensure(boxH);
+    if (i % 2 === 0) {
+      setFill(SOFT_BG);
+      doc.rect(M.left, ctx.y - 4, CW, boxH, "F");
+    }
+    let yy = ctx.y + 8;
+    setText(NAVY);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    doc.text(termLines, M.left + 10, yy);
+    yy += termLines.length * 12;
+    setText(INK);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.text(defLines, M.left + 10, yy);
+    ctx.y += boxH;
+  });
+  ctx.y += 8;
+
+  // 12 · Aviso legal
+  sectionTitle("12", "Aviso legal y metodología");
   paragraph("Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.", { size: 9 });
   ctx.y += 2;
   paragraph("Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.", { size: 9 });

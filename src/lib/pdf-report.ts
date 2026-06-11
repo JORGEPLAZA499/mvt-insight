@@ -508,7 +508,8 @@ export function generatePdfReport(a: Analysis) {
         doc.rect(M.left, ctx.y, 3, boxH, "F");
       }
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+
       doc.text(`${i + 1}. ${app.displayName}`, M.left + 10, ctx.y + 14);
       setText(MUTED);
       doc.setFont("helvetica", "normal"); doc.setFontSize(8);

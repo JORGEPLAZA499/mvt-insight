@@ -228,6 +228,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
   const r = analysis.result!;
   const verdict = useMemo(() => buildVerdict(r), [r]);
   const recs = useMemo(() => nextSteps(r), [r]);
+  const deviceCard = useMemo(() => buildDeviceCard(r.deviceInfo), [r.deviceInfo]);
+  const topApps = useMemo(() => buildTopApps(r.detections, 10), [r.detections]);
+  const humanTimeline = useMemo(() => buildHumanTimeline(r.timeline, r.detections, 20), [r.timeline, r.detections]);
   const verdictBorder =
     verdict.level === "mercenary" ? "border-destructive/40 bg-destructive/5"
     : verdict.level === "stalkerware" ? "border-destructive/30 bg-destructive/5"
@@ -260,11 +263,6 @@ function UserReport({ analysis }: { analysis: Analysis }) {
           <strong>{r.totalDetections}</strong> indicios técnicos. El nivel de riesgo estimado es{" "}
           <strong className={riskColor(r.risk)}>{riskLabel(r.risk)}</strong>.
         </p>
-        {formatDeviceLine(r.deviceInfo) && (
-          <p className="text-sm text-foreground/90 mt-2">
-            Dispositivo identificado: <strong>{formatDeviceLine(r.deviceInfo)}</strong>.
-          </p>
-        )}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
           <SmallStat icon={AlertOctagon} label="Indicios" value={r.totalDetections} />
           <SmallStat icon={Layers} label="Módulos con indicios" value={r.modules.filter((m) => m.detected > 0).length} />
@@ -273,9 +271,37 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         </div>
       </section>
 
-      {/* 03 · Cómo leer este informe */}
+      {/* 03 · Ficha del dispositivo */}
+      {deviceCard.length > 0 && (
+        <section>
+          <SectionTitle num="03" title="Ficha del dispositivo" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Información del terminal extraída automáticamente del análisis. Por privacidad, números de serie e identificadores se muestran parcialmente.
+          </p>
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+              {[0, 1].map((col) => (
+                <div key={col} className="divide-y divide-border">
+                  {deviceCard.filter((_, i) => i % 2 === col).map((f) => (
+                    <div key={f.label} className="px-4 py-3 flex items-start gap-3">
+                      <Smartphone className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{f.label}</div>
+                        <div className="text-sm font-medium mt-0.5 break-words">{f.value}</div>
+                        {f.hint && <div className="text-xs text-muted-foreground mt-0.5">{f.hint}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 04 · Cómo leer este informe */}
       <section>
-        <SectionTitle num="03" title="Cómo leer este informe" />
+        <SectionTitle num="04" title="Cómo leer este informe" />
         <p className="text-sm text-foreground/80">
           MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo.
           Un indicio no equivale a una infección confirmada: puede tratarse de una app legítima instalada por el propio usuario.
@@ -295,9 +321,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         </div>
       </section>
 
-      {/* 04 · Áreas del dispositivo analizadas */}
+      {/* 05 · Áreas del dispositivo analizadas */}
       <section>
-        <SectionTitle num="04" title="Áreas del dispositivo analizadas" />
+        <SectionTitle num="05" title="Áreas del dispositivo analizadas" />
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
             <div className="col-span-6">Área</div>
@@ -314,9 +340,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         </div>
       </section>
 
-      {/* 05 · Indicios detectados */}
+      {/* 06 · Indicios detectados */}
       <section>
-        <SectionTitle num="05" title="Indicios detectados" />
+        <SectionTitle num="06" title="Indicios detectados" />
         {r.detections.length === 0 ? (
           <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm">
             <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
@@ -327,9 +353,48 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         )}
       </section>
 
-      {/* 06 · Próximos pasos recomendados */}
+      {/* 07 · Apps con más actividad sospechosa */}
+      {topApps.length > 0 && (
+        <section>
+          <SectionTitle num="07" title="Apps con más actividad sospechosa" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Apps que más veces aparecen en los indicios técnicos. Si no reconoces alguna marcada como "Origen no reconocido", revísala con calma.
+          </p>
+          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {topApps.map((app, i) => (
+              <TopAppRow key={app.packageName} app={app} index={i + 1} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 08 · Cronología de eventos clave */}
+      {humanTimeline.length > 0 && (
+        <section>
+          <SectionTitle num="08" title="Cronología de eventos clave" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Reconstrucción en lenguaje natural de los eventos más relevantes detectados, ordenados por fecha.
+          </p>
+          <ol className="relative border-l border-border ml-3 space-y-4">
+            {humanTimeline.map((e, i) => (
+              <li key={i} className="ml-6 relative">
+                <span className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full ${
+                  e.severity === "critical" || e.severity === "high" ? "bg-destructive"
+                  : e.severity === "medium" ? "bg-warning" : "bg-muted-foreground"
+                }`} />
+                <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" /> {e.when}
+                </div>
+                <div className="text-sm text-foreground/90 mt-1">{e.sentence}</div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {/* 09 · Próximos pasos recomendados */}
       <section>
-        <SectionTitle num="06" title="Próximos pasos recomendados" />
+        <SectionTitle num="09" title="Próximos pasos recomendados" />
         <ol className="space-y-3">
           {recs.map((rec, i) => (
             <li key={i} className="flex gap-3">
@@ -340,9 +405,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         </ol>
       </section>
 
-      {/* 07 · Cómo verificar este resultado */}
+      {/* 10 · Cómo verificar este resultado */}
       <section>
-        <SectionTitle num="07" title="Cómo verificar este resultado" />
+        <SectionTitle num="10" title="Cómo verificar este resultado" />
         <div className="space-y-3">
           {CROSS_CHECK_STEPS.map((step) => (
             <div key={step.title} className="rounded-lg border border-border bg-card p-4 border-l-4 border-l-primary">
@@ -353,9 +418,28 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         </div>
       </section>
 
-      {/* 08 · Aviso legal */}
+      {/* 11 · Glosario */}
       <section>
-        <SectionTitle num="08" title="Aviso legal y metodología" />
+        <SectionTitle num="11" title="Glosario de términos" />
+        <p className="text-sm text-muted-foreground mb-4">
+          Pequeño diccionario para entender los términos técnicos que aparecen en este informe.
+        </p>
+        <div className="rounded-xl border border-border bg-card divide-y divide-border">
+          {GLOSSARY.map((g) => (
+            <div key={g.term} className="px-4 py-3 flex items-start gap-3">
+              <BookOpen className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold">{g.term}</div>
+                <div className="text-sm text-muted-foreground mt-0.5">{g.definition}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 12 · Aviso legal */}
+      <section>
+        <SectionTitle num="12" title="Aviso legal y metodología" />
         <div className="space-y-3 text-xs text-muted-foreground">
           <p>Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.</p>
           <p>Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.</p>
@@ -382,6 +466,41 @@ function UserReport({ analysis }: { analysis: Analysis }) {
           <p className="italic">Los archivos se procesan localmente en el navegador. No se transmite información del dispositivo analizado a terceros. El análisis se realiza con el consentimiento del propietario del dispositivo.</p>
         </div>
       </section>
+    </div>
+  );
+}
+
+function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {
+  const originBadge =
+    app.origin === "system" ? "bg-muted text-muted-foreground border-border"
+    : app.origin === "known" ? "bg-primary/10 text-primary border-primary/20"
+    : "bg-warning/15 text-warning border-warning/30";
+  return (
+    <div className="p-4 flex items-start gap-4">
+      <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0 tabular-nums text-xs font-semibold">
+        {index}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <AppWindow className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="font-medium text-sm">{app.displayName}</span>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${SEV_BADGE[app.severity]}`}>
+            {severityLabel(app.severity)}
+          </span>
+          <span className="text-xs text-muted-foreground tabular-nums">· {app.count} indicio(s)</span>
+        </div>
+        <div className="text-xs text-muted-foreground font-mono mt-1 break-all">{app.packageName}</div>
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${originBadge}`}>
+            {app.originLabel}
+          </span>
+          {app.categories.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              Visto en: {app.categories.join(", ")}
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

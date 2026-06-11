@@ -157,6 +157,132 @@ function pickLevel(obj: any, fallback: RiskLevel): RiskLevel {
   return fallback;
 }
 
+function extractRootBinaries(data: any, fromText?: string): string[] {
+  const out = new Set<string>();
+  const push = (s: any) => {
+    if (typeof s === "string" && s.trim()) {
+      const base = s.trim().split(/[\\/]/).pop() || s.trim();
+      if (base) out.add(base);
+    }
+  };
+  if (Array.isArray(data)) {
+    for (const it of data) {
+      if (typeof it === "string") push(it);
+      else if (it && typeof it === "object") push((it as any).name || (it as any).path || (it as any).binary || (it as any).matched_indicator);
+    }
+  } else if (data && typeof data === "object") {
+    for (const v of Object.values(data)) {
+      if (typeof v === "string") push(v);
+      else if (Array.isArray(v)) v.forEach(push);
+    }
+  } else if (typeof fromText === "string") {
+    for (const l of fromText.split(/\r?\n/)) push(l);
+  }
+  return [...out].slice(0, 20);
+}
+
+function extractSelinuxStatus(data: any, fromText?: string): SelinuxStatus | undefined {
+  const candidate = (s: any): string | undefined => {
+    if (typeof s !== "string") return undefined;
+    const v = s.toLowerCase().trim();
+    if (v.includes("enforcing")) return "enforcing";
+    if (v.includes("permissive")) return "permissive";
+    if (v.includes("disabled")) return "disabled";
+    return undefined;
+  };
+  if (data && typeof data === "object") {
+    const obj: any = Array.isArray(data) ? data[0] : data;
+    if (obj) {
+      const v = candidate(obj.status) || candidate(obj.selinux) || candidate(obj.value) || candidate(obj.mode);
+      if (v) return v as SelinuxStatus;
+    }
+  }
+  if (typeof fromText === "string") {
+    const v = candidate(fromText);
+    if (v) return v as SelinuxStatus;
+  }
+  return undefined;
+}
+
+function extractAccessibilityServices(data: any): AccessibilityServiceEntry[] {
+  const out: AccessibilityServiceEntry[] = [];
+  const seen = new Set<string>();
+  const pushPair = (pkg: string, svc: string) => {
+    const key = `${pkg}/${svc}`;
+    if (!seen.has(key)) { seen.add(key); out.push({ package: pkg, service: svc }); }
+  };
+  const tryString = (s: any) => {
+    if (typeof s !== "string") return;
+    // Format: "com.foo/com.foo.bar.Service"
+    const m = s.match(/^([a-z][\w.]+)\/([\w.$]+)$/i);
+    if (m) pushPair(m[1], m[2]);
+  };
+  const visit = (it: any) => {
+    if (!it) return;
+    if (typeof it === "string") { tryString(it); return; }
+    if (typeof it !== "object") return;
+    const o: any = it;
+    const pkg = o.package_name || o.package || o.pkg;
+    const svc = o.service || o.service_name || o.component;
+    if (typeof pkg === "string" && typeof svc === "string") {
+      pushPair(pkg, svc);
+    } else if (typeof o.id === "string") {
+      tryString(o.id);
+    } else if (typeof o.name === "string") {
+      tryString(o.name);
+    }
+    // Listas anidadas
+    const enabled = o.enabled_services || o.bound_services || o.services;
+    if (Array.isArray(enabled)) enabled.forEach(visit);
+  };
+  if (Array.isArray(data)) data.forEach(visit);
+  else if (data && typeof data === "object") {
+    visit(data);
+    for (const v of Object.values(data)) {
+      if (Array.isArray(v)) v.forEach(visit);
+    }
+  }
+  return out.slice(0, 30);
+}
+
+function extractIosConfigProfiles(data: any): IosConfigProfile[] {
+  const out: IosConfigProfile[] = [];
+  const items: any[] = Array.isArray(data) ? data : data && typeof data === "object" ? Object.values(data) : [];
+  for (const it of items) {
+    if (!it || typeof it !== "object") continue;
+    const o: any = it;
+    const name = o.PayloadDisplayName || o.payload_display_name || o.name;
+    if (typeof name !== "string" || !name.trim()) continue;
+    out.push({
+      name: name.trim(),
+      org: typeof o.PayloadOrganization === "string" ? o.PayloadOrganization : typeof o.payload_organization === "string" ? o.payload_organization : undefined,
+      uuid: typeof o.PayloadUUID === "string" ? o.PayloadUUID : typeof o.payload_uuid === "string" ? o.payload_uuid : undefined,
+      type: typeof o.PayloadType === "string" ? o.PayloadType : typeof o.payload_type === "string" ? o.payload_type : undefined,
+      installDate: typeof o.InstallDate === "string" ? o.InstallDate : typeof o.install_date === "string" ? o.install_date : undefined,
+    });
+  }
+  return out.slice(0, 30);
+}
+
+function extractNetworkTop(data: any): NetworkProcUsage[] {
+  const map = new Map<string, NetworkProcUsage>();
+  const items: any[] = Array.isArray(data) ? data : data && typeof data === "object" ? Object.values(data) : [];
+  for (const it of items) {
+    if (!it || typeof it !== "object") continue;
+    const o: any = it;
+    const name = o.proc_name || o.bundle_id || o.process || o.name;
+    if (typeof name !== "string") continue;
+    const num = (x: any) => (typeof x === "number" ? x : typeof x === "string" ? Number(x) || 0 : 0);
+    const bytes = num(o.wifi_in) + num(o.wifi_out) + num(o.wwan_in) + num(o.wwan_out)
+      + num(o.WWANIn) + num(o.WWANOut) + num(o.WifiIn) + num(o.WifiOut);
+    if (bytes <= 0) continue;
+    const prev = map.get(name);
+    if (prev) prev.totalBytes += bytes;
+    else map.set(name, { name, bundle: typeof o.bundle_id === "string" ? o.bundle_id : undefined, totalBytes: bytes });
+  }
+  return [...map.values()].sort((a, b) => b.totalBytes - a.totalBytes).slice(0, 5);
+}
+
 async function readFileEntries(files: File[]): Promise<{ name: string; text: string }[]> {
   const out: { name: string; text: string }[] = [];
   const accept = (p: string) => {
@@ -164,6 +290,24 @@ async function readFileEntries(files: File[]): Promise<{ name: string; text: str
     return l.endsWith(".json") || l.endsWith(".txt");
   };
   for (const f of files) {
+    const lower = f.name.toLowerCase();
+    if (lower.endsWith(".zip")) {
+      const buf = await f.arrayBuffer();
+      const zip = await JSZip.loadAsync(buf);
+      const tasks: Promise<void>[] = [];
+      zip.forEach((path, entry) => {
+        if (entry.dir) return;
+        if (!accept(path)) return;
+        tasks.push(entry.async("string").then((text) => { out.push({ name: path, text }); }));
+      });
+      await Promise.all(tasks);
+    } else if (accept(lower)) {
+      const text = await f.text();
+      out.push({ name: f.name, text });
+    }
+  }
+  return out;
+}
     const lower = f.name.toLowerCase();
     if (lower.endsWith(".zip")) {
       const buf = await f.arrayBuffer();

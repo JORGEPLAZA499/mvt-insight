@@ -64,6 +64,7 @@ export function App() {
   const [iosPasswordError, setIosPasswordError] = useState<string | null>(null);
   // Guardamos la última contraseña usada para poder reintentar tras instalar drivers.
   const lastIosPasswordRef = useRef<string | null>(null);
+  const [showItunesFallback, setShowItunesFallback] = useState(false);
 
 
   const PHASES = device === "ios"

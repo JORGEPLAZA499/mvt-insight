@@ -244,27 +244,32 @@ export function generatePdfReport(a: Analysis) {
       : v.level === "stalkerware" ? SEV_COLOR.high
       : v.level === "suspicious" ? SEV_COLOR.medium
       : [22, 163, 74];
-    ensure(110);
+    ensure(120);
     setFill(verdictColor);
     doc.roundedRect(M.left, ctx.y, CW, 8, 2, 2, "F");
     ctx.y += 14;
+    // Pre-medir contenido para calcular alto real
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    const hLines = doc.splitTextToSize(v.headline, CW - 32);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    const dLines = doc.splitTextToSize(v.detail, CW - 32);
+    const boxH = 22 + hLines.length * 18 + 6 + dLines.length * 12 + 14;
     setFill(SOFT_BG);
-    doc.roundedRect(M.left, ctx.y, CW, 86, 4, 4, "F");
+    doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
     setStroke(LINE); doc.setLineWidth(0.5);
-    doc.roundedRect(M.left, ctx.y, CW, 86, 4, 4, "S");
+    doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "S");
     setText(MUTED);
     doc.setFont("helvetica", "bold"); doc.setFontSize(8);
     doc.text("VEREDICTO", M.left + 16, ctx.y + 18);
     setText(verdictColor);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-    const hLines = doc.splitTextToSize(v.headline, CW - 32);
-    doc.text(hLines, M.left + 16, ctx.y + 36);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    doc.text(hLines, M.left + 16, ctx.y + 40);
     setText(INK);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    const dLines = doc.splitTextToSize(v.detail, CW - 32);
-    doc.text(dLines, M.left + 16, ctx.y + 36 + hLines.length * 15);
-    ctx.y += 86 + 14;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    doc.text(dLines, M.left + 16, ctx.y + 40 + hLines.length * 18 + 4);
+    ctx.y += boxH + 14;
   }
+
 
   // 02 · Resumen ejecutivo
   sectionTitle(NEXT(), "Resumen ejecutivo");

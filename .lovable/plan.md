@@ -1,34 +1,48 @@
-## Problema
+# Fix definitivo del workflow Build iOS Tools
 
-El step **"Bundle mvt-ios with PyInstaller (unix)"** falla en los 3 jobs Unix (macOS arm64, macOS x64, Linux). PyInstaller necesita un archivo `.py` como script, pero el workflow le pasa:
+## Causa probable
 
-1. Primero: la salida de `python -c "import mvt.ios.cli, os; print(...)"` — que devuelve la ruta a `__init__.py` de `mvt.ios.cli`, **pero ese módulo en mvt moderno no expone `cli` en `__init__.py`** → error `'Group' object has no attribute '__file__'`.
-2. Fallback: `-c "import mvt.ios.cli; mvt.ios.cli.cli()"` — pero `-c` en PyInstaller espera **un archivo**, no código inline → error `Script file 'import mvt.ios.cli; ...' does not exist`.
+El workflow genera `mvt_ios_launcher.py` con heredocs incrustados dentro de un bloque YAML `run: |`. Ambos here-docs (bash y PowerShell) están rotos por la indentación:
 
-El step de Windows ya lo hace bien: crea un `mvt_ios_launcher.py` con el contenido del launcher y se lo pasa a PyInstaller. Hay que replicar exactamente eso en Unix.
+- **Unix (`<<'PY'`)**: bash NO elimina la indentación. El archivo `.py` generado queda con 10 espacios al principio de cada línea → `IndentationError: unexpected indent` antes de que PyInstaller llegue a importar nada.
+- **Windows (`@'...'@`)**: el cierre `'@` debe estar al inicio absoluto de línea, sin espacios. Aquí va indentado dentro del YAML, así que PowerShell falla al parsear el here-string o produce un archivo con indentación inválida.
 
-## Cambio
+Es decir, el "fix con launcher .py" anterior no se aplicó realmente: ambos jobs siguen fallando antes incluso de ejecutar PyInstaller.
 
-En `.github/workflows/build-ios-tools.yml`, reemplazar el step **"Bundle mvt-ios with PyInstaller (unix)"** por:
+## Solución
 
-```yaml
-- name: Bundle mvt-ios with PyInstaller (unix)
-  if: matrix.os != 'windows-latest'
-  run: |
-    cat > mvt_ios_launcher.py <<'PY'
-    from mvt.ios.cli import cli
-    if __name__ == "__main__":
-        cli()
-    PY
-    pyinstaller --onefile --name mvt-ios \
-      --collect-all mvt \
-      --hidden-import iOSbackup \
-      mvt_ios_launcher.py
-    cp dist/mvt-ios staging/bin/
-```
+Dejar de generar el launcher en línea y **commitearlo como archivo real** en el repo. Es 4 líneas, no necesita lógica del workflow.
 
-Sin cambios en código de la app de escritorio ni en el resto del workflow.
+### Cambios
 
-## Siguiente paso
+1. **Nuevo archivo** `.github/workflows/mvt_ios_launcher.py`:
+   ```python
+   from mvt.ios.cli import cli
+   if __name__ == "__main__":
+       cli()
+   ```
 
-Después de aplicar el fix, vuelves a lanzar manualmente el workflow **"Build iOS Tools"** desde la pestaña Actions de GitHub (mismo procedimiento que te indiqué antes). Los 4 jobs deberían completarse y publicar los binarios en la release `ios-tools-v1`.
+2. **Editar** `.github/workflows/build-ios-tools.yml`:
+   - Step "Bundle mvt-ios with PyInstaller (unix)" → eliminar el heredoc, copiar el launcher y llamar a PyInstaller:
+     ```yaml
+     run: |
+       cp .github/workflows/mvt_ios_launcher.py .
+       pyinstaller --onefile --name mvt-ios \
+         --collect-all mvt \
+         --hidden-import iOSbackup \
+         mvt_ios_launcher.py
+       cp dist/mvt-ios staging/bin/
+     ```
+   - Step "Bundle mvt-ios with PyInstaller (windows)" → equivalente en pwsh:
+     ```yaml
+     run: |
+       Copy-Item .github/workflows/mvt_ios_launcher.py .
+       pyinstaller --onefile --name mvt-ios --collect-all mvt --hidden-import iOSbackup mvt_ios_launcher.py
+       Copy-Item dist/mvt-ios.exe staging/bin/ -Force
+     ```
+
+Con esto el contenido del .py es idéntico byte a byte en las 4 plataformas y no depende de cómo YAML/bash/pwsh interpretan la indentación.
+
+## Después de aplicar
+
+Volver a lanzar manualmente **"Build iOS Tools"** desde la pestaña Actions en GitHub. Si vuelve a fallar, necesito que me pegues las últimas ~40 líneas del log del step que rompa — sin eso estoy adivinando la causa.

@@ -113,11 +113,7 @@ jobs:
       - name: Bundle mvt-ios with PyInstaller (unix)
         if: matrix.os != 'windows-latest'
         run: |
-          cat > mvt_ios_launcher.py <<'PY'
-          from mvt.ios.cli import cli
-          if __name__ == "__main__":
-              cli()
-          PY
+          cp .github/workflows/mvt_ios_launcher.py .
           pyinstaller --onefile --name mvt-ios \
             --collect-all mvt \
             --hidden-import iOSbackup \
@@ -128,13 +124,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          # Crea un pequeño launcher .py que invoca mvt-ios para que PyInstaller lo empaquete.
-          @'
-          from mvt.ios.cli import cli
-          if __name__ == "__main__":
-              cli()
-          '@ | Out-File -Encoding utf8 mvt_ios_launcher.py
-          pyinstaller --onefile --name mvt-ios --collect-all mvt mvt_ios_launcher.py
+          Copy-Item .github/workflows/mvt_ios_launcher.py .
+          pyinstaller --onefile --name mvt-ios --collect-all mvt --hidden-import iOSbackup mvt_ios_launcher.py
           Copy-Item dist/mvt-ios.exe staging/bin/ -Force
 
       # -------- 3. Empaquetar y publicar --------

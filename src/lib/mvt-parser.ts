@@ -38,6 +38,27 @@ export interface MvtDeviceInfo {
   regionInfo?: string;
 }
 
+export type SelinuxStatus = "enforcing" | "permissive" | "disabled";
+
+export interface AccessibilityServiceEntry {
+  package: string;
+  service: string;
+}
+
+export interface IosConfigProfile {
+  name: string;
+  org?: string;
+  uuid?: string;
+  type?: string;
+  installDate?: string;
+}
+
+export interface NetworkProcUsage {
+  name: string;
+  bundle?: string;
+  totalBytes: number;
+}
+
 export interface MvtParsedResult {
   platform: Platform;
   totalEntries: number;
@@ -49,6 +70,11 @@ export interface MvtParsedResult {
   parsedAt: string;
   sourceName: string;
   deviceInfo?: MvtDeviceInfo;
+  rootBinaries?: string[];
+  selinuxStatus?: SelinuxStatus;
+  accessibilityServices?: AccessibilityServiceEntry[];
+  iosConfigProfiles?: IosConfigProfile[];
+  topNetworkProcs?: NetworkProcUsage[];
 }
 
 // Strip path & extension, return { key, isDetected, ext }

@@ -65,10 +65,6 @@ function PricingPage() {
 
         <section className="relative max-w-5xl mx-auto px-6 py-16 md:py-24">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-[11px] uppercase tracking-[0.25em] text-primary/90">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              {t("purchase.badge")}
-            </div>
             <h1 className="mt-5 text-4xl md:text-5xl font-semibold tracking-tight">
               {t("landing.nav.pricing")}
             </h1>

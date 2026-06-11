@@ -54,7 +54,7 @@ function Upload() {
           <p className="text-muted-foreground mt-3 leading-relaxed">
             {t(
               "upload.desktopOnly.intro",
-              "Por seguridad y rendimiento, el análisis forense se realiza en tu equipo. Tus datos nunca salen de tu ordenador: solo el informe (unas decenas de KB) se sincroniza con tu cuenta web.",
+              "Por seguridad y rendimiento, el análisis forense se realiza en tu equipo. Tus datos nunca salen de tu ordenador: solo el informe se sincroniza con tu cuenta web.",
             )}
           </p>
         </header>

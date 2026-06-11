@@ -440,3 +440,370 @@ export function buildModuleHighlights(
 
   return [...buckets.values()].sort((a, b) => b.count - a.count).slice(0, limit);
 }
+
+// ============================================================
+// Ficha del dispositivo en lenguaje claro
+// ============================================================
+
+// Modelos comerciales: códigos internos -> nombre que el usuario reconoce.
+// Lista corta de los más frecuentes; si no hay match, se muestra el código tal cual.
+const MODEL_NICKNAMES: Record<string, string> = {
+  // Samsung Galaxy S series
+  "SM-S901": "Galaxy S22", "SM-S901B": "Galaxy S22", "SM-S901U": "Galaxy S22",
+  "SM-S906": "Galaxy S22+", "SM-S908": "Galaxy S22 Ultra",
+  "SM-S911": "Galaxy S23", "SM-S911B": "Galaxy S23", "SM-S916": "Galaxy S23+", "SM-S918": "Galaxy S23 Ultra",
+  "SM-S921": "Galaxy S24", "SM-S921B": "Galaxy S24", "SM-S926": "Galaxy S24+", "SM-S928": "Galaxy S24 Ultra",
+  "SM-S931": "Galaxy S25", "SM-S936": "Galaxy S25+", "SM-S938": "Galaxy S25 Ultra",
+  "SM-G991": "Galaxy S21", "SM-G996": "Galaxy S21+", "SM-G998": "Galaxy S21 Ultra",
+  "SM-G981": "Galaxy S20", "SM-G986": "Galaxy S20+", "SM-G988": "Galaxy S20 Ultra",
+  // Samsung A
+  "SM-A546": "Galaxy A54", "SM-A556": "Galaxy A55", "SM-A346": "Galaxy A34", "SM-A356": "Galaxy A35",
+  "SM-A536": "Galaxy A53", "SM-A526": "Galaxy A52",
+  // Samsung Z
+  "SM-F946": "Galaxy Z Fold5", "SM-F731": "Galaxy Z Flip5",
+  "SM-F956": "Galaxy Z Fold6", "SM-F741": "Galaxy Z Flip6",
+  // Google Pixel
+  "Pixel 6": "Pixel 6", "Pixel 6a": "Pixel 6a", "Pixel 6 Pro": "Pixel 6 Pro",
+  "Pixel 7": "Pixel 7", "Pixel 7a": "Pixel 7a", "Pixel 7 Pro": "Pixel 7 Pro",
+  "Pixel 8": "Pixel 8", "Pixel 8a": "Pixel 8a", "Pixel 8 Pro": "Pixel 8 Pro",
+  "Pixel 9": "Pixel 9", "Pixel 9 Pro": "Pixel 9 Pro", "Pixel 9 Pro XL": "Pixel 9 Pro XL",
+  // Xiaomi
+  "M2102J20SG": "POCO X3 Pro", "M2007J3SG": "Mi 10T Pro",
+  "2201123G": "Xiaomi 12", "2201122G": "Xiaomi 12 Pro",
+  "2210132G": "Xiaomi 13", "2211133G": "Xiaomi 13 Pro",
+  "2401117G": "Xiaomi 14",
+  // OnePlus
+  "CPH2451": "OnePlus 11", "CPH2581": "OnePlus 12",
+  // iPhone (ProductType)
+  "iPhone14,2": "iPhone 13 Pro", "iPhone14,3": "iPhone 13 Pro Max",
+  "iPhone14,4": "iPhone 13 mini", "iPhone14,5": "iPhone 13",
+  "iPhone14,7": "iPhone 14", "iPhone14,8": "iPhone 14 Plus",
+  "iPhone15,2": "iPhone 14 Pro", "iPhone15,3": "iPhone 14 Pro Max",
+  "iPhone15,4": "iPhone 15", "iPhone15,5": "iPhone 15 Plus",
+  "iPhone16,1": "iPhone 15 Pro", "iPhone16,2": "iPhone 15 Pro Max",
+  "iPhone17,1": "iPhone 16 Pro", "iPhone17,2": "iPhone 16 Pro Max",
+  "iPhone17,3": "iPhone 16", "iPhone17,4": "iPhone 16 Plus",
+};
+
+export function marketingNameForModel(model?: string): string | undefined {
+  if (!model) return undefined;
+  if (MODEL_NICKNAMES[model]) return MODEL_NICKNAMES[model];
+  // Match por prefijo Samsung SM-XXXX (sin sufijo regional)
+  const prefix = Object.keys(MODEL_NICKNAMES).find((k) => model.toUpperCase().startsWith(k.toUpperCase()));
+  return prefix ? MODEL_NICKNAMES[prefix] : undefined;
+}
+
+function describeBootloader(state?: string): string | undefined {
+  if (!state) return undefined;
+  const s = state.toLowerCase();
+  if (s === "green" || s === "1" || s === "true" || s === "locked") return "bloqueado (recomendado)";
+  if (s === "orange" || s === "0" || s === "false" || s === "unlocked") return "desbloqueado — el sistema podría haber sido modificado";
+  if (s === "yellow") return "modificado con clave propia";
+  if (s === "red") return "no se puede verificar";
+  return state;
+}
+
+function describeLocale(loc?: string): string | undefined {
+  if (!loc) return undefined;
+  try {
+    const parts = loc.replace("_", "-").split("-");
+    const lang = parts[0];
+    const region = parts[1];
+    const langName = new Intl.DisplayNames(["es"], { type: "language" }).of(lang);
+    const regionName = region ? new Intl.DisplayNames(["es"], { type: "region" }).of(region) : undefined;
+    return [langName, regionName].filter(Boolean).join(" · ");
+  } catch { return loc; }
+}
+
+function describeSecurityPatch(patch?: string): string | undefined {
+  if (!patch) return undefined;
+  // formato 2024-09-01
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(patch);
+  if (!m) return patch;
+  const d = new Date(`${patch}T00:00:00Z`);
+  const months = Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24 * 30.5)));
+  if (months <= 3) return `${patch} (reciente)`;
+  if (months <= 9) return `${patch} (con algunos meses de retraso)`;
+  return `${patch} (más de ${months} meses — conviene actualizar)`;
+}
+
+export interface DeviceCardField {
+  label: string;
+  value: string;
+  hint?: string;
+}
+
+export function buildDeviceCard(info?: MvtDeviceInfo): DeviceCardField[] {
+  if (!info) return [];
+  const fields: DeviceCardField[] = [];
+  const maker = info.manufacturer || info.brand;
+  const isApple = (maker || "").toLowerCase() === "apple";
+  const osName = isApple ? "iOS" : "Android";
+
+  if (maker) fields.push({ label: "Marca", value: maker });
+  if (info.model) {
+    const nick = marketingNameForModel(info.model);
+    fields.push({
+      label: "Modelo",
+      value: nick ? `${nick}` : info.model,
+      hint: nick && nick !== info.model ? `Código interno: ${info.model}` : undefined,
+    });
+  }
+  if (info.osVersion) {
+    fields.push({ label: "Sistema operativo", value: `${osName} ${info.osVersion}` });
+  }
+  const patch = describeSecurityPatch(info.securityPatch);
+  if (patch) fields.push({ label: "Parche de seguridad", value: patch, hint: "Fecha del último parche de seguridad instalado." });
+  if (info.buildId) fields.push({ label: "Versión del firmware", value: info.buildId });
+  if (info.deviceName) fields.push({ label: "Nombre del dispositivo", value: info.deviceName, hint: "El que aparece en Bluetooth y Wi-Fi." });
+  const loc = describeLocale(info.locale);
+  if (loc) fields.push({ label: "Idioma / región", value: loc });
+  if (info.timezone) fields.push({ label: "Zona horaria", value: info.timezone });
+  if (info.carrier) fields.push({ label: "Operador (SIM)", value: info.carrier });
+  if (info.regionInfo) fields.push({ label: "Región del dispositivo", value: info.regionInfo });
+  const boot = describeBootloader(info.bootloaderState);
+  if (boot) fields.push({ label: "Estado del bootloader", value: boot, hint: "Indica si el sistema operativo ha sido modificado." });
+  if (typeof info.debuggable === "boolean") {
+    fields.push({
+      label: "Modo desarrollador",
+      value: info.debuggable ? "activo (mayor superficie de riesgo)" : "no activo",
+    });
+  }
+  if (info.serialLast4) {
+    fields.push({ label: "Número de serie", value: `••••${info.serialLast4}`, hint: "Solo se muestran los últimos 4 dígitos por privacidad." });
+  }
+  return fields;
+}
+
+// ============================================================
+// Apps con más actividad sospechosa
+// ============================================================
+
+const SYSTEM_PREFIXES = [
+  "com.google.", "com.android.", "android.",
+  "com.samsung.", "com.sec.", "com.miui.", "com.xiaomi.", "com.huawei.",
+  "com.oneplus.", "com.oppo.", "com.vivo.", "com.realme.",
+  "com.apple.",
+];
+
+const KNOWN_PACKAGES: Record<string, string> = {
+  "com.whatsapp": "WhatsApp",
+  "com.whatsapp.w4b": "WhatsApp Business",
+  "org.telegram.messenger": "Telegram",
+  "org.thoughtcrime.securesms": "Signal",
+  "com.instagram.android": "Instagram",
+  "com.facebook.katana": "Facebook",
+  "com.facebook.orca": "Facebook Messenger",
+  "com.zhiliaoapp.musically": "TikTok",
+  "com.twitter.android": "X (Twitter)",
+  "com.snapchat.android": "Snapchat",
+  "com.spotify.music": "Spotify",
+  "com.netflix.mediaclient": "Netflix",
+  "com.google.android.gm": "Gmail",
+  "com.google.android.youtube": "YouTube",
+  "com.android.chrome": "Chrome",
+  "com.microsoft.teams": "Microsoft Teams",
+  "com.skype.raider": "Skype",
+  "com.life360.android.safetymapd": "Life360",
+};
+
+export type AppOrigin = "system" | "known" | "unknown";
+
+export interface SuspiciousApp {
+  packageName: string;
+  displayName: string;
+  origin: AppOrigin;
+  originLabel: string;
+  count: number;
+  severity: RiskLevel;
+  categories: string[];
+}
+
+function packageFromDetection(d: MvtDetection): string | undefined {
+  // 1) raw fields
+  const raw = d.raw && typeof d.raw === "object" ? d.raw : null;
+  if (raw) {
+    for (const k of ["package_name", "package", "matched_indicator"]) {
+      const v = (raw as any)[k];
+      if (typeof v === "string" && /^[a-z][a-z0-9_]+(?:\.[a-z0-9_]+){2,}$/i.test(v)) return v;
+    }
+  }
+  // 2) from summary
+  const m = (d.summary || "").match(/['"]([a-z][a-z0-9_]+(?:\.[a-z0-9_]+){2,})['"]/i)
+    || (d.summary || "").match(/\b([a-z][a-z0-9_]+(?:\.[a-z0-9_]+){2,})\b/i);
+  return m ? m[1] : undefined;
+}
+
+function classifyOrigin(pkg: string): { origin: AppOrigin; label: string } {
+  if (SYSTEM_PREFIXES.some((p) => pkg.startsWith(p))) return { origin: "system", label: "App del sistema o del fabricante" };
+  if (KNOWN_PACKAGES[pkg]) return { origin: "known", label: "App popular conocida" };
+  return { origin: "unknown", label: "Origen no reconocido — revísala" };
+}
+
+function moduleToCategory(moduleKey: string): string {
+  switch (moduleKey) {
+    case "dumpsys_appops": return "permisos sensibles";
+    case "dumpsys_accessibility": return "accesibilidad";
+    case "dumpsys_receivers": return "componentes en segundo plano";
+    case "dumpsys_activities": return "actividad en pantalla";
+    case "dumpsys_packages":
+    case "aqf_packages": return "instalación de apps";
+    case "tombstones": return "fallos del sistema";
+    case "sms": return "mensajes SMS";
+    case "dumpsys_battery_history":
+    case "dumpsys_battery_daily": return "uso de batería";
+    default: return humanizeModule(moduleKey).toLowerCase();
+  }
+}
+
+const SEV_ORDER: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+
+export function buildTopApps(detections: MvtDetection[], limit = 10): SuspiciousApp[] {
+  const map = new Map<string, SuspiciousApp & { catSet: Set<string> }>();
+  for (const d of detections) {
+    const pkg = packageFromDetection(d);
+    if (!pkg) continue;
+    let app = map.get(pkg);
+    if (!app) {
+      const oc = classifyOrigin(pkg);
+      app = {
+        packageName: pkg,
+        displayName: KNOWN_PACKAGES[pkg] || pkg.split(".").slice(-1)[0],
+        origin: oc.origin,
+        originLabel: oc.label,
+        count: 0,
+        severity: "low",
+        categories: [],
+        catSet: new Set(),
+      };
+      map.set(pkg, app);
+    }
+    app.count += 1;
+    const lvl = d.level ?? "low";
+    if ((SEV_ORDER[lvl] ?? 0) > (SEV_ORDER[app.severity] ?? 0)) app.severity = lvl;
+    app.catSet.add(moduleToCategory(d.module));
+  }
+  const arr = [...map.values()].map((a) => ({ ...a, categories: [...a.catSet] }));
+  return arr
+    .sort((a, b) => {
+      const s = (SEV_ORDER[b.severity] ?? 0) - (SEV_ORDER[a.severity] ?? 0);
+      return s !== 0 ? s : b.count - a.count;
+    })
+    .slice(0, limit)
+    .map(({ catSet: _omit, ...rest }) => rest);
+}
+
+// ============================================================
+// Cronología en lenguaje humano
+// ============================================================
+
+export interface HumanEvent {
+  when: string;
+  whenIso: string;
+  sentence: string;
+  severity: RiskLevel;
+}
+
+function formatWhen(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const date = d.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+  const time = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  return `${date} a las ${time}`;
+}
+
+function eventSentence(module: string, summary: string): string {
+  const s = summary.trim();
+
+  // Permiso peligroso
+  let m = s.match(/^Package '([^']+)' had risky permission '([^']+)' set to '([^']+)'/i);
+  if (m) {
+    const verb = /access|allow/i.test(m[3]) ? "recibió permiso para" : "perdió el permiso de";
+    return `La app "${m[1]}" ${verb} ${humanPermission(m[2])}.`;
+  }
+
+  // Receiver/Service/Activity sospechoso
+  m = s.match(/^Found a known suspicious (?:receiver|service) with name\s+"([^"\/]+)\/([^"]+)" matching indicators from "([^"]+)"/i);
+  if (m) return `Se activó un componente en segundo plano de la app "${m[1]}", asociado a ${m[3]}.`;
+
+  // App instalada vía ADB/navegador
+  m = s.match(/^Found a non-system package installed via adb[^:]*:\s*"([^"]+)"/i);
+  if (m) return `Se instaló la app "${m[1]}" por cable USB/ADB (fuera de la tienda oficial).`;
+  m = s.match(/^Found a package installed via a browser[^:]*:\s*"([^"]+)"/i);
+  if (m) return `Se instaló la app "${m[1]}" desde el navegador (fuera de la tienda oficial).`;
+
+  // App sospechosa por ID
+  m = s.match(/^Found a known suspicious app with ID "([^"]+)" matching indicators from "([^"]+)"/i);
+  if (m) return `Se detectó la app "${m[1]}", asociada a ${m[2]}.`;
+
+  // Crash
+  m = s.match(/^Crash of process "?([^"\s]+)"?/i);
+  if (m) return `Se registró un fallo crítico del proceso "${m[1]}".`;
+
+  // Servicio accesibilidad
+  if (module === "dumpsys_accessibility") return `Cambio en los servicios de accesibilidad: ${humanizeDetection(s)}`;
+
+  return humanizeDetection(s);
+}
+
+export function buildHumanTimeline(
+  timeline: MvtParsedResult["timeline"],
+  detections: MvtDetection[],
+  limit = 20,
+): HumanEvent[] {
+  // Cogemos eventos con timestamp. Si vienen del timeline (módulo humanizado),
+  // intentamos recuperar la summary original buscando la detección coincidente.
+  const enriched: HumanEvent[] = [];
+  const detsByTs = new Map<string, MvtDetection[]>();
+  for (const d of detections) {
+    if (!d.timestamp) continue;
+    const list = detsByTs.get(d.timestamp) ?? [];
+    list.push(d);
+    detsByTs.set(d.timestamp, list);
+  }
+  const seen = new Set<string>();
+  for (const e of timeline) {
+    if (!e.timestamp) continue;
+    // preferir la detección original (tiene el module key crudo)
+    const sameTs = detsByTs.get(e.timestamp) ?? [];
+    const orig = sameTs.find((d) => e.summary.startsWith(d.summary.slice(0, 40)) || d.summary === e.summary) ?? sameTs[0];
+    const moduleKey = orig?.module ?? "";
+    const sentence = eventSentence(moduleKey, e.summary);
+    const key = `${e.timestamp}|${sentence}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    enriched.push({
+      when: formatWhen(e.timestamp),
+      whenIso: e.timestamp,
+      sentence,
+      severity: e.severity,
+    });
+  }
+  // Priorizar por severidad y luego por fecha asc
+  return enriched
+    .sort((a, b) => {
+      const s = (SEV_ORDER[b.severity] ?? 0) - (SEV_ORDER[a.severity] ?? 0);
+      return s !== 0 ? s : a.whenIso.localeCompare(b.whenIso);
+    })
+    .slice(0, limit)
+    .sort((a, b) => a.whenIso.localeCompare(b.whenIso));
+}
+
+// ============================================================
+// Glosario
+// ============================================================
+
+export const GLOSSARY: { term: string; definition: string }[] = [
+  { term: "MVT (Mobile Verification Toolkit)", definition: "Herramienta libre de Amnesty International para buscar rastros conocidos de spyware en copias de seguridad de móviles." },
+  { term: "AndroidQF", definition: "Utilidad oficial que extrae del móvil Android los datos necesarios (paquetes, permisos, propiedades) que después analiza MVT." },
+  { term: "IOC (Indicador de Compromiso)", definition: "Pista pública que identifica un malware concreto: un nombre de paquete, un dominio, un hash de certificado, etc." },
+  { term: "Módulo", definition: "Cada una de las áreas del dispositivo que MVT analiza por separado (permisos, paquetes instalados, accesibilidad, etc.)." },
+  { term: "Paquete (package)", definition: "Identificador único de una app en Android, por ejemplo 'com.whatsapp'. En iOS se llama 'bundle ID'." },
+  { term: "Permiso sensible", definition: "Permiso que da a una app acceso a datos delicados (ubicación, micrófono, SMS, contactos, accesibilidad)." },
+  { term: "Servicio de accesibilidad", definition: "Permiso muy potente pensado para personas con discapacidad: permite a una app leer la pantalla y simular toques. Es muy usado por stalkerware." },
+  { term: "Bootloader", definition: "Programa que arranca el sistema operativo del móvil. Si está desbloqueado, el sistema podría haber sido modificado." },
+  { term: "Root", definition: "Acceso de administrador total al sistema Android. Si está activo, las apps pueden saltarse muchas protecciones." },
+  { term: "Parche de seguridad", definition: "Actualización del fabricante que corrige fallos de seguridad. Si lleva muchos meses sin instalarse, el dispositivo es más vulnerable." },
+  { term: "Stalkerware", definition: "Apps comerciales legales de vigilancia (control parental, seguimiento de pareja). No son malware en sentido estricto, pero permiten espiar." },
+  { term: "Spyware mercenario", definition: "Malware avanzado de uso dirigido vendido a gobiernos (Pegasus, Predator, FinFisher). Trátalo siempre como emergencia." },
+];

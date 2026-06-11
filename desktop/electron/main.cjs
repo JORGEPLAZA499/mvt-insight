@@ -696,6 +696,20 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       });
       send("mvt:phase", { phase: 1, statusKey: "phaseStatus.binaryReady", label: "Herramientas iOS listas", progress: 1 });
 
+      // 1.5 Comprobar que Windows tenga los drivers de Apple Mobile Device.
+      // Sin ellos, idevice_id devuelve lista vacía aunque el iPhone esté conectado.
+      if (process.platform === "win32") {
+        send("mvt:log", "🔎 Comprobando drivers de Apple Mobile Device…");
+        const drv = await iosTools.checkAppleDriversWindows();
+        if (!drv.installed) {
+          send("mvt:log", "❌ Faltan los drivers de Apple Mobile Device en Windows.");
+          const err = new Error("IOS_DRIVERS_MISSING");
+          err.code = "IOS_DRIVERS_MISSING";
+          throw err;
+        }
+        send("mvt:log", "✅ Drivers de Apple Mobile Device detectados.");
+      }
+
       // 2. Esperar a que el iPhone esté conectado y pareado.
       send("mvt:phase", { phase: 2, statusKey: "phaseStatus.waitingDevice", label: "Esperando que conectes el iPhone", progress: 0 });
       send("mvt:log", "🔌 Conecta el iPhone por USB y desbloquéalo.");
@@ -705,6 +719,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       const tStart = Date.now();
       let udid = null;
       let pairedAnnounced = false;
+      let hintShown = false;
       while (true) {
         if (cancelled) return { ok: false, error: "cancelled" };
         const devices = await iosTools.listIosDevices(dir, (m) => send("mvt:log", m));
@@ -724,6 +739,9 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
           if (pairRes.trustRequired) {
             send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosTrust", label: "Acepta «Confiar» en el iPhone", progress: 0.5 });
           }
+        } else if (!hintShown && Date.now() - tStart > 15_000) {
+          hintShown = true;
+          send("mvt:log", "ℹ️ Aún no se ve el iPhone. Comprueba: cable USB de DATOS (no solo de carga), iPhone desbloqueado y, si aparece, pulsa «Confiar» en el iPhone.");
         }
         if (Date.now() - tStart > WAIT_DEVICE_TIMEOUT_MS) {
           throw new Error(
@@ -732,6 +750,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         }
         await new Promise((r) => setTimeout(r, POLL_MS));
       }
+
 
       // 3. Activar cifrado del backup (si no lo estaba ya) con la contraseña del usuario.
       send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosEnablingEncryption", label: "Configurando cifrado del backup", progress: 0.7 });

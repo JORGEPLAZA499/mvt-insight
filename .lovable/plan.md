@@ -1,16 +1,11 @@
-## Cambio de runner macOS Intel en workflow de GitHub Actions
+## Publicar nueva versión de la app de escritorio
 
-**Objetivo:** Resolver la cola infinita del job `darwin-x64` en el workflow `build-ios-tools.yml` sustituyendo el runner obsoleto/saturado `macos-13` por el nuevo runner oficial `macos-15-intel`.
+1. Bump de `desktop/package.json` → `version: "1.0.28"` a `"1.0.29"` (un solo bump agrupa todos los cambios pendientes, según la regla del proyecto).
+2. El push al repo dispara `.github/workflows/release.yml`, que compila Windows / macOS / Linux y publica los instaladores en la release de GitHub.
+3. `electron-updater` detectará la nueva versión en los clientes ya instalados y ofrecerá la actualización automática.
 
-**Cambio técnico:**
-- Archivo: `.github/workflows/build-ios-tools.yml`
-- Línea 37: `os: macos-13` → `os: macos-15-intel`
+### Notas
+- No se toca `.github/workflows/build-ios-tools.yml` (release independiente con tag `ios-tools-v1`).
+- Si prefieres saltar a `1.1.0` (cambio menor) en lugar de patch, dímelo antes de implementar.
 
-**Motivación:**
-- `macos-13` está saturado o siendo retirado por GitHub → jobs se quedan horas esperando runner.
-- `macos-15-intel` es el reemplazo gratuito oficial para builds Intel (x64) en macOS.
-- El resto del job (Homebrew x86_64, PyInstaller, empaquetado) funciona igual sin modificaciones.
-
-**Impacto:**
-- El job `darwin-x64` pasará de quedarse atascado en cola a ejecutarse en minutos.
-- Las releases seguirán publicando `ios-tools-darwin-x64.tar.gz` como antes.
+Confirma para cambiar a build mode y aplicar.

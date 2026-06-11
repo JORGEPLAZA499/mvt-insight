@@ -25,6 +25,10 @@ import {
   buildDeviceCard,
   buildTopApps,
   buildHumanTimeline,
+  buildSystemIntegrity,
+  buildAccessibilityList,
+  buildConfigProfiles,
+  buildTopNetwork,
   GLOSSARY,
   type Category,
 } from "./mvt-translate";

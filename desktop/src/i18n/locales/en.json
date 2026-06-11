@@ -148,8 +148,10 @@
   },
   "iosDrivers": {
     "title": "Apple drivers are missing on this Windows",
-    "body": "For the computer to recognize the iPhone we need Apple Mobile Device drivers. We can't bundle them in our app due to Apple's license; install them in 1 click from the Microsoft Store (recommended) or from Apple's official iTunes installer.",
+    "body": "For the computer to recognize the iPhone we need Apple Mobile Device drivers. We can't bundle them in our app due to Apple's license. The quickest way is to install the free «Apple Devices» app from the Microsoft Store.",
     "installStore": "Install «Apple Devices» (Microsoft Store)",
+    "fallbackHint": "Can't use the Microsoft Store?",
+    "fallbackBody": "If the Microsoft Store isn't available on your machine, you can use Apple's official iTunes installer as an alternative.",
     "installItunes": "Download iTunes (apple.com)",
     "retry": "I've installed it — retry"
   }

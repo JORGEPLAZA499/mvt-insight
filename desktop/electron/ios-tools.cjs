@@ -249,8 +249,6 @@ function createBackup(workDir, udid, destDir, onData) {
       if (code === 0) resolve({ ok: true, child });
       else reject(new Error(`idevicebackup2 falló (código ${code}): ${stderr.trim()}`));
     });
-    // Devolvemos el child para poder cancelarlo
-    resolve.__child = child;
   });
 }
 

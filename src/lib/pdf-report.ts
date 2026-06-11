@@ -325,7 +325,8 @@ export function generatePdfReport(a: Analysis) {
       doc.setFont("helvetica", "normal"); doc.setFontSize(9);
       doc.text(f.label, M.left + 10, ctx.y);
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+
       const val = doc.splitTextToSize(String(f.value), CW - 200)[0];
       doc.text(val, M.left + 200, ctx.y);
       if (f.hint) {

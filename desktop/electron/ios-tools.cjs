@@ -271,6 +271,61 @@ function runMvtIos(workDir, backupDir, resultsDir, password, onData) {
   });
 }
 
+/**
+ * Comprueba si Windows tiene instalados los drivers de Apple Mobile Device.
+ * `libimobiledevice` (idevice_id/idevicepair/idevicebackup2) los necesita
+ * para hablar con el iPhone por USB. Se instalan con iTunes o con la app
+ * gratuita "Apple Devices" de la Microsoft Store. No podemos redistribuir
+ * los drivers nosotros, así que detectamos su ausencia y guiamos al usuario.
+ *
+ * Returns: { installed: boolean }
+ */
+async function checkAppleDriversWindows() {
+  if (process.platform !== "win32") return { installed: true };
+
+  // 1) Servicio "Apple Mobile Device Service" (iTunes clásico).
+  try {
+    const r = await runCmd("sc", ["query", "Apple Mobile Device Service"]);
+    const out = (r.stdout + r.stderr).toLowerCase();
+    if (r.code === 0 && /state\s*:\s*\d+\s+(running|stopped|start_pending)/.test(out)) {
+      return { installed: true };
+    }
+  } catch {}
+
+  // 2) Clave de registro instalada por Apple Mobile Device Support.
+  try {
+    const r = await runCmd("reg", [
+      "query",
+      "HKLM\\SOFTWARE\\Apple Inc.\\Apple Mobile Device Support",
+    ]);
+    if (r.code === 0) return { installed: true };
+  } catch {}
+
+  // 3) WOW64 (instalaciones 32-bit en Windows 64-bit).
+  try {
+    const r = await runCmd("reg", [
+      "query",
+      "HKLM\\SOFTWARE\\WOW6432Node\\Apple Inc.\\Apple Mobile Device Support",
+    ]);
+    if (r.code === 0) return { installed: true };
+  } catch {}
+
+  // 4) App "Apple Devices" (Microsoft Store) — registra un paquete AppX.
+  try {
+    const r = await runCmd("powershell.exe", [
+      "-NoProfile", "-NonInteractive", "-Command",
+      "Get-AppxPackage -Name 'AppleInc.AppleDevices' | Select-Object -ExpandProperty Name",
+    ]);
+    if (r.code === 0 && /AppleDevices/i.test(r.stdout)) {
+      return { installed: true };
+    }
+  } catch {}
+
+  return { installed: false };
+}
+
+
+
 module.exports = {
   ensureIosTools,
   listIosDevices,
@@ -280,4 +335,6 @@ module.exports = {
   runMvtIos,
   iosBinPath,
   iosToolsDir,
+  checkAppleDriversWindows,
 };
+

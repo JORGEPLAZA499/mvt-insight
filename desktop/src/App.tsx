@@ -62,12 +62,22 @@ export function App() {
   const [iosPassword, setIosPassword] = useState("");
   const [iosPasswordConfirm, setIosPasswordConfirm] = useState("");
   const [iosPasswordError, setIosPasswordError] = useState<string | null>(null);
+  // Guardamos la última contraseña usada para poder reintentar tras instalar drivers.
+  const lastIosPasswordRef = useRef<string | null>(null);
 
-  const PHASES = [
-    tr("phases.download", "Descargando AndroidQF"),
-    tr("phases.connect", "Conectando con el dispositivo"),
-    tr("phases.collect", "Recolectando datos"),
-  ];
+
+  const PHASES = device === "ios"
+    ? [
+        tr("phases.ios.tools", "Preparando herramientas iOS"),
+        tr("phases.ios.connect", "Conectando con el iPhone"),
+        tr("phases.ios.analyze", "Analizando backup"),
+      ]
+    : [
+        tr("phases.download", "Descargando AndroidQF"),
+        tr("phases.connect", "Conectando con el dispositivo"),
+        tr("phases.collect", "Recolectando datos"),
+      ];
+
 
   useEffect(() => {
     if (!window.mvt) return;
@@ -183,10 +193,21 @@ export function App() {
       return;
     }
     const pwd = iosPassword;
+    lastIosPasswordRef.current = pwd;
     setIosPassword("");
     setIosPasswordConfirm("");
     void start("ios", { password: pwd });
   };
+
+  const retryIosAfterDrivers = () => {
+    const pwd = lastIosPasswordRef.current;
+    if (!pwd) {
+      setScreen("welcome");
+      return;
+    }
+    void start("ios", { password: pwd });
+  };
+
 
   // Subida automática al servidor cuando entramos en "done" con cuenta vinculada.
   // El usuario también puede subirlo manualmente desde el botón "Subir datos al informe".
@@ -643,7 +664,37 @@ export function App() {
 
 
 
-        {error && (
+        {error === "IOS_DRIVERS_MISSING" ? (
+          <div className="card" style={{ borderColor: "var(--primary, #6ea8ff)" }}>
+            <strong>{tr("iosDrivers.title", "Faltan los drivers de Apple en este Windows")}</strong>
+            <div style={{ marginTop: 8, fontSize: 13, color: "var(--muted)" }}>
+              {tr(
+                "iosDrivers.body",
+                "Para que el ordenador reconozca el iPhone necesitamos los drivers de Apple Mobile Device. No podemos incluirlos en nuestra app por la licencia de Apple; instálalos en 1 clic desde la Microsoft Store (recomendado) o desde el instalador oficial de iTunes."
+              )}
+            </div>
+            <div className="row" style={{ marginTop: 12, flexWrap: "wrap", gap: 8 }}>
+              <button
+                className="btn"
+                onClick={() => window.mvt?.openExternal("ms-windows-store://pdp/?productid=9NP83LWLPZ9K")}
+              >
+                {tr("iosDrivers.installStore", "Instalar «Apple Devices» (Microsoft Store)")}
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => window.mvt?.openExternal("https://www.apple.com/itunes/download/win64")}
+              >
+                {tr("iosDrivers.installItunes", "Descargar iTunes (apple.com)")}
+              </button>
+              <button className="btn btn-secondary" onClick={retryIosAfterDrivers}>
+                {tr("iosDrivers.retry", "Ya lo he instalado — reintentar")}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
+                {tr("error.back", "Volver al inicio")}
+              </button>
+            </div>
+          </div>
+        ) : error && (
           <div className="card" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
             <strong>{tr("error.title", "Algo salió mal:")}</strong>
             <div style={{ marginTop: 6, fontSize: 13 }}>{error}</div>
@@ -654,6 +705,7 @@ export function App() {
             </div>
           </div>
         )}
+
         {VersionCorner}
       </div>
     );

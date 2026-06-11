@@ -888,19 +888,21 @@ export function generatePdfReport(a: Analysis) {
   paragraph("Pequeño diccionario para entender los términos técnicos que aparecen en este informe.", { size: 9, color: MUTED });
   ctx.y += 4;
   GLOSSARY.forEach((g, i) => {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11.5);
     const termLines = doc.splitTextToSize(g.term, CW - 20);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     const defLines = doc.splitTextToSize(g.definition, CW - 20);
-    const boxH = 6 + termLines.length * 12 + defLines.length * 11 + 8;
+    const boxH = 8 + termLines.length * 14 + 2 + defLines.length * 11 + 8;
     ensure(boxH);
     if (i % 2 === 0) {
       setFill(SOFT_BG);
       doc.rect(M.left, ctx.y - 4, CW, boxH, "F");
     }
-    let yy = ctx.y + 8;
+    let yy = ctx.y + 10;
     setText(NAVY);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11.5);
     doc.text(termLines, M.left + 10, yy);
-    yy += termLines.length * 12;
+    yy += termLines.length * 14 + 2;
     setText(INK);
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     doc.text(defLines, M.left + 10, yy);

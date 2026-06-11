@@ -31,7 +31,8 @@ function Upload() {
     { icon: Monitor, key: "step2" },
     { icon: Smartphone, key: "step3" },
     { icon: Settings, key: "step4" },
-    { icon: FileSearch, key: "step5" },
+    { icon: Usb, key: "step5" },
+    { icon: FileSearch, key: "step6" },
   ];
 
   const total = steps.length;

@@ -486,10 +486,10 @@ export function App() {
             <div className="title">{tr("welcome.android.title", "Android")}</div>
             <div className="sub">{tr("welcome.android.sub", "Sistema operativo Android")}</div>
           </button>
-          <button className="choice" onClick={() => start("ios")} disabled>
+          <button className="choice" onClick={() => { setIosPassword(""); setIosPasswordConfirm(""); setIosPasswordError(null); setScreen("iosSetup"); }}>
             <div className="icon">📲</div>
             <div className="title">{tr("welcome.ios.title", "iPhone")}</div>
-            <div className="sub">{tr("welcome.ios.sub", "Próximamente (solo macOS)")}</div>
+            <div className="sub">{tr("welcome.ios.sub", "Sistema operativo iOS")}</div>
           </button>
         </div>
 

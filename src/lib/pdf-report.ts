@@ -266,7 +266,7 @@ export function generatePdfReport(a: Analysis) {
   }
 
   // 02 · Resumen ejecutivo
-  sectionTitle("02", "Resumen ejecutivo");
+  sectionTitle(NEXT(), "Resumen ejecutivo");
   const baseSummary = r
     ? `Se ha analizado el archivo "${a.fileName}". La plataforma detectada es ${platformLabel(r.platform)}. Se procesaron ${r.modules.length} módulos MVT con un total de ${r.totalEntries.toLocaleString()} entradas y se identificaron ${r.totalDetections} indicios técnicos. El nivel de riesgo estimado es ${riskLabel(r.risk)}.`
     : `Análisis de "${a.fileName}". Estado actual: ${a.status}.`;
@@ -303,7 +303,7 @@ export function generatePdfReport(a: Analysis) {
   // 03 · Ficha del dispositivo
   const deviceCard = r ? buildDeviceCard(r.deviceInfo) : [];
   if (deviceCard.length > 0) {
-    sectionTitle("03", "Ficha del dispositivo");
+    sectionTitle(NEXT(), "Ficha del dispositivo");
     paragraph("Información del terminal extraída del análisis. Los identificadores sensibles (serie, IMEI) se muestran parcialmente.", { size: 9, color: MUTED });
     ctx.y += 4;
     const rowH2 = 22;
@@ -333,7 +333,7 @@ export function generatePdfReport(a: Analysis) {
   }
 
   // 04 · Cómo leer este informe
-  sectionTitle("04", "Cómo leer este informe");
+  sectionTitle(NEXT(), "Cómo leer este informe");
   paragraph("MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo. Un indicio no equivale a una infección confirmada: puede tratarse de una app legítima instalada por el propio usuario. Revisa cada hallazgo y comprueba si reconoces la app o el comportamiento descrito.");
   ctx.y += 4;
   paragraph("Las severidades empleadas en este informe:", { color: NAVY_SOFT });
@@ -353,7 +353,7 @@ export function generatePdfReport(a: Analysis) {
   // 05 · Áreas analizadas (módulos)
   const rowH = 18;
   if (r && r.modules.length) {
-    sectionTitle("05", "Áreas del dispositivo analizadas");
+    sectionTitle(NEXT(), "Áreas del dispositivo analizadas");
     const visible = r.modules.filter((m) => m.entries > 0 || m.detected > 0);
     // Cabecera
     ensure(22);
@@ -465,7 +465,7 @@ export function generatePdfReport(a: Analysis) {
       uniqueTotal += arr.length;
     });
 
-    sectionTitle("06", `Indicios detectados · ${uniqueTotal} entidad${uniqueTotal === 1 ? "" : "es"} (${r.detections.length} ocurrencias)`);
+    sectionTitle(NEXT(), `Indicios detectados · ${uniqueTotal} entidad${uniqueTotal === 1 ? "" : "es"} (${r.detections.length} ocurrencias)`);
 
     // Distribución
     const distLine = (["mercenary", "stalkerware", "suspicious"] as Category[])
@@ -576,7 +576,7 @@ export function generatePdfReport(a: Analysis) {
   // 07 · Apps con más actividad sospechosa
   const topApps = r ? buildTopApps(r.detections, 10) : [];
   if (topApps.length > 0) {
-    sectionTitle("07", "Apps con más actividad sospechosa");
+    sectionTitle(NEXT(), "Apps con más actividad sospechosa");
     paragraph("Apps que más veces aparecen en los indicios técnicos. Revisa con calma las marcadas como 'Origen no reconocido'.", { size: 9, color: MUTED });
     ctx.y += 4;
     topApps.forEach((app, i) => {
@@ -617,7 +617,7 @@ export function generatePdfReport(a: Analysis) {
   // 08 · Cronología de eventos clave
   const humanEvents = r ? buildHumanTimeline(r.timeline, r.detections, 20) : [];
   if (humanEvents.length > 0) {
-    sectionTitle("08", "Cronología de eventos clave");
+    sectionTitle(NEXT(), "Cronología de eventos clave");
     paragraph("Reconstrucción en lenguaje natural de los eventos más relevantes, ordenados por fecha.", { size: 9, color: MUTED });
     ctx.y += 6;
     humanEvents.forEach((e) => {
@@ -642,7 +642,7 @@ export function generatePdfReport(a: Analysis) {
   }
 
   // 09 · Próximos pasos
-  sectionTitle("09", "Próximos pasos recomendados");
+  sectionTitle(NEXT(), "Próximos pasos recomendados");
   const recs = r ? nextSteps(r) : [
     "Aislar el dispositivo de redes sensibles hasta completar la verificación.",
     "Actualizar el sistema operativo y revocar credenciales potencialmente expuestas.",
@@ -662,7 +662,7 @@ export function generatePdfReport(a: Analysis) {
   });
 
   // 10 · Verificación cruzada
-  sectionTitle("10", "Cómo verificar este resultado");
+  sectionTitle(NEXT(), "Cómo verificar este resultado");
   ctx.y += 6;
   CROSS_CHECK_STEPS.forEach((step) => {
     const titleLines = doc.splitTextToSize(step.title, CW - 24);
@@ -685,7 +685,7 @@ export function generatePdfReport(a: Analysis) {
   });
 
   // 11 · Glosario de términos
-  sectionTitle("11", "Glosario de términos");
+  sectionTitle(NEXT(), "Glosario de términos");
   paragraph("Pequeño diccionario para entender los términos técnicos que aparecen en este informe.", { size: 9, color: MUTED });
   ctx.y += 4;
   GLOSSARY.forEach((g, i) => {
@@ -710,7 +710,7 @@ export function generatePdfReport(a: Analysis) {
   ctx.y += 8;
 
   // 12 · Aviso legal
-  sectionTitle("12", "Aviso legal y metodología");
+  sectionTitle(NEXT(), "Aviso legal y metodología");
   paragraph("Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.", { size: 9 });
   ctx.y += 2;
   paragraph("Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.", { size: 9 });

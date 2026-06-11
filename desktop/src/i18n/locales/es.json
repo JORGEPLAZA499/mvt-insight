@@ -126,5 +126,18 @@
       "credits": "No te quedan créditos.",
       "generic": "No se pudo subir el informe."
     }
+  },
+  "ios": {
+    "title": "Analizar iPhone",
+    "subtitle": "Define una contraseña para cifrar el backup. Es obligatoria para poder analizar SMS, llamadas, Salud y Llavero.",
+    "step1": "Conecta el iPhone al ordenador con un cable USB.",
+    "step2": "Desbloquea el iPhone y, si aparece, pulsa «Confiar» en la pantalla del teléfono.",
+    "step3": "Elige una contraseña para el backup cifrado. Guárdala: si el iPhone ya tenía un backup cifrado, debe ser la misma de iTunes/Finder.",
+    "passwordPlaceholder": "Contraseña del backup",
+    "passwordConfirmPlaceholder": "Repite la contraseña",
+    "passwordTooShort": "La contraseña debe tener al menos 4 caracteres.",
+    "passwordMismatch": "Las contraseñas no coinciden.",
+    "startAnalysis": "Iniciar análisis",
+    "cancel": "Cancelar"
   }
 }

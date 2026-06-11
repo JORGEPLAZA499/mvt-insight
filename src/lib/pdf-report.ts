@@ -115,18 +115,19 @@ export function generatePdfReport(a: Analysis) {
   }
 
   function sectionTitle(num: string, title: string) {
-    ensure(48);
+    ensure(52);
     setText(MUTED);
     doc.setFont("helvetica", "bold"); doc.setFontSize(8);
     doc.text(num, M.left, ctx.y);
     setText(INK);
-    doc.setFontSize(15);
+    doc.setFontSize(17);
     doc.text(title, M.left + 24, ctx.y);
-    ctx.y += 8;
+    ctx.y += 10;
     setStroke(LINE); doc.setLineWidth(0.8);
     doc.line(M.left, ctx.y, W - M.right, ctx.y);
-    ctx.y += 16;
+    ctx.y += 18;
   }
+
 
   function paragraph(text: string, opts: { size?: number; color?: [number, number, number]; italic?: boolean } = {}) {
     const size = opts.size ?? 10;

@@ -22,6 +22,10 @@ import {
   CROSS_CHECK_STEPS,
   detectionKey,
   buildModuleHighlights,
+  buildDeviceCard,
+  buildTopApps,
+  buildHumanTimeline,
+  GLOSSARY,
   type Category,
 } from "./mvt-translate";
 

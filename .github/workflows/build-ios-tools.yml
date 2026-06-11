@@ -76,7 +76,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libimobiledevice-utils libimobiledevice6 libplist3 libusbmuxd6
+          sudo apt-get install -y libimobiledevice-utils usbmuxd
           mkdir -p staging/bin staging/lib
           for b in idevice_id idevicepair idevicebackup2 ideviceinfo; do
             cp -L "$(which $b)" staging/bin/
@@ -93,10 +93,12 @@ jobs:
         run: |
           # Las builds oficiales de Windows vienen de github.com/libimobiledevice-win32
           $ProgressPreference = "SilentlyContinue"
-          $url = "https://github.com/libimobiledevice-win32/imobiledevice-net/releases/latest/download/libimobiledevice.1.3.0-win-x64.zip"
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/libimobiledevice-win32/imobiledevice-net/releases/latest" -Headers @{ "User-Agent" = "GitHubActions" }
+          $asset = $release.assets | Where-Object { $_.name -like "libimobiledevice.*-win-x64.zip" } | Select-Object -First 1
+          if (-not $asset) { throw "No se encontró un asset libimobiledevice win-x64 en la última release" }
           New-Item -ItemType Directory -Force -Path staging | Out-Null
           New-Item -ItemType Directory -Force -Path staging/bin | Out-Null
-          Invoke-WebRequest -Uri $url -OutFile imd.zip -ErrorAction Stop
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile imd.zip -ErrorAction Stop
           Expand-Archive -Path imd.zip -DestinationPath imd -Force
           # Copia .exe y .dll a staging/bin (Windows busca DLLs en la misma carpeta del .exe)
           Get-ChildItem -Path imd -Recurse -Include *.exe,*.dll | ForEach-Object {

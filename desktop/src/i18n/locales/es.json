@@ -145,5 +145,13 @@
     "passwordMismatch": "Las contraseñas no coinciden.",
     "startAnalysis": "Iniciar análisis",
     "cancel": "Cancelar"
+  },
+  "iosDrivers": {
+    "title": "Faltan los drivers de Apple en este Windows",
+    "body": "Para que el ordenador reconozca el iPhone necesitamos los drivers de Apple Mobile Device. No podemos incluirlos en nuestra app por la licencia de Apple; instálalos en 1 clic desde la Microsoft Store (recomendado) o desde el instalador oficial de iTunes.",
+    "installStore": "Instalar «Apple Devices» (Microsoft Store)",
+    "installItunes": "Descargar iTunes (apple.com)",
+    "retry": "Ya lo he instalado — reintentar"
   }
 }
+

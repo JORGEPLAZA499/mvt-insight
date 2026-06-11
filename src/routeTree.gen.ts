@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SetupAdminRouteImport } from './routes/setup-admin'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -40,6 +41,11 @@ const SetupAdminRoute = SetupAdminRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/legal': typeof LegalRoute
   '/login': typeof LoginRoute
+  '/pricing': typeof PricingRoute
   '/reports': typeof ReportsRoute
   '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/legal': typeof LegalRoute
   '/login': typeof LoginRoute
+  '/pricing': typeof PricingRoute
   '/reports': typeof ReportsRoute
   '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/legal': typeof LegalRoute
   '/login': typeof LoginRoute
+  '/pricing': typeof PricingRoute
   '/reports': typeof ReportsRoute
   '/setup-admin': typeof SetupAdminRoute
   '/upload': typeof UploadRoute
@@ -183,6 +192,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/legal'
     | '/login'
+    | '/pricing'
     | '/reports'
     | '/setup-admin'
     | '/upload'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/legal'
     | '/login'
+    | '/pricing'
     | '/reports'
     | '/setup-admin'
     | '/upload'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/legal'
     | '/login'
+    | '/pricing'
     | '/reports'
     | '/setup-admin'
     | '/upload'
@@ -241,6 +253,7 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   LegalRoute: typeof LegalRoute
   LoginRoute: typeof LoginRoute
+  PricingRoute: typeof PricingRoute
   ReportsRoute: typeof ReportsRoute
   SetupAdminRoute: typeof SetupAdminRoute
   UploadRoute: typeof UploadRoute
@@ -275,6 +288,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -385,6 +405,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   LegalRoute: LegalRoute,
   LoginRoute: LoginRoute,
+  PricingRoute: PricingRoute,
   ReportsRoute: ReportsRoute,
   SetupAdminRoute: SetupAdminRoute,
   UploadRoute: UploadRoute,

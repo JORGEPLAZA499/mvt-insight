@@ -5,7 +5,7 @@ import logoUrl from "./assets/logo.png";
 import { parseMvtFiles } from "./lib/mvt-parser";
 
 type Device = "android" | "ios";
-type Screen = "welcome" | "running" | "done" | "link";
+type Screen = "welcome" | "running" | "done" | "link" | "iosSetup";
 
 const WEB_BASE_URL = "https://spyware.rpjsoftware.com";
 
@@ -58,6 +58,10 @@ export function App() {
   const [linkError, setLinkError] = useState<string | null>(null);
   // Upload state for the "done" screen
   const [upload, setUpload] = useState<UploadState>({ state: "idle" });
+  // Contraseña del backup iOS (cifrado obligatorio para obtener SMS, llamadas, etc.)
+  const [iosPassword, setIosPassword] = useState("");
+  const [iosPasswordConfirm, setIosPasswordConfirm] = useState("");
+  const [iosPasswordError, setIosPasswordError] = useState<string | null>(null);
 
   const PHASES = [
     tr("phases.download", "Descargando AndroidQF"),
@@ -145,7 +149,7 @@ export function App() {
     await window.mvt?.quitAndInstall();
   };
 
-  const start = async (d: Device) => {
+  const start = async (d: Device, options: { password?: string } = {}) => {
     setDevice(d);
     setScreen("running");
     setLogs([]);
@@ -158,7 +162,7 @@ export function App() {
       setError(tr("error.browserOnly", "Esta función solo está disponible en la app de escritorio."));
       return;
     }
-    const result = await window.mvt.start(d);
+    const result = await window.mvt.start(d, options);
     if (cancelledRef.current) return;
     if (result.ok && result.zipPath) {
       setZipPath(result.zipPath);
@@ -166,6 +170,22 @@ export function App() {
     } else {
       setError(result.error ?? tr("error.unknown", "Error desconocido"));
     }
+  };
+
+  const handleIosStart = () => {
+    setIosPasswordError(null);
+    if (iosPassword.length < 4) {
+      setIosPasswordError(tr("ios.passwordTooShort", "La contraseña debe tener al menos 4 caracteres."));
+      return;
+    }
+    if (iosPassword !== iosPasswordConfirm) {
+      setIosPasswordError(tr("ios.passwordMismatch", "Las contraseñas no coinciden."));
+      return;
+    }
+    const pwd = iosPassword;
+    setIosPassword("");
+    setIosPasswordConfirm("");
+    void start("ios", { password: pwd });
   };
 
   // Subida automática al servidor cuando entramos en "done" con cuenta vinculada.

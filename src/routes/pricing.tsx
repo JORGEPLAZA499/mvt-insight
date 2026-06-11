@@ -2,8 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CreditCard,
-  Bitcoin,
   ShieldCheck,
   Sparkles,
   FileText,
@@ -175,43 +173,21 @@ function PricingPage() {
                 </div>
 
                 <div className="md:w-[260px] w-full flex flex-col gap-3">
-                  <Link
-                    to="/login"
-                    search={{ mode: "register" }}
-                    className="group relative w-full overflow-hidden rounded-xl px-4 py-3.5 font-semibold text-primary-foreground shadow-glow transition hover:scale-[1.02] active:scale-[0.99] cursor-pointer text-center"
-                    style={{ background: "var(--gradient-primary)" }}
-                  >
-                    <span className="relative flex items-center justify-center gap-2">
-                      <CreditCard className="h-5 w-5" />
-                      {t("purchase.payCard")}
-                    </span>
-                    <span
-                      className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"
-                      style={{
-                        background:
-                          "linear-gradient(90deg, transparent, color-mix(in oklab, white 35%, transparent), transparent)",
-                      }}
-                    />
-                  </Link>
-
-                  <button
-                    disabled
-                    title={t("purchase.cryptoSoon")}
-                    className="group relative w-full overflow-hidden rounded-xl px-4 py-3.5 font-semibold border border-border bg-background/60 backdrop-blur opacity-60 cursor-not-allowed"
-                  >
-                    <span className="relative flex items-center justify-center gap-2">
-                      <Bitcoin className="h-5 w-5 text-[color:var(--warning)]" />
-                      {t("purchase.payCrypto")}
-                      <span className="ml-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                        {t("purchase.soon")}
-                      </span>
-                    </span>
-                  </button>
-
-                  <div className="mt-2 grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <PayGroup title={t("purchase.cardPayments")} items={cardBrands} />
                     <PayGroup title={t("purchase.cryptoPayments")} items={cryptoBrands} />
                   </div>
+
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground text-center">
+                    Las compras se realizan desde el panel de control una vez iniciada sesión.
+                  </p>
+
+                  <Link
+                    to="/login"
+                    className="w-full text-center rounded-xl border border-primary/30 bg-background/60 backdrop-blur px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/60 hover:text-primary transition"
+                  >
+                    {t("landing.nav.login")}
+                  </Link>
                 </div>
               </div>
             </div>

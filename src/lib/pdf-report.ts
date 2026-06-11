@@ -564,7 +564,8 @@ export function generatePdfReport(a: Analysis) {
       ensure(rowH);
       if (i % 2 === 0) { setFill(SOFT_BG); doc.rect(M.left, ctx.y - 12, CW, rowH, "F"); }
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+
       const human = humanizeModule(m.key, m.label);
       doc.text(doc.splitTextToSize(human, CW - 320)[0], M.left + 10, ctx.y);
       setText(MUTED);

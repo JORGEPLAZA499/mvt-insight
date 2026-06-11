@@ -372,7 +372,11 @@
         "body": "Pon el teléfono en modo avión para evitar que lleguen nuevos mensajes o notificaciones durante el análisis. Luego conecta el móvil por USB y en la app pulsa «Iniciar análisis». La app procesa todo el backup localmente."
       },
       "step4": {
-        "title": "Paso 4: Recibe el informe aquí",
+        "title": "Paso 4: Activa el modo desarrollador",
+        "body": "En el móvil, ve a Ajustes → Información del teléfono y toca 7 veces sobre «Número de compilación». Luego entra en Ajustes → Sistema → Opciones de desarrollador y activa «Depuración USB»."
+      },
+      "step5": {
+        "title": "Paso 5: Recibe el informe aquí",
         "body": "Al terminar, el informe se sincroniza con tu cuenta web automáticamente y se abre en el navegador."
       },
       "security": {

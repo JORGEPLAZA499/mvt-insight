@@ -15,7 +15,7 @@
     },
     "ios": {
       "title": "iPhone",
-      "sub": "Coming soon (macOS only)"
+      "sub": "iOS operating system"
     },
     "before": {
       "title": "Before you start:",
@@ -56,7 +56,12 @@
     "analyzingApps": "Analyzing installed apps…",
     "collectingSystemInfo": "Collecting system info…",
     "compressing": "Compressing results…",
-    "done": "Analysis complete"
+    "done": "Analysis complete",
+    "iosPairing": "Checking trust with the iPhone…",
+    "iosTrust": "Tap «Trust this computer» on the iPhone.",
+    "iosEnablingEncryption": "Enabling backup encryption…",
+    "iosBackup": "Creating iPhone backup…",
+    "iosAnalyzing": "Analyzing backup with MVT-iOS…"
   },
 
   "error": {
@@ -121,5 +126,18 @@
       "credits": "You have no credits left.",
       "generic": "Couldn't upload the report."
     }
+  },
+  "ios": {
+    "title": "Analyze iPhone",
+    "subtitle": "Set a password to encrypt the backup. It's required to analyze SMS, calls, Health and Keychain.",
+    "step1": "Connect the iPhone to the computer with a USB cable.",
+    "step2": "Unlock the iPhone and, if prompted, tap «Trust» on the phone screen.",
+    "step3": "Choose a password for the encrypted backup. Save it: if the iPhone already had an encrypted backup, it must be the same one from iTunes/Finder.",
+    "passwordPlaceholder": "Backup password",
+    "passwordConfirmPlaceholder": "Repeat the password",
+    "passwordTooShort": "The password must be at least 4 characters.",
+    "passwordMismatch": "Passwords don't match.",
+    "startAnalysis": "Start analysis",
+    "cancel": "Cancel"
   }
 }

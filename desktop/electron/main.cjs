@@ -10,6 +10,7 @@ const https = require("https");
 const { spawn } = require("child_process");
 const { pipeline } = require("stream/promises");
 const { autoUpdater } = require("electron-updater");
+const iosTools = require("./ios-tools.cjs");
 
 const isDev = !app.isPackaged;
 
@@ -376,7 +377,7 @@ ipcMain.handle("mvt:cancel", async () => {
   return { ok: true };
 });
 
-ipcMain.handle("mvt:start", async (event, { device }) => {
+ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
   const send = (channel, payload) => event.sender.send(channel, payload);
   cancelled = false;
 
@@ -681,8 +682,118 @@ ipcMain.handle("mvt:start", async (event, { device }) => {
       return { ok: true, zipPath };
     }
 
-    // iOS solo en macOS — pendiente Fase 2
-    throw new Error("El flujo iOS estará disponible en la próxima versión.");
+    if (device === "ios") {
+      if (!password || typeof password !== "string" || password.length < 4) {
+        throw new Error("Se requiere una contraseña de backup (mínimo 4 caracteres).");
+      }
+      const dir = workDir();
+
+      // 1. Descargar/instalar herramientas iOS (libimobiledevice + mvt-ios)
+      send("mvt:phase", { phase: 1, statusKey: "phaseStatus.resolvingVersion", label: "Buscando herramientas iOS", progress: 0 });
+      await iosTools.ensureIosTools(dir, {
+        log: (m) => send("mvt:log", m),
+        onProgress: (p) => send("mvt:phase", { phase: 1, statusKey: "phaseStatus.downloadingBinary", label: "Descargando herramientas iOS", progress: p }),
+      });
+      send("mvt:phase", { phase: 1, statusKey: "phaseStatus.binaryReady", label: "Herramientas iOS listas", progress: 1 });
+
+      // 2. Esperar a que el iPhone esté conectado y pareado.
+      send("mvt:phase", { phase: 2, statusKey: "phaseStatus.waitingDevice", label: "Esperando que conectes el iPhone", progress: 0 });
+      send("mvt:log", "🔌 Conecta el iPhone por USB y desbloquéalo.");
+
+      const WAIT_DEVICE_TIMEOUT_MS = 120_000;
+      const POLL_MS = 1500;
+      const tStart = Date.now();
+      let udid = null;
+      let pairedAnnounced = false;
+      while (true) {
+        if (cancelled) return { ok: false, error: "cancelled" };
+        const devices = await iosTools.listIosDevices(dir, (m) => send("mvt:log", m));
+        if (devices.length > 0) {
+          udid = devices[0];
+          send("mvt:log", `📱 iPhone detectado (UDID: ${udid.slice(0, 8)}…).`);
+
+          send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosPairing", label: "Comprobando confianza", progress: 0.3 });
+          const pairRes = await iosTools.pairDevice(dir, udid, (m) => send("mvt:log", m));
+          if (pairRes.paired) {
+            if (!pairedAnnounced) {
+              pairedAnnounced = true;
+              send("mvt:log", "✅ iPhone pareado.");
+            }
+            break;
+          }
+          if (pairRes.trustRequired) {
+            send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosTrust", label: "Acepta «Confiar» en el iPhone", progress: 0.5 });
+          }
+        }
+        if (Date.now() - tStart > WAIT_DEVICE_TIMEOUT_MS) {
+          throw new Error(
+            "No se detectó el iPhone. Conéctalo por USB, desbloquéalo y, si aparece el aviso, pulsa «Confiar» en la pantalla del iPhone."
+          );
+        }
+        await new Promise((r) => setTimeout(r, POLL_MS));
+      }
+
+      // 3. Activar cifrado del backup (si no lo estaba ya) con la contraseña del usuario.
+      send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosEnablingEncryption", label: "Configurando cifrado del backup", progress: 0.7 });
+      const enc = await iosTools.enableEncryption(dir, udid, password, (m) => send("mvt:log", m));
+      if (!enc.ok) {
+        throw new Error(
+          "No se pudo activar el cifrado del backup. Si ya tenías un backup cifrado con otra contraseña en iTunes/Finder, " +
+          "abre Ajustes > General > Restablecer > Restablecer historial de localización y privacidad en el iPhone, o usa la misma contraseña anterior."
+        );
+      }
+      if (enc.alreadyEnabled) {
+        send("mvt:log", "ℹ️ El cifrado ya estaba activado; usaré la contraseña que has indicado para descifrar.");
+      } else {
+        send("mvt:log", "🔒 Cifrado del backup activado.");
+      }
+
+      // 4. Crear backup
+      const backupDir = path.join(dir, `ios-backup-${Date.now()}`);
+      send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosBackup", label: "Creando backup del iPhone", progress: 0.8 });
+      send("mvt:log", `💾 Backup en ${backupDir}`);
+      const backupStart = Date.now();
+      let lastBackupPhase = 0;
+      await iosTools.createBackup(dir, udid, backupDir, (data) => {
+        const text = String(data);
+        send("mvt:log", text);
+        // Heurística simple de progreso por mensajes conocidos
+        if (/Started\s+\"Backup\"/i.test(text) && lastBackupPhase < 0.2) {
+          lastBackupPhase = 0.2;
+          send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosBackup", label: "Creando backup del iPhone", progress: 0.85 });
+        }
+        const m = text.match(/(\d{1,3})%/);
+        if (m) {
+          const pct = Math.min(100, parseInt(m[1], 10)) / 100;
+          send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosBackup", label: "Creando backup del iPhone", progress: 0.8 + pct * 0.2 });
+        }
+      }).catch((e) => { throw e; });
+      send("mvt:log", `✅ Backup completado en ${(Date.now() - backupStart) / 1000}s.`);
+
+      // 5. Ejecutar mvt-ios sobre el backup
+      const resultsDir = path.join(dir, `ios-results-${Date.now()}`);
+      send("mvt:phase", { phase: 3, statusKey: "phaseStatus.iosAnalyzing", label: "Analizando backup con MVT", progress: 0.1 });
+      await iosTools.runMvtIos(dir, backupDir, resultsDir, password, (data) => {
+        const text = String(data);
+        send("mvt:log", text);
+        if (/Running module/i.test(text)) {
+          send("mvt:phase", { phase: 3, statusKey: "phaseStatus.iosAnalyzing", label: "Analizando backup con MVT", progress: 0.5 });
+        }
+      });
+
+      // 6. Comprimir resultados para mantener la misma UX que Android
+      const zipPath = path.join(dir, `ios-results-${Date.now()}.zip`);
+      send("mvt:phase", { phase: 3, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.9 });
+      await zipFolder(resultsDir, zipPath);
+      send("mvt:phase", { phase: 3, statusKey: "phaseStatus.done", label: "Listo", progress: 1 });
+
+      // Limpieza: borramos el backup (es enorme) pero conservamos los resultados.
+      try { fs.rmSync(backupDir, { recursive: true, force: true }); } catch {}
+
+      return { ok: true, zipPath };
+    }
+
+    throw new Error(`Dispositivo no soportado: ${device}`);
   } catch (err) {
     if (cancelled) return { ok: false, error: "cancelled" };
     send("mvt:log", `❌ ${err.message}`);

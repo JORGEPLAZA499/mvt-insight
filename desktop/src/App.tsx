@@ -5,7 +5,7 @@ import logoUrl from "./assets/logo.png";
 import { parseMvtFiles } from "./lib/mvt-parser";
 
 type Device = "android" | "ios";
-type Screen = "welcome" | "running" | "done" | "link";
+type Screen = "welcome" | "running" | "done" | "link" | "iosSetup";
 
 const WEB_BASE_URL = "https://spyware.rpjsoftware.com";
 
@@ -58,6 +58,10 @@ export function App() {
   const [linkError, setLinkError] = useState<string | null>(null);
   // Upload state for the "done" screen
   const [upload, setUpload] = useState<UploadState>({ state: "idle" });
+  // Contraseña del backup iOS (cifrado obligatorio para obtener SMS, llamadas, etc.)
+  const [iosPassword, setIosPassword] = useState("");
+  const [iosPasswordConfirm, setIosPasswordConfirm] = useState("");
+  const [iosPasswordError, setIosPasswordError] = useState<string | null>(null);
 
   const PHASES = [
     tr("phases.download", "Descargando AndroidQF"),
@@ -145,7 +149,7 @@ export function App() {
     await window.mvt?.quitAndInstall();
   };
 
-  const start = async (d: Device) => {
+  const start = async (d: Device, options: { password?: string } = {}) => {
     setDevice(d);
     setScreen("running");
     setLogs([]);
@@ -158,7 +162,7 @@ export function App() {
       setError(tr("error.browserOnly", "Esta función solo está disponible en la app de escritorio."));
       return;
     }
-    const result = await window.mvt.start(d);
+    const result = await window.mvt.start(d, options);
     if (cancelledRef.current) return;
     if (result.ok && result.zipPath) {
       setZipPath(result.zipPath);
@@ -166,6 +170,22 @@ export function App() {
     } else {
       setError(result.error ?? tr("error.unknown", "Error desconocido"));
     }
+  };
+
+  const handleIosStart = () => {
+    setIosPasswordError(null);
+    if (iosPassword.length < 4) {
+      setIosPasswordError(tr("ios.passwordTooShort", "La contraseña debe tener al menos 4 caracteres."));
+      return;
+    }
+    if (iosPassword !== iosPasswordConfirm) {
+      setIosPasswordError(tr("ios.passwordMismatch", "Las contraseñas no coinciden."));
+      return;
+    }
+    const pwd = iosPassword;
+    setIosPassword("");
+    setIosPasswordConfirm("");
+    void start("ios", { password: pwd });
   };
 
   // Subida automática al servidor cuando entramos en "done" con cuenta vinculada.
@@ -451,6 +471,71 @@ export function App() {
     );
   }
 
+  if (screen === "iosSetup") {
+    return (
+      <div className="app">
+        {TopBar}
+        <div className="header">
+          <Logo size={140} />
+          <h1>{tr("ios.title", "Analizar iPhone")}</h1>
+          <p>{tr("ios.subtitle", "Define una contraseña para cifrar el backup. Es obligatoria para poder analizar SMS, llamadas, Salud y Llavero.")}</p>
+        </div>
+        <div className="card">
+          <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "var(--muted)", lineHeight: 1.7 }}>
+            <li>{tr("ios.step1", "Conecta el iPhone al ordenador con un cable USB.")}</li>
+            <li>{tr("ios.step2", "Desbloquea el iPhone y, si aparece, pulsa «Confiar» en la pantalla del teléfono.")}</li>
+            <li>{tr("ios.step3", "Elige una contraseña para el backup cifrado. Guárdala: si el iPhone ya tenía un backup cifrado, debe ser la misma de iTunes/Finder.")}</li>
+          </ol>
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <input
+              type="password"
+              value={iosPassword}
+              onChange={(e) => setIosPassword(e.target.value)}
+              placeholder={tr("ios.passwordPlaceholder", "Contraseña del backup")}
+              autoFocus
+              style={{
+                fontFamily: "SF Mono, Menlo, monospace",
+                fontSize: 16,
+                padding: "10px 14px",
+                borderRadius: 8,
+                border: "1px solid var(--border, #333)",
+                background: "var(--bg-soft, #1a1a22)",
+                color: "var(--fg, #fff)",
+              }}
+            />
+            <input
+              type="password"
+              value={iosPasswordConfirm}
+              onChange={(e) => setIosPasswordConfirm(e.target.value)}
+              placeholder={tr("ios.passwordConfirmPlaceholder", "Repite la contraseña")}
+              style={{
+                fontFamily: "SF Mono, Menlo, monospace",
+                fontSize: 16,
+                padding: "10px 14px",
+                borderRadius: 8,
+                border: "1px solid var(--border, #333)",
+                background: "var(--bg-soft, #1a1a22)",
+                color: "var(--fg, #fff)",
+              }}
+            />
+            {iosPasswordError && (
+              <div style={{ color: "var(--danger)", fontSize: 13 }}>{iosPasswordError}</div>
+            )}
+            <div className="row">
+              <button className="btn" onClick={handleIosStart} disabled={!iosPassword || !iosPasswordConfirm}>
+                {tr("ios.startAnalysis", "Iniciar análisis")}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
+                {tr("ios.cancel", "Cancelar")}
+              </button>
+            </div>
+          </div>
+        </div>
+        {VersionCorner}
+      </div>
+    );
+  }
+
   if (screen === "welcome") {
     return (
       <div className="app">
@@ -466,10 +551,10 @@ export function App() {
             <div className="title">{tr("welcome.android.title", "Android")}</div>
             <div className="sub">{tr("welcome.android.sub", "Sistema operativo Android")}</div>
           </button>
-          <button className="choice" onClick={() => start("ios")} disabled>
+          <button className="choice" onClick={() => { setIosPassword(""); setIosPasswordConfirm(""); setIosPasswordError(null); setScreen("iosSetup"); }}>
             <div className="icon">📲</div>
             <div className="title">{tr("welcome.ios.title", "iPhone")}</div>
-            <div className="sub">{tr("welcome.ios.sub", "Próximamente (solo macOS)")}</div>
+            <div className="sub">{tr("welcome.ios.sub", "Sistema operativo iOS")}</div>
           </button>
         </div>
 

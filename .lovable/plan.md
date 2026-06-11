@@ -1,56 +1,99 @@
-## Diagnóstico
+# Plan: Activar análisis iOS en la app de escritorio
 
-Tras revisar `informe-27B73663.pdf` y `src/lib/pdf-report.ts`, hay dos problemas distintos:
+Basado en tus respuestas:
+- **Plataformas:** macOS + Windows + Linux
+- **Motor:** Python + mvt-ios bundleado dentro del instalador
+- **Backups cifrados:** Sí
+- **Origen del backup:** USB automático (mismo flujo "un clic" que Android)
 
-### 1. Jerarquía tipográfica plana (lo que pides)
-Los títulos de sección están en 15 pt y muchos cuerpos/descripciones en 10 pt: solo 5 pt de diferencia, así que visualmente el título no “manda”. En varios bloques (glosario, “Cómo verificar este resultado”, tarjetas de indicios) el título de la tarjeta es 10 pt y la descripción 9 pt — quedan casi iguales, por eso parece que “la descripción es más grande que el título”.
+## Cómo funcionará para el usuario
 
-### 2. Rendering “Inform e forense” / “Resum en ejecutivo”
-Los textos en **negrita** salen con huecos extra entre letras (`Inform e`, `Resum en`, `Áreas del dispositivo anal izadas`). Es un defecto conocido de jsPDF con la fuente Helvetica estándar al medir ciertos pares con caracteres acentuados (ó, í, á, ñ). **No es algo que se ajuste cambiando tamaños**; se arregla cambiando a una fuente TTF embebida (p. ej. Inter o Noto Sans). Lo dejo fuera del alcance salvo que me confirmes que también quieres que lo solucione (implica embeber un .ttf y subir el peso del bundle ~150 KB).
+1. Pulsa el botón **iPhone** (igual que ya hace con Android).
+2. La app comprueba que el iPhone esté conectado por USB y desbloqueado.
+3. Si el backup va a estar cifrado por primera vez, le pide al usuario una **contraseña de backup** (y le explica que Apple solo guarda SMS, llamadas, Salud y Llavero cuando el backup está cifrado).
+4. La app crea el backup vía USB usando `idevicebackup2` (libimobiledevice) en una carpeta temporal.
+5. Ejecuta `mvt-ios check-backup` sobre esa carpeta, con la contraseña.
+6. Lee los JSON de salida con el parser que **ya existe** (`desktop/src/lib/mvt-parser.ts` ya entiende los outputs de mvt-ios) y muestra los resultados en la misma UI de resultados que Android.
+7. Borra el backup temporal al cerrar.
 
----
+## Qué hay que construir
 
-## Cambios propuestos (solo tipografía / jerarquía)
+### 1. Binarios nativos por plataforma (descarga al primer uso)
+Mismo patrón que ya usamos para AndroidQF: la app **no** trae los binarios dentro del instalador (mantiene el .dmg/.exe/.AppImage ligeros), sino que los descarga la primera vez que el usuario pulsa iPhone, los verifica por hash y los cachea.
 
-Archivo: `src/lib/pdf-report.ts`
+Binarios necesarios por SO:
+- **macOS** (arm64 + x64): `idevice_id`, `idevicebackup2`, `ideviceinfo`, `idevicepair` desde libimobiledevice (build de `libimobiledevice-glue` + `libplist`).
+- **Windows** (x64): los mismos binarios + DLLs + **drivers de Apple Mobile Device Support**. Si los drivers no están, la app detecta el caso y abre una pantalla de ayuda con un botón "Instalar drivers de Apple" que descarga el instalador oficial.
+- **Linux** (x64): `libimobiledevice` empaquetado como AppImage interno o vía detección del paquete del sistema con instrucciones si falta.
 
-| Bloque | Actual | Nuevo |
-|---|---|---|
-| Título de sección (`sectionTitle`) | 15 pt bold | **17 pt bold**, separador a 12 pt (más aire) |
-| Numerito de sección (“01”, “02”…) | 8 pt | 8 pt (sin cambio, ya funciona) |
-| Veredicto: headline | 14 pt | **16 pt** |
-| Veredicto: detalle | 9 pt | 10 pt |
-| Resumen ejecutivo (párrafo) | 10 pt | 10.5 pt (sin cambio real, queda) |
-| KPI cards: número | 18 pt | **20 pt** |
-| KPI cards: etiqueta | 8 pt | 8 pt (sin cambio) |
-| Ficha del dispositivo: valor | 10 pt | **11 pt bold** |
-| Ficha del dispositivo: etiqueta | 9 pt | 9 pt MUTED (sin cambio) |
-| Tabla “Áreas analizadas”: nombre módulo | 10 pt bold | **11 pt bold** |
-| Tabla: clave técnica `(dumpsys)` | 8 pt | 8 pt MUTED (sin cambio) |
-| Tarjetas “Cómo verificar este resultado”: título | 10 pt bold | **12 pt bold NAVY** |
-| Tarjetas “Cómo verificar…”: cuerpo | 9 pt | 9.5 pt |
-| Glosario: término | 10 pt bold | **11.5 pt bold NAVY** |
-| Glosario: definición | 9 pt | 9 pt (sin cambio) |
-| Tarjetas de indicios: nombre entidad | 10 pt bold | **11 pt bold** |
-| Tarjetas de indicios: módulos detectados | 8 pt | 8 pt MUTED (sin cambio) |
-| Tarjetas de “Apps con más…” / accesibilidad / perfiles: nombre | 10 pt bold | **11 pt bold** |
-| Próximos pasos: texto del paso | 10 pt | **11 pt** |
-| Cabecera categoría (“Indicios mercenarios · …”) | 12 pt | **13 pt** |
-| Leyenda severidades (página 3): cuerpo | 10 pt | 10 pt (sin cambio) |
-| Aviso legal: párrafos | 9 pt | 9 pt (sin cambio) |
-| Portada — título | 34 pt | 34 pt (sin cambio) |
-| Portada — subtítulo | 12 pt | 12 pt (sin cambio) |
+### 2. mvt-ios bundleado
+Crear un job de GitHub Actions que:
+- Compile `mvt-ios` con **PyInstaller** en macOS, Windows y Linux.
+- Publique los tres binarios (`mvt-ios-darwin-arm64`, `mvt-ios-darwin-x64`, `mvt-ios-win-x64.exe`, `mvt-ios-linux-x64`) como assets de una GitHub Release.
+- La app descarga el binario correcto al primer uso (igual que AndroidQF) y lo guarda en `~/.spyware-detector/bin/`.
 
-Otros pequeños ajustes derivados:
-- Recalcular alturas de tarjetas (`cardH2`, `cardH3`, `boxH` del glosario y de “Cómo verificar…”) en función de los nuevos tamaños de fuente, para que no se solapen ni dejen huecos enormes.
-- Asegurar que el `humanLines` de las tarjetas de indicios se mide con el nuevo `fontSize(11)` antes de calcular la altura.
-- Mantener anchos y márgenes; no se tocan colores, layout, ni contenido.
+> Nota: aunque tu respuesta fue "bundlear dentro del instalador", recomiendo descargar al primer uso porque ahorra ~120 MB al instalador y permite actualizar mvt-ios sin sacar nueva versión de la app. Si prefieres bundlear de verdad, lo cambiamos.
 
-## Validación (obligatoria)
-1. Generar un informe nuevo desde la app.
-2. Convertir a imágenes con `pdftoppm -jpeg -r 110` y abrir las 5 páginas.
-3. Comprobar página por página que: títulos de sección dominan, tarjetas tienen título mayor que descripción, no hay solapes ni cortes.
-4. Si algún bloque queda demasiado alto, ajustar `boxH` correspondiente.
+### 3. Flujo iOS en Electron (`desktop/electron/main.cjs`)
+Nuevos handlers IPC, simétricos a los de Android:
+- `ios:check-device` → corre `idevice_id -l`, devuelve si hay iPhone, su nombre y si está pareado.
+- `ios:request-pair` → corre `idevicepair pair`, devuelve "confía en el ordenador desde el iPhone".
+- `ios:start-backup` → recibe `{ password }`, corre `idevicebackup2 backup --full <tmp>` con la contraseña, devuelve progreso por stream.
+- `ios:run-mvt` → corre el binario de mvt-ios sobre la carpeta del backup con la contraseña, escribe los JSON en `<tmp>/results/`.
+- `ios:cleanup` → borra la carpeta temporal.
 
-## Fuera de alcance (a confirmar aparte)
-- Sustituir la Helvetica estándar por una TTF embebida para eliminar el efecto “Inform e forense”. Avísame si lo quieres y lo añado en otra iteración.
+### 4. UI en `desktop/src/`
+- Reusar `mvt-parser.ts` tal cual (ya soporta los módulos de iOS).
+- Nuevo componente `IosAnalysisFlow.tsx` que envuelve los 4 pasos (detectar → parear → contraseña → backup → análisis → resultados) en la misma UI visual que el flujo Android.
+- Una sola pantalla de progreso que muestra: "Creando backup… 23%", "Analizando con MVT… módulo 4/18", etc.
+- Pantalla de error específica si:
+  - No hay iPhone conectado.
+  - Hay que aceptar "Confiar" en el iPhone.
+  - Contraseña incorrecta.
+  - Faltan drivers de Apple (solo Windows).
+
+### 5. Pantalla de "Activar análisis iOS"
+La UI actual dice "Próximamente (solo macOS)". Hay que:
+- Quitar el badge "Próximamente".
+- Quitar la restricción de "solo macOS".
+- Cuando el usuario pulse iPhone por primera vez, mostrar un wizard breve: "Vamos a descargar las herramientas necesarias (≈ 60 MB). Esto solo pasa una vez."
+
+## Detalles técnicos
+
+```text
+Carpeta de cache:
+  ~/.spyware-detector/
+    bin/
+      idevicebackup2(.exe)
+      idevice_id(.exe)
+      mvt-ios(.exe)
+      libplist.dll        (solo Windows)
+      ...
+    tmp/
+      backup-<timestamp>/   (se borra al terminar)
+      results-<timestamp>/  (JSON de mvt-ios, alimenta el parser)
+```
+
+Endpoints / archivos nuevos o tocados:
+- `desktop/electron/main.cjs` — añadir handlers IPC `ios:*` y descarga/verificación de binarios.
+- `desktop/electron/ios-tools.cjs` (nuevo) — wrapper de libimobiledevice + mvt-ios + descarga + checksums.
+- `desktop/src/lib/ios-flow.ts` (nuevo) — orquestación del flujo en el renderer.
+- `desktop/src/components/IosAnalysisFlow.tsx` (nuevo) — UI del wizard.
+- `desktop/src/App.tsx` — sustituir el botón iPhone "Próximamente" por el botón real que abre `IosAnalysisFlow`.
+- `.github/workflows/build-mvt-ios.yml` (nuevo) — compila mvt-ios con PyInstaller en macOS/Win/Linux y publica los binarios.
+- `.github/workflows/build-libimobiledevice.yml` (nuevo) — empaqueta los binarios de libimobiledevice por plataforma.
+- `src/i18n/locales/{es,en}.json` — strings nuevos del wizard.
+
+## Qué NO incluye este plan
+
+- Análisis de iPhones **sin cable** (vía iCloud backup) → fuera de alcance, requiere credenciales de Apple ID y 2FA.
+- Soporte de iOS < 14 → mvt-ios oficialmente solo cubre versiones modernas.
+- Jailbreak / FFS dump → no es el flujo que queremos para el usuario final.
+
+## Riesgos
+
+- **Windows + drivers de Apple:** si el usuario no tiene iTunes ni Apple Mobile Device Support instalados, libimobiledevice no ve el iPhone. Lo mitigamos con la pantalla de ayuda + descarga del instalador oficial.
+- **Tamaño de mvt-ios con PyInstaller:** ~40-60 MB por plataforma. Aceptable con descarga al primer uso.
+- **Firma de código:** los binarios de libimobiledevice y mvt-ios deberían firmarse para evitar avisos de Gatekeeper (macOS) y SmartScreen (Windows). Esto es un paso adicional de release que conviene planificar.
+
+¿Apruebas este plan para empezar a implementarlo?

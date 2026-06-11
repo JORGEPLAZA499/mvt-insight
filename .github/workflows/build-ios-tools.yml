@@ -1,0 +1,166 @@
+name: Build iOS Tools
+run-name: Build iOS Tools (libimobiledevice + mvt-ios)
+
+# Compila los binarios necesarios para el flujo iOS de la app de escritorio:
+#   - libimobiledevice (idevice_id, idevicepair, idevicebackup2, ideviceinfo)
+#   - mvt-ios empaquetado con PyInstaller
+#
+# Publica un archivo por plataforma (`ios-tools-<plat>-<arch>.{tar.gz|zip}`)
+# en la release del repo con tag `ios-tools-v1`. La app de escritorio descarga
+# el archivo correspondiente la primera vez que el usuario pulsa "iPhone".
+#
+# Disparadores:
+#   - workflow_dispatch (manual)
+#   - push de tag que empiece por `ios-tools-`
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "ios-tools-*"
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ios-tools-v1
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14            # Apple Silicon (arm64)
+            label: darwin-arm64
+            ext: tar.gz
+          - os: macos-13            # Intel (x64)
+            label: darwin-x64
+            ext: tar.gz
+          - os: ubuntu-latest
+            label: linux-x64
+            ext: tar.gz
+          - os: windows-latest
+            label: win-x64
+            ext: zip
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # -------- 1. libimobiledevice --------
+
+      - name: Install libimobiledevice (macOS via Homebrew)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          brew update
+          brew install libimobiledevice ideviceinstaller
+          mkdir -p staging/bin staging/lib
+          # Copia los binarios reales (los enlaces simbólicos se resuelven con -L)
+          for b in idevice_id idevicepair idevicebackup2 ideviceinfo; do
+            cp -L "$(brew --prefix)/bin/$b" staging/bin/
+          done
+          # Copia las libs dinámicas para que la app funcione sin Homebrew instalado
+          for lib in libimobiledevice-1.0 libplist-2.0 libusbmuxd-2.0 libimobiledevice-glue-1.0 libssl libcrypto; do
+            for f in $(brew --prefix)/lib/${lib}*.dylib; do
+              [ -f "$f" ] && cp -L "$f" staging/lib/ || true
+            done
+          done
+
+      - name: Install libimobiledevice (Linux apt)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libimobiledevice-utils libimobiledevice6 libplist3 libusbmuxd6
+          mkdir -p staging/bin staging/lib
+          for b in idevice_id idevicepair idevicebackup2 ideviceinfo; do
+            cp -L "$(which $b)" staging/bin/
+          done
+          for lib in libimobiledevice libplist libusbmuxd libimobiledevice-glue; do
+            for f in /usr/lib/x86_64-linux-gnu/${lib}*.so*; do
+              [ -f "$f" ] && cp -L "$f" staging/lib/ || true
+            done
+          done
+
+      - name: Install libimobiledevice (Windows via imobiledevice-net)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # Las builds oficiales de Windows vienen de github.com/libimobiledevice-win32
+          $ProgressPreference = "SilentlyContinue"
+          $url = "https://github.com/libimobiledevice-win32/imobiledevice-net/releases/latest/download/libimobiledevice.1.3.0-win-x64.zip"
+          New-Item -ItemType Directory -Force -Path staging | Out-Null
+          New-Item -ItemType Directory -Force -Path staging/bin | Out-Null
+          Invoke-WebRequest -Uri $url -OutFile imd.zip -ErrorAction Stop
+          Expand-Archive -Path imd.zip -DestinationPath imd -Force
+          # Copia .exe y .dll a staging/bin (Windows busca DLLs en la misma carpeta del .exe)
+          Get-ChildItem -Path imd -Recurse -Include *.exe,*.dll | ForEach-Object {
+            Copy-Item $_.FullName -Destination staging/bin/ -Force
+          }
+
+      # -------- 2. mvt-ios (PyInstaller) --------
+
+      - name: Install build deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller mvt
+
+      - name: Bundle mvt-ios with PyInstaller (unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          pyinstaller --onefile --name mvt-ios \
+            --collect-all mvt \
+            --hidden-import iOSbackup \
+            $(python -c "import mvt.ios.cli, os; print(os.path.dirname(mvt.ios.cli.__file__) + '/__init__.py')") \
+            || pyinstaller --onefile --name mvt-ios \
+              --collect-all mvt \
+              -c "import mvt.ios.cli; mvt.ios.cli.cli()"
+          cp dist/mvt-ios staging/bin/
+
+      - name: Bundle mvt-ios with PyInstaller (windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # Crea un pequeño launcher .py que invoca mvt-ios para que PyInstaller lo empaquete.
+          @'
+          from mvt.ios.cli import cli
+          if __name__ == "__main__":
+              cli()
+          '@ | Out-File -Encoding utf8 mvt_ios_launcher.py
+          pyinstaller --onefile --name mvt-ios --collect-all mvt mvt_ios_launcher.py
+          Copy-Item dist/mvt-ios.exe staging/bin/ -Force
+
+      # -------- 3. Empaquetar y publicar --------
+
+      - name: Create archive (tar.gz)
+        if: matrix.ext == 'tar.gz'
+        run: |
+          cd staging
+          tar -czf ../ios-tools-${{ matrix.label }}.tar.gz .
+          cd ..
+          ls -la ios-tools-${{ matrix.label }}.tar.gz
+
+      - name: Create archive (zip)
+        if: matrix.ext == 'zip'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path staging/* -DestinationPath ios-tools-${{ matrix.label }}.zip -Force
+          Get-Item ios-tools-${{ matrix.label }}.zip
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: iOS Tools (${{ env.RELEASE_TAG }})
+          body: |
+            Binarios pre-compilados de libimobiledevice + mvt-ios para el flujo iOS
+            de la app de escritorio MvtInsight. Generados automáticamente por
+            `.github/workflows/build-ios-tools.yml`.
+          files: ios-tools-${{ matrix.label }}.${{ matrix.ext }}
+          fail_on_unmatched_files: true
+          make_latest: false

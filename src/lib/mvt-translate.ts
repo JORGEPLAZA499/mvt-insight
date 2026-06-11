@@ -1,4 +1,7 @@
-import type { RiskLevel, MvtParsedResult, MvtDetection, MvtDeviceInfo } from "./mvt-parser";
+import type {
+  RiskLevel, MvtParsedResult, MvtDetection, MvtDeviceInfo,
+  AccessibilityServiceEntry, IosConfigProfile, NetworkProcUsage, SelinuxStatus,
+} from "./mvt-parser";
 
 // ---------- Módulos: nombre técnico -> nombre claro en español ----------
 

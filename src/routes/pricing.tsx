@@ -64,15 +64,6 @@ function PricingPage() {
         />
 
         <section className="relative max-w-5xl mx-auto px-6 pt-6 pb-16 md:pt-8 md:pb-24">
-          <div className="text-center mb-10">
-            <h1 className="text-4xl md:text-5xl font-semibold tracking-tight">
-              {t("landing.nav.pricing")}
-            </h1>
-            <p className="mt-3 text-muted-foreground max-w-4xl mx-auto">
-              {t("purchase.description")}
-            </p>
-          </div>
-
           {/* Pricing card — same visual language as purchase modal */}
           <div
             className="relative overflow-hidden rounded-2xl border border-primary/30 p-px shadow-glow animate-fade-in"
@@ -113,9 +104,14 @@ function PricingPage() {
 
               <div className="relative grid md:grid-cols-[1fr_auto] gap-8 items-center">
                 <div>
-                  <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-primary/90 mb-3">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    {t("purchase.badge")}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-primary/90">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      {t("purchase.badge")}
+                    </div>
+                    <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
+                      {t("landing.nav.pricing")}
+                    </h1>
                   </div>
                   <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">
                     {t("purchase.title")}

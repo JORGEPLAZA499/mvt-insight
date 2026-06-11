@@ -355,7 +355,7 @@
     "desktopOnly": {
       "badge": "Análisis seguro local",
       "title": "Analiza tu dispositivo desde la app de escritorio",
-      "intro": "Por seguridad y rendimiento, el análisis forense se realiza en tu equipo. Tus datos nunca salen de tu ordenador: solo el informe (unas decenas de KB) se sincroniza con tu cuenta web.",
+      "intro": "Por seguridad y rendimiento, el análisis forense se realiza en tu equipo. Tus datos nunca salen de tu ordenador: solo el informe se sincroniza con tu cuenta web.",
       "cardTitle": "App de escritorio MVT Insight",
       "cardBody": "Disponible para macOS, Windows y Linux. Descárgala, vincúlala con tu cuenta y comienza el análisis con un clic.",
       "cta": "Descargar y vincular",

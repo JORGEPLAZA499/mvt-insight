@@ -343,10 +343,6 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* 07 · Cómo verificar este resultado */}
       <section>
         <SectionTitle num="07" title="Cómo verificar este resultado" />
-        <p className="text-sm text-foreground/80 mb-4">
-          MVT solo detecta amenazas con firma conocida. Si tienes una sospecha real, no te quedes solo con este informe:
-          contrasta el resultado con la herramienta oficial y, si es necesario, con un equipo especializado.
-        </p>
         <div className="space-y-3">
           {CROSS_CHECK_STEPS.map((step) => (
             <div key={step.title} className="rounded-lg border border-border bg-card p-4 border-l-4 border-l-primary">

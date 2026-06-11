@@ -24,9 +24,18 @@ export interface MvtDeviceInfo {
   brand?: string;
   manufacturer?: string;
   model?: string;
+  marketingName?: string;
   deviceName?: string;
   osVersion?: string;
   buildId?: string;
+  securityPatch?: string;
+  locale?: string;
+  timezone?: string;
+  carrier?: string;
+  bootloaderState?: string;
+  debuggable?: boolean;
+  serialLast4?: string;
+  regionInfo?: string;
 }
 
 export interface MvtParsedResult {
@@ -161,6 +170,8 @@ function extractAndroidGetprop(data: any): MvtDeviceInfo {
     for (const [k, v] of Object.entries(data)) add(k, v as any);
   }
   const get = (k: string) => map.get(k);
+  const serial = get("ro.serialno") || get("ril.serialnumber");
+  const debuggable = get("ro.debuggable");
   return {
     brand: get("ro.product.brand"),
     manufacturer: get("ro.product.manufacturer"),
@@ -168,12 +179,20 @@ function extractAndroidGetprop(data: any): MvtDeviceInfo {
     deviceName: get("ro.product.device"),
     osVersion: get("ro.build.version.release"),
     buildId: get("ro.build.display.id") || get("ro.build.id"),
+    securityPatch: get("ro.build.version.security_patch"),
+    locale: get("persist.sys.locale") || get("ro.product.locale"),
+    timezone: get("persist.sys.timezone"),
+    carrier: get("gsm.sim.operator.alpha") || get("gsm.operator.alpha"),
+    bootloaderState: get("ro.boot.verifiedbootstate") || get("ro.boot.flash.locked"),
+    debuggable: debuggable === "1" || debuggable === "true" ? true : debuggable === "0" ? false : undefined,
+    serialLast4: serial && serial.length >= 4 ? serial.slice(-4) : undefined,
   };
 }
 
 function extractIosInfo(data: any): MvtDeviceInfo {
   if (!data || typeof data !== "object" || Array.isArray(data)) return {};
   const d: any = data;
+  const serial = typeof d.SerialNumber === "string" ? d.SerialNumber : undefined;
   return {
     brand: "Apple",
     manufacturer: "Apple",
@@ -181,6 +200,11 @@ function extractIosInfo(data: any): MvtDeviceInfo {
     deviceName: d.DeviceName,
     osVersion: d.ProductVersion,
     buildId: d.BuildVersion,
+    regionInfo: d.RegionInfo,
+    locale: d.Locale,
+    timezone: d.TimeZone,
+    carrier: d.CarrierName || d.SIMOperatorName,
+    serialLast4: serial && serial.length >= 4 ? serial.slice(-4) : undefined,
   };
 }
 
@@ -188,6 +212,7 @@ function cleanDeviceInfo(info: MvtDeviceInfo): MvtDeviceInfo | undefined {
   const out: MvtDeviceInfo = {};
   for (const [k, v] of Object.entries(info)) {
     if (typeof v === "string" && v.trim()) (out as any)[k] = v.trim();
+    else if (typeof v === "boolean") (out as any)[k] = v;
   }
   return Object.keys(out).length ? out : undefined;
 }

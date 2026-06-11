@@ -113,13 +113,15 @@ jobs:
       - name: Bundle mvt-ios with PyInstaller (unix)
         if: matrix.os != 'windows-latest'
         run: |
+          cat > mvt_ios_launcher.py <<'PY'
+          from mvt.ios.cli import cli
+          if __name__ == "__main__":
+              cli()
+          PY
           pyinstaller --onefile --name mvt-ios \
             --collect-all mvt \
             --hidden-import iOSbackup \
-            $(python -c "import mvt.ios.cli, os; print(os.path.dirname(mvt.ios.cli.__file__) + '/__init__.py')") \
-            || pyinstaller --onefile --name mvt-ios \
-              --collect-all mvt \
-              -c "import mvt.ios.cli; mvt.ios.cli.cli()"
+            mvt_ios_launcher.py
           cp dist/mvt-ios staging/bin/
 
       - name: Bundle mvt-ios with PyInstaller (windows)

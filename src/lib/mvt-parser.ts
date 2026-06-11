@@ -376,6 +376,12 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
   const timeline: MvtParsedResult["timeline"] = [];
 
   let deviceInfo: MvtDeviceInfo | undefined;
+  let rootBinaries: string[] | undefined;
+  let selinuxStatus: SelinuxStatus | undefined;
+  const accessibilitySet: AccessibilityServiceEntry[] = [];
+  const accessibilitySeen = new Set<string>();
+  let iosConfigProfiles: IosConfigProfile[] | undefined;
+  let topNetworkProcs: NetworkProcUsage[] | undefined;
 
   for (const { name, text } of entries) {
     const meta = parseFileName(name);
@@ -424,6 +430,31 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
         else if (meta.key === "info") deviceInfo = cleanDeviceInfo(extractIosInfo(data));
       }
     }
+
+    // -------- Extraer información estructural extra (independiente de detección) --------
+    if (meta.key === "root_binaries") {
+      const found = extractRootBinaries(data, meta.ext === "txt" ? text : undefined);
+      if (found.length) {
+        rootBinaries = rootBinaries ? [...new Set([...rootBinaries, ...found])] : found;
+      }
+    } else if (meta.key === "selinux_status") {
+      if (!selinuxStatus) {
+        const v = extractSelinuxStatus(data, meta.ext === "txt" ? text : undefined);
+        if (v) selinuxStatus = v;
+      }
+    } else if (meta.key === "dumpsys_accessibility" && !meta.isDetected) {
+      for (const a of extractAccessibilityServices(data)) {
+        const key = `${a.package}/${a.service}`;
+        if (!accessibilitySeen.has(key)) { accessibilitySeen.add(key); accessibilitySet.push(a); }
+      }
+    } else if (meta.key === "configuration_profiles" && !meta.isDetected) {
+      const list = extractIosConfigProfiles(data);
+      if (list.length) iosConfigProfiles = iosConfigProfiles ? [...iosConfigProfiles, ...list] : list;
+    } else if ((meta.key === "net_datausage" || meta.key === "datausage") && !meta.isDetected) {
+      const top = extractNetworkTop(data);
+      if (top.length) topNetworkProcs = top;
+    }
+
     moduleMap.set(meta.key, existing);
   }
 
@@ -451,5 +482,10 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
     parsedAt: new Date().toISOString(),
     sourceName,
     deviceInfo,
+    rootBinaries,
+    selinuxStatus,
+    accessibilityServices: accessibilitySet.length ? accessibilitySet : undefined,
+    iosConfigProfiles,
+    topNetworkProcs,
   };
 }

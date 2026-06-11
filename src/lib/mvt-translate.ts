@@ -1,4 +1,4 @@
-import type { RiskLevel, MvtParsedResult, MvtDetection } from "./mvt-parser";
+import type { RiskLevel, MvtParsedResult, MvtDetection, MvtDeviceInfo } from "./mvt-parser";
 
 // ---------- Módulos: nombre técnico -> nombre claro en español ----------
 

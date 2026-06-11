@@ -691,7 +691,8 @@ export function generatePdfReport(a: Analysis) {
       doc.roundedRect(M.left, ctx.y, CW, 4, 1, 1, "F");
       ctx.y += 12;
       setText([cr, cg, cb]);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+
       const occ = groups.reduce((s, g) => s + g.count, 0);
       doc.text(`${CATEGORY_LABEL[cat]}  ·  ${groups.length} entidad${groups.length === 1 ? "" : "es"}  ·  ${occ} ocurr.`, M.left, ctx.y);
       ctx.y += 14;

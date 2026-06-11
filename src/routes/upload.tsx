@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Settings,
+  Usb,
 } from "lucide-react";
 
 export const Route = createFileRoute("/upload")({

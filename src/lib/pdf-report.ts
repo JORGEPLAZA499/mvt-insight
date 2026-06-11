@@ -115,18 +115,19 @@ export function generatePdfReport(a: Analysis) {
   }
 
   function sectionTitle(num: string, title: string) {
-    ensure(48);
+    ensure(52);
     setText(MUTED);
     doc.setFont("helvetica", "bold"); doc.setFontSize(8);
     doc.text(num, M.left, ctx.y);
     setText(INK);
-    doc.setFontSize(15);
+    doc.setFontSize(17);
     doc.text(title, M.left + 24, ctx.y);
-    ctx.y += 8;
+    ctx.y += 10;
     setStroke(LINE); doc.setLineWidth(0.8);
     doc.line(M.left, ctx.y, W - M.right, ctx.y);
-    ctx.y += 16;
+    ctx.y += 18;
   }
+
 
   function paragraph(text: string, opts: { size?: number; color?: [number, number, number]; italic?: boolean } = {}) {
     const size = opts.size ?? 10;
@@ -243,27 +244,32 @@ export function generatePdfReport(a: Analysis) {
       : v.level === "stalkerware" ? SEV_COLOR.high
       : v.level === "suspicious" ? SEV_COLOR.medium
       : [22, 163, 74];
-    ensure(110);
+    ensure(120);
     setFill(verdictColor);
     doc.roundedRect(M.left, ctx.y, CW, 8, 2, 2, "F");
     ctx.y += 14;
+    // Pre-medir contenido para calcular alto real
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    const hLines = doc.splitTextToSize(v.headline, CW - 32);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    const dLines = doc.splitTextToSize(v.detail, CW - 32);
+    const boxH = 22 + hLines.length * 18 + 6 + dLines.length * 12 + 14;
     setFill(SOFT_BG);
-    doc.roundedRect(M.left, ctx.y, CW, 86, 4, 4, "F");
+    doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
     setStroke(LINE); doc.setLineWidth(0.5);
-    doc.roundedRect(M.left, ctx.y, CW, 86, 4, 4, "S");
+    doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "S");
     setText(MUTED);
     doc.setFont("helvetica", "bold"); doc.setFontSize(8);
     doc.text("VEREDICTO", M.left + 16, ctx.y + 18);
     setText(verdictColor);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-    const hLines = doc.splitTextToSize(v.headline, CW - 32);
-    doc.text(hLines, M.left + 16, ctx.y + 36);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    doc.text(hLines, M.left + 16, ctx.y + 40);
     setText(INK);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    const dLines = doc.splitTextToSize(v.detail, CW - 32);
-    doc.text(dLines, M.left + 16, ctx.y + 36 + hLines.length * 15);
-    ctx.y += 86 + 14;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    doc.text(dLines, M.left + 16, ctx.y + 40 + hLines.length * 18 + 4);
+    ctx.y += boxH + 14;
   }
+
 
   // 02 · Resumen ejecutivo
   sectionTitle(NEXT(), "Resumen ejecutivo");
@@ -294,7 +300,7 @@ export function generatePdfReport(a: Analysis) {
       doc.setFont("helvetica", "normal"); doc.setFontSize(8);
       doc.text(label.toUpperCase(), x + 10, ctx.y + 16);
       setText(color);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(20);
       doc.text(value, x + 10, ctx.y + 42);
     });
     ctx.y += 72;
@@ -319,7 +325,8 @@ export function generatePdfReport(a: Analysis) {
       doc.setFont("helvetica", "normal"); doc.setFontSize(9);
       doc.text(f.label, M.left + 10, ctx.y);
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+
       const val = doc.splitTextToSize(String(f.value), CW - 200)[0];
       doc.text(val, M.left + 200, ctx.y);
       if (f.hint) {
@@ -426,7 +433,8 @@ export function generatePdfReport(a: Analysis) {
         doc.rect(M.left, ctx.y, 3, boxH, "F");
       }
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+
       doc.text(row.displayName, M.left + 10, ctx.y + 13);
       setText(MUTED);
       doc.setFont("helvetica", "normal"); doc.setFontSize(8);
@@ -462,7 +470,8 @@ export function generatePdfReport(a: Analysis) {
       let yy = ctx.y + 14;
       const chipW = severityChip(p.severity, M.left + 12, yy);
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+
       doc.text(p.name, M.left + 12 + chipW + 6, yy);
       yy += 12;
       setText(MUTED);
@@ -499,7 +508,8 @@ export function generatePdfReport(a: Analysis) {
         doc.rect(M.left, ctx.y, 3, boxH, "F");
       }
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+
       doc.text(`${i + 1}. ${app.displayName}`, M.left + 10, ctx.y + 14);
       setText(MUTED);
       doc.setFont("helvetica", "normal"); doc.setFontSize(8);
@@ -554,7 +564,8 @@ export function generatePdfReport(a: Analysis) {
       ensure(rowH);
       if (i % 2 === 0) { setFill(SOFT_BG); doc.rect(M.left, ctx.y - 12, CW, rowH, "F"); }
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+
       const human = humanizeModule(m.key, m.label);
       doc.text(doc.splitTextToSize(human, CW - 320)[0], M.left + 10, ctx.y);
       setText(MUTED);
@@ -680,7 +691,8 @@ export function generatePdfReport(a: Analysis) {
       doc.roundedRect(M.left, ctx.y, CW, 4, 1, 1, "F");
       ctx.y += 12;
       setText([cr, cg, cb]);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+
       const occ = groups.reduce((s, g) => s + g.count, 0);
       doc.text(`${CATEGORY_LABEL[cat]}  ·  ${groups.length} entidad${groups.length === 1 ? "" : "es"}  ·  ${occ} ocurr.`, M.left, ctx.y);
       ctx.y += 14;
@@ -720,7 +732,8 @@ export function generatePdfReport(a: Analysis) {
         let yy = ctx.y + 12;
         const chipW = severityChip(g.level, M.left + 12, yy);
         setText(INK);
-        doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+
         const head = `${idx + 1}. ${g.label}${g.count > 1 ? `  ·  ${g.count}×` : ""}`;
         doc.text(head, M.left + 12 + chipW + 6, yy);
         yy += 14;
@@ -769,7 +782,7 @@ export function generatePdfReport(a: Analysis) {
         : app.origin === "known" ? "App popular conocida"
         : "Origen no reconocido — revísala";
       const catLine = app.categories.length ? `Visto en: ${app.categories.join(", ")}` : "";
-      const cardH3 = 16 + 14 + 12 + (catLine ? 12 : 0) + 14;
+      const cardH3 = 18 + 16 + 12 + (catLine ? 12 : 0) + 14;
       ensure(cardH3 + 4);
       setFill(SOFT_BG);
       doc.roundedRect(M.left, ctx.y, CW, cardH3, 4, 4, "F");
@@ -779,7 +792,7 @@ export function generatePdfReport(a: Analysis) {
       let yy = ctx.y + 16;
       const chipW = severityChip(app.severity, M.left + 12, yy);
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
       doc.text(`${i + 1}. ${app.displayName}  ·  ${app.count} indicio(s)`, M.left + 12 + chipW + 6, yy);
       yy += 12;
       setText(MUTED);
@@ -839,31 +852,33 @@ export function generatePdfReport(a: Analysis) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(9);
     doc.text(String(i + 1), M.left + 8, ctx.y, { align: "center" });
     setText(INK);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(11);
     const lines = doc.splitTextToSize(rec, CW - 32);
     doc.text(lines, M.left + 24, ctx.y);
-    ctx.y += Math.max(20, lines.length * 13 + 4);
+    ctx.y += Math.max(22, lines.length * 14 + 4);
   });
 
   // 10 · Verificación cruzada
   sectionTitle(NEXT(), "Cómo verificar este resultado");
   ctx.y += 6;
   CROSS_CHECK_STEPS.forEach((step) => {
-    const titleLines = doc.splitTextToSize(step.title, CW - 24);
-    const detailLines = doc.splitTextToSize(step.detail, CW - 24);
-    const boxH = 14 + titleLines.length * 13 + detailLines.length * 12 + 12;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+    const titleLines = doc.splitTextToSize(step.title, CW - 28);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+    const detailLines = doc.splitTextToSize(step.detail, CW - 28);
+    const boxH = 16 + titleLines.length * 15 + 4 + detailLines.length * 12 + 14;
     ensure(boxH + 6);
     setFill(SOFT_BG);
     doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
     setFill(ACCENT);
     doc.rect(M.left, ctx.y, 3, boxH, "F");
-    let yy = ctx.y + 18;
+    let yy = ctx.y + 20;
     setText(NAVY);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12);
     doc.text(titleLines, M.left + 14, yy);
-    yy += titleLines.length * 13 + 2;
+    yy += titleLines.length * 15 + 4;
     setText(INK);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
     doc.text(detailLines, M.left + 14, yy);
     ctx.y += boxH + 6;
   });
@@ -873,19 +888,21 @@ export function generatePdfReport(a: Analysis) {
   paragraph("Pequeño diccionario para entender los términos técnicos que aparecen en este informe.", { size: 9, color: MUTED });
   ctx.y += 4;
   GLOSSARY.forEach((g, i) => {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11.5);
     const termLines = doc.splitTextToSize(g.term, CW - 20);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     const defLines = doc.splitTextToSize(g.definition, CW - 20);
-    const boxH = 6 + termLines.length * 12 + defLines.length * 11 + 8;
+    const boxH = 8 + termLines.length * 14 + 2 + defLines.length * 11 + 8;
     ensure(boxH);
     if (i % 2 === 0) {
       setFill(SOFT_BG);
       doc.rect(M.left, ctx.y - 4, CW, boxH, "F");
     }
-    let yy = ctx.y + 8;
+    let yy = ctx.y + 10;
     setText(NAVY);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11.5);
     doc.text(termLines, M.left + 10, yy);
-    yy += termLines.length * 12;
+    yy += termLines.length * 14 + 2;
     setText(INK);
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     doc.text(defLines, M.left + 10, yy);

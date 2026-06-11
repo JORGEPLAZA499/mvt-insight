@@ -230,6 +230,8 @@ export function generatePdfReport(a: Analysis) {
   sectionTitle("01", "Resumen ejecutivo");
 
   // Bloque de VEREDICTO en una frase
+  // 01 · Veredicto
+  sectionTitle("01", "Veredicto");
   if (r) {
     const v = buildVerdict(r);
     const verdictColor: [number, number, number] =
@@ -259,9 +261,10 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += 86 + 14;
   }
 
-  const deviceSentence = deviceStr ? ` Dispositivo identificado: ${deviceStr}.` : "";
+  // 02 · Resumen ejecutivo
+  sectionTitle("02", "Resumen ejecutivo");
   const baseSummary = r
-    ? `Se ha analizado el archivo "${a.fileName}". La plataforma detectada es ${platformLabel(r.platform)}.${deviceSentence} Se procesaron ${r.modules.length} módulos MVT con un total de ${r.totalEntries.toLocaleString()} entradas y se identificaron ${r.totalDetections} indicios técnicos. El nivel de riesgo estimado es ${riskLabel(r.risk)}.`
+    ? `Se ha analizado el archivo "${a.fileName}". La plataforma detectada es ${platformLabel(r.platform)}. Se procesaron ${r.modules.length} módulos MVT con un total de ${r.totalEntries.toLocaleString()} entradas y se identificaron ${r.totalDetections} indicios técnicos. El nivel de riesgo estimado es ${riskLabel(r.risk)}.`
     : `Análisis de "${a.fileName}". Estado actual: ${a.status}.`;
   paragraph(baseSummary);
   ctx.y += 8;
@@ -293,8 +296,40 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += 72;
   }
 
-  // 02 · ¿Qué significa este informe?
-  sectionTitle("02", "Cómo leer este informe");
+  // 03 · Ficha del dispositivo
+  const deviceCard = r ? buildDeviceCard(r.deviceInfo) : [];
+  if (deviceCard.length > 0) {
+    sectionTitle("03", "Ficha del dispositivo");
+    paragraph("Información del terminal extraída del análisis. Los identificadores sensibles (serie, IMEI) se muestran parcialmente.", { size: 9, color: MUTED });
+    ctx.y += 4;
+    const rowH2 = 22;
+    deviceCard.forEach((f, i) => {
+      const hintH = f.hint ? 10 : 0;
+      const totalH = rowH2 + hintH;
+      ensure(totalH);
+      if (i % 2 === 0) {
+        setFill(SOFT_BG);
+        doc.rect(M.left, ctx.y - 12, CW, totalH, "F");
+      }
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.text(f.label, M.left + 10, ctx.y);
+      setText(INK);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      const val = doc.splitTextToSize(String(f.value), CW - 200)[0];
+      doc.text(val, M.left + 200, ctx.y);
+      if (f.hint) {
+        setText(MUTED);
+        doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+        doc.text(f.hint, M.left + 200, ctx.y + 10);
+      }
+      ctx.y += totalH;
+    });
+    ctx.y += 8;
+  }
+
+  // 04 · Cómo leer este informe
+  sectionTitle("04", "Cómo leer este informe");
   paragraph("MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo. Un indicio no equivale a una infección confirmada: puede tratarse de una app legítima instalada por el propio usuario. Revisa cada hallazgo y comprueba si reconoces la app o el comportamiento descrito.");
   ctx.y += 4;
   paragraph("Las severidades empleadas en este informe:", { color: NAVY_SOFT });
@@ -310,39 +345,6 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += Math.max(18, lines.length * 13);
   });
   ctx.y += 6;
-
-  // 03 · Detalles del análisis
-  sectionTitle("03", "Detalles del análisis");
-  const meta: [string, string][] = [
-    ["Fecha", new Date(a.uploadedAt).toLocaleString()],
-    ["Archivo de origen", a.fileName],
-    ["Tamaño", `${(a.fileSize / 1024).toFixed(1)} KB`],
-    ["Plataforma", r ? platformLabel(r.platform) : "—"],
-    ...(deviceStr ? [["Dispositivo", deviceStr] as [string, string]] : []),
-    ["Módulos analizados", String(r?.modules.length ?? 0)],
-    ["Entradas totales", String(r?.totalEntries ?? 0)],
-    ["Indicios detectados", String(r?.totalDetections ?? 0)],
-    ["Riesgo estimado", riskLabel(r?.risk)],
-    ["Identificador", ctx.reportId],
-  ];
-  // Tabla 2 columnas
-  const rowH = 18;
-  meta.forEach(([k, v], i) => {
-    ensure(rowH);
-    if (i % 2 === 0) {
-      setFill(SOFT_BG);
-      doc.rect(M.left, ctx.y - 12, CW, rowH, "F");
-    }
-    setText(MUTED);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    doc.text(k, M.left + 10, ctx.y);
-    setText(INK);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-    const val = doc.splitTextToSize(String(v), CW - 200)[0];
-    doc.text(val, M.left + 200, ctx.y);
-    ctx.y += rowH;
-  });
-  ctx.y += 8;
 
   // 04 · Áreas analizadas (módulos)
   if (r && r.modules.length) {

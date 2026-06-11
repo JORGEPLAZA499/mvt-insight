@@ -852,10 +852,10 @@ export function generatePdfReport(a: Analysis) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(9);
     doc.text(String(i + 1), M.left + 8, ctx.y, { align: "center" });
     setText(INK);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(11);
     const lines = doc.splitTextToSize(rec, CW - 32);
     doc.text(lines, M.left + 24, ctx.y);
-    ctx.y += Math.max(20, lines.length * 13 + 4);
+    ctx.y += Math.max(22, lines.length * 14 + 4);
   });
 
   // 10 · Verificación cruzada

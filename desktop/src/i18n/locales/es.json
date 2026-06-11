@@ -15,7 +15,7 @@
     },
     "ios": {
       "title": "iPhone",
-      "sub": "Próximamente (solo macOS)"
+      "sub": "Sistema operativo iOS"
     },
     "before": {
       "title": "Antes de empezar:",
@@ -56,7 +56,12 @@
     "analyzingApps": "Analizando aplicaciones instaladas…",
     "collectingSystemInfo": "Recolectando información del sistema…",
     "compressing": "Comprimiendo resultados…",
-    "done": "Análisis finalizado"
+    "done": "Análisis finalizado",
+    "iosPairing": "Comprobando confianza con el iPhone…",
+    "iosTrust": "Acepta «Confiar en este ordenador» en el iPhone.",
+    "iosEnablingEncryption": "Activando cifrado del backup…",
+    "iosBackup": "Creando backup del iPhone…",
+    "iosAnalyzing": "Analizando backup con MVT-iOS…"
   },
 
   "error": {

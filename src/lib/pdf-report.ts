@@ -470,7 +470,8 @@ export function generatePdfReport(a: Analysis) {
       let yy = ctx.y + 14;
       const chipW = severityChip(p.severity, M.left + 12, yy);
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+
       doc.text(p.name, M.left + 12 + chipW + 6, yy);
       yy += 12;
       setText(MUTED);

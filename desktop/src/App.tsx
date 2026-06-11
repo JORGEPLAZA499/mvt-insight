@@ -63,11 +63,18 @@ export function App() {
   const [iosPasswordConfirm, setIosPasswordConfirm] = useState("");
   const [iosPasswordError, setIosPasswordError] = useState<string | null>(null);
 
-  const PHASES = [
-    tr("phases.download", "Descargando AndroidQF"),
-    tr("phases.connect", "Conectando con el dispositivo"),
-    tr("phases.collect", "Recolectando datos"),
-  ];
+  const PHASES = device === "ios"
+    ? [
+        tr("phases.ios.tools", "Preparando herramientas iOS"),
+        tr("phases.ios.connect", "Conectando con el iPhone"),
+        tr("phases.ios.analyze", "Analizando backup"),
+      ]
+    : [
+        tr("phases.download", "Descargando AndroidQF"),
+        tr("phases.connect", "Conectando con el dispositivo"),
+        tr("phases.collect", "Recolectando datos"),
+      ];
+
 
   useEffect(() => {
     if (!window.mvt) return;

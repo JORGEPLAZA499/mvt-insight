@@ -293,10 +293,6 @@ export function riskNarrative(result: MvtParsedResult): string {
 
 export const CROSS_CHECK_STEPS: { title: string; detail: string }[] = [
   {
-    title: "Vuelve a ejecutar MVT oficial en línea de comandos",
-    detail: "Instala mvt-android o mvt-ios desde docs.mvt.re y analiza el mismo backup con los IOCs más recientes de Amnesty Tech (mvt-android check-backup / mvt-ios check-backup). Compara el resultado con este informe.",
-  },
-  {
     title: "Access Now Digital Security Helpline",
     detail: "Ayuda gratuita 24/7 para activistas, periodistas y sociedad civil. Correo: help@accessnow.org · accessnow.org/help",
   },

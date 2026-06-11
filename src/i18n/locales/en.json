@@ -376,7 +376,11 @@
         "body": "On your phone, go to Settings → About phone and tap 7 times on «Build number». Then go to Settings → System → Developer options and turn on «USB Debugging»."
       },
       "step5": {
-        "title": "Step 5: Get the report here",
+        "title": "Step 5: Connect and run analysis",
+        "body": "Connect your phone via USB to the computer and in the app select Android or iOS. The app processes the entire backup locally."
+      },
+      "step6": {
+        "title": "Step 6: Get the report here",
         "body": "When it finishes, the report syncs to your web account automatically and opens in your browser."
       },
       "security": {

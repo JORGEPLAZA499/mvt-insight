@@ -376,7 +376,11 @@
         "body": "En el móvil, ve a Ajustes → Información del teléfono y toca 7 veces sobre «Número de compilación». Luego entra en Ajustes → Sistema → Opciones de desarrollador y activa «Depuración USB»."
       },
       "step5": {
-        "title": "Paso 5: Recibe el informe aquí",
+        "title": "Paso 5: Conecta y ejecuta el análisis",
+        "body": "Conecta el móvil por USB al computador y en la app selecciona Android o iOS. La app procesa todo el backup localmente."
+      },
+      "step6": {
+        "title": "Paso 6: Recibe el informe aquí",
         "body": "Al terminar, el informe se sincroniza con tu cuenta web automáticamente y se abre en el navegador."
       },
       "security": {

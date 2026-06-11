@@ -1,110 +1,56 @@
-Añadir 4 secciones nuevas al informe (web y PDF) en lenguaje claro para usuario no experto. Mantener el orden existente y numeración correlativa.
+# Más información relevante extraíble del MVT
 
-## Nuevas secciones del informe
+Tras revisar el parser y los módulos MVT que se procesan, el informe actual aprovecha bien las **detecciones contra IOCs conocidos** (Pegasus, stalkerware, etc.), pero **ignora varios campos de alto valor** que ya vienen en el JSON de MVT y que son comprensibles sin ser experto.
 
-Renumeración (insertar entre las actuales):
+## Qué se está perdiendo hoy
 
-```text
-01 · Veredicto
-02 · Resumen ejecutivo
-03 · Ficha del dispositivo          ← NUEVA (sustituye y amplía "Dispositivo identificado")
-04 · Cómo leer este informe
-05 · Áreas del dispositivo analizadas
-06 · Indicios detectados
-07 · Apps con más actividad sospechosa   ← NUEVA
-08 · Cronología de eventos clave         ← NUEVA (en lenguaje humano)
-09 · Próximos pasos recomendados
-10 · Cómo verificar este resultado
-11 · Glosario de términos                ← NUEVA
-12 · Aviso legal y metodología
-```
+| Módulo MVT | Qué contiene | Qué hace el parser hoy |
+|---|---|---|
+| `root_binaries` (Android) | Lista de binarios root encontrados (`su`, `magisk`…) | Solo cuenta cuántos hay |
+| `selinux_status` (Android) | Estado SELinux: enforcing / permissive / disabled | Solo cuenta entradas |
+| `dumpsys_accessibility` (Android) | Lista de servicios de accesibilidad activos (vector #1 de stalkerware) | Solo procesa los que matchean IOC |
+| `configuration_profiles` (iOS) | Perfiles MDM/config instalados (pueden redirigir tráfico, instalar CAs) | Solo cuenta |
+| `net_datausage` (iOS) | Tráfico de red por proceso/app, incluido background | Solo cuenta |
+| `version_history` (iOS) | Historial de actualizaciones de iOS con timestamps | Solo cuenta |
+| `sms` _detected | Cuerpo y remitente extraídos pero diluidos en "Indicios" | Sin sección propia |
 
-## Contenido de cada sección nueva
+## Propuesta: 4 secciones nuevas
 
-### 03 · Ficha del dispositivo
-Tarjeta con campos en lenguaje claro:
-- **Marca / fabricante** (ej.: Samsung)
-- **Modelo comercial** (ej.: Galaxy S22) — derivado de `ro.product.model` + tabla de mapeo de modelos comunes
-- **Sistema operativo y versión** (ej.: Android 14)
-- **Build / parche de seguridad** (`ro.build.display.id`, `ro.build.version.security_patch`) con explicación: "fecha del último parche de seguridad instalado"
-- **Nombre del dispositivo** (el que aparece en Bluetooth/Wi-Fi)
-- **Idioma y país configurados** (`persist.sys.locale`)
-- **Operador / SIM** (`gsm.sim.operator.alpha`) si está disponible
-- **Estado de root / bootloader** (`ro.boot.verifiedbootstate`, `ro.debuggable`) con leyenda "Modo desarrollador activo: sí/no"
-- En iOS: `ProductType`, `ProductVersion`, `BuildVersion`, `DeviceName`, `RegionInfo`
+Se añaden 4 secciones (sin tocar lógica de riesgo, BD ni i18n), reenumerando el informe. Web y PDF en paralelo.
 
-NO se mostrará IMEI ni número de serie completos (por privacidad); si están, se muestra solo los últimos 4 dígitos.
+### Sección nueva — Estado de seguridad del sistema (Android)
+- Binarios root encontrados (lista de nombres): `su`, `magisk`, etc.
+- Estado de SELinux con explicación humana ("enforcing = protección activa", "permissive = protección reducida").
+- Bandera visible si bootloader desbloqueado + debuggable + root presentes simultáneamente.
+- **Por qué importa**: un usuario ve "Magisk instalado" y entiende que su móvil está rooteado, en lugar de "2 indicios en root_binaries".
 
-### 07 · Apps con más actividad sospechosa
-Ranking top 10:
-- Agrupar `r.detections` por nombre de app/paquete extraído de `humanizeDetection`/`raw`
-- Para cada una: nombre legible, paquete (en mono pequeño), número de indicios, categoría dominante (permisos sensibles, accesibilidad, etc.), severidad máxima
-- Etiqueta "App del sistema" / "App conocida" / "App de origen desconocido" según mapping de paquetes habituales (com.google.*, com.android.*, com.samsung.*, etc.)
-- Si no hay detecciones, omitir la sección
+### Sección nueva — Servicios de accesibilidad activos (Android)
+- Lista de todos los servicios de accesibilidad habilitados con `packageName` y nombre comercial cuando exista.
+- Etiqueta: sistema / conocida / **desconocida** (resaltada).
+- **Por qué importa**: es el permiso que usa el stalkerware para leer pantalla y teclas. Que el usuario pueda ir a Ajustes y desactivar el que no reconoce es la acción más útil posible.
 
-### 08 · Cronología de eventos clave
-Transformar `r.timeline` (máx 20 eventos más relevantes por severidad+fecha) en frases naturales:
-- "El **12 de mayo a las 03:14**, la app **WhatsApp** recibió el permiso de **acceder a tu ubicación en segundo plano**."
-- "El **3 de junio**, se detectó actividad en **Servicios de accesibilidad** de la app **com.unknown.tracker**."
-- Plantillas por módulo (`dumpsys_appops` → permiso concedido; `dumpsys_accessibility` → servicio activado; `sms` → mensaje sospechoso; etc.)
-- Si `timeline` está vacío, omitir.
+### Sección nueva — Perfiles de configuración instalados (iOS)
+- Lista de perfiles MDM/config: nombre, organización emisora, fecha, UUID corto.
+- Resaltar en rojo si el `PayloadType` es VPN gestionada o certificado raíz.
+- **Por qué importa**: un perfil MDM colocado por un atacante puede interceptar todo el tráfico HTTPS. El usuario medio ni sabe que estos perfiles existen.
 
-### 11 · Glosario
-Lista de 8-12 términos con definición de 1-2 líneas:
-- IOC, MVT, AndroidQF, módulo, permiso sensible, servicio de accesibilidad, bootloader, root, parche de seguridad, paquete (package), getprop, stalkerware, mercenary spyware.
+### Sección nueva — Apps con más tráfico de red (iOS)
+- Top 5 procesos/bundles por bytes (wifi+wwan, in+out) desde `net_datausage`.
+- Filtrar prefijos de sistema; marcar apps desconocidas.
+- **Por qué importa**: el spyware exfiltra datos en segundo plano. Una app desconocida con 50 MB de fondo es señal clara.
 
-## Archivos a tocar
+## Lo que NO se incluye en este plan
+- **`version_history` (iOS)**: requiere heurística de "hora inusual" con riesgo de falsos positivos. Lo dejo fuera salvo que lo pidas.
+- **Sección dedicada a SMS sospechosos**: ya aparecen en "Indicios detectados". Si quieres una sección propia con remitente + extracto del cuerpo, la añado.
+- **`processes` (Android) listando procesos sospechosos sin IOC match**: alta tasa de ruido para usuario no experto.
 
-### `src/lib/mvt-parser.ts` y `desktop/src/lib/mvt-parser.ts`
-Ampliar `MvtDeviceInfo`:
-```ts
-export interface MvtDeviceInfo {
-  brand?: string;
-  manufacturer?: string;
-  model?: string;
-  marketingName?: string;     // NUEVO
-  deviceName?: string;
-  osVersion?: string;
-  buildId?: string;
-  securityPatch?: string;     // NUEVO
-  locale?: string;            // NUEVO
-  carrier?: string;           // NUEVO
-  bootloaderState?: string;   // NUEVO
-  debuggable?: boolean;       // NUEVO
-  serialLast4?: string;       // NUEVO (solo últimos 4)
-  regionInfo?: string;        // NUEVO iOS
-}
-```
-Actualizar `extractAndroidGetprop` y `extractIosInfo` para poblar los nuevos campos.
+## Cambios técnicos
 
-### `src/lib/mvt-translate.ts`
-Nuevas funciones puras (sin React, reutilizables web+PDF):
-- `buildDeviceCard(deviceInfo)` → array de `{ label, value, hint? }`
-- `buildTopApps(detections)` → array de `{ name, package, count, category, severity, originLabel }`
-- `buildHumanTimeline(timeline, detections)` → array de `{ when, sentence }`
-- `GLOSSARY: { term, definition }[]`
-- `MODEL_NICKNAMES: Record<string, string>` (ej.: `SM-S901B` → "Galaxy S22")
-- `KNOWN_PACKAGE_PREFIXES` para clasificar "sistema/conocida/desconocida"
+1. **`src/lib/mvt-parser.ts`** y **`desktop/src/lib/mvt-parser.ts`**: extender `MvtParsedResult` con `rootBinaries: string[]`, `selinuxStatus: 'enforcing'|'permissive'|'disabled'|null`, `accessibilityServices: {package: string; service: string}[]`, `iosConfigProfiles: {name; org; uuid; type; installDate}[]`, `topNetworkProcs: {name; totalBytes}[]`. Añadir parseo específico por `meta.key` en `parseMvtFiles`.
+2. **`src/lib/mvt-translate.ts`** y `desktop/`: 4 builders nuevos (`buildSystemIntegrity`, `buildAccessibilityList`, `buildConfigProfiles`, `buildTopNetwork`) + helpers de clasificación sistema/conocida/desconocida (reutilizar `KNOWN_PACKAGE_PREFIXES`). Ampliar `GLOSSARY` con: SELinux, perfil de configuración MDM, exfiltración.
+3. **`src/routes/analysis.$id.tsx`**: insertar las 4 secciones nuevas. Renumerar (pasamos de 12 a 16 secciones). Las nuevas solo aparecen si hay datos (Android-only / iOS-only se ocultan en el SO contrario).
+4. **`src/lib/pdf-report.ts`**: replicar las 4 secciones con los estilos actuales (chips, rectángulos redondeados).
+5. **No se toca**: lógica de riesgo, veredicto, parser de detecciones IOC, BD, edge functions, i18n, `package.json` (sin bump de versión).
 
-### `src/routes/analysis.$id.tsx`
-- Renumerar secciones existentes
-- Quitar la línea "Dispositivo identificado: …" del Resumen ejecutivo (ahora vive en Ficha del dispositivo)
-- Añadir 4 secciones nuevas usando los helpers de `mvt-translate.ts`
-
-### `src/lib/pdf-report.ts`
-- Renumerar secciones
-- Añadir 4 secciones nuevas con los mismos datos y estilos consistentes con las actuales (tarjetas, tablas, badges de severidad)
-- Mantener saltos de página con `ensure()`
-
-## Lo que NO se toca
-
-- Lógica de cálculo de riesgo, parser de detecciones, base de datos, traducciones i18n existentes.
-- Pestaña "Desarrollador" se mantiene igual.
-- No bump de versión (cambio de informe, no afecta a la app de escritorio salvo el parser compartido, pero no se publica salvo orden expresa).
-
-## Detalles técnicos
-
-- Para el modelo comercial usaré una tabla pequeña de los modelos más frecuentes (Samsung SM-*, Xiaomi códigos, Google Pixel, OnePlus). Si no hay mapeo, se muestra el código tal cual.
-- Para clasificar app conocida/desconocida usaré prefijos: `com.google.*`, `com.android.*`, `com.samsung.*`, `com.miui.*`, `com.huawei.*`, `com.oneplus.*`, `com.apple.*` → sistema; lista corta de top apps (whatsapp, telegram, instagram, fb, tiktok, gmail, chrome) → conocida; resto → desconocida.
-- Cronología: ordenar por fecha asc, limitar a 20, agrupar eventos del mismo segundo en uno solo.
-- Glosario: constante estática traducida en español.
+## Compatibilidad con informes anteriores
+Igual que en el cambio previo: las secciones se renderizarán **vacías o se ocultarán** en informes guardados antes de este cambio, porque los nuevos campos no estaban en el parseo. Para verlos completos hace falta re-analizar el .zip. No se rompe ningún informe existente.

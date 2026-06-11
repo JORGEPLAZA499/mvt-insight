@@ -25,6 +25,10 @@ import {
   buildDeviceCard,
   buildTopApps,
   buildHumanTimeline,
+  buildSystemIntegrity,
+  buildAccessibilityList,
+  buildConfigProfiles,
+  buildTopNetwork,
   GLOSSARY,
   type Category,
 } from "./mvt-translate";
@@ -59,6 +63,10 @@ export function generatePdfReport(a: Analysis) {
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const CW = W - M.left - M.right;
+
+  // Numeración dinámica de secciones (se incrementa solo cuando se renderiza una).
+  let __secNum = 0;
+  const NEXT = () => String(++__secNum).padStart(2, "0");
 
   const ctx = {
     doc, W, H, CW,
@@ -226,12 +234,8 @@ export function generatePdfReport(a: Analysis) {
   // ============================================================
   newPage();
 
-  // 01 · Resumen ejecutivo
-  sectionTitle("01", "Resumen ejecutivo");
-
-  // Bloque de VEREDICTO en una frase
-  // 01 · Veredicto
-  sectionTitle("01", "Veredicto");
+  // Veredicto
+  sectionTitle(NEXT(), "Veredicto");
   if (r) {
     const v = buildVerdict(r);
     const verdictColor: [number, number, number] =
@@ -262,7 +266,7 @@ export function generatePdfReport(a: Analysis) {
   }
 
   // 02 · Resumen ejecutivo
-  sectionTitle("02", "Resumen ejecutivo");
+  sectionTitle(NEXT(), "Resumen ejecutivo");
   const baseSummary = r
     ? `Se ha analizado el archivo "${a.fileName}". La plataforma detectada es ${platformLabel(r.platform)}. Se procesaron ${r.modules.length} módulos MVT con un total de ${r.totalEntries.toLocaleString()} entradas y se identificaron ${r.totalDetections} indicios técnicos. El nivel de riesgo estimado es ${riskLabel(r.risk)}.`
     : `Análisis de "${a.fileName}". Estado actual: ${a.status}.`;
@@ -299,7 +303,7 @@ export function generatePdfReport(a: Analysis) {
   // 03 · Ficha del dispositivo
   const deviceCard = r ? buildDeviceCard(r.deviceInfo) : [];
   if (deviceCard.length > 0) {
-    sectionTitle("03", "Ficha del dispositivo");
+    sectionTitle(NEXT(), "Ficha del dispositivo");
     paragraph("Información del terminal extraída del análisis. Los identificadores sensibles (serie, IMEI) se muestran parcialmente.", { size: 9, color: MUTED });
     ctx.y += 4;
     const rowH2 = 22;
@@ -328,8 +332,192 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += 8;
   }
 
+  // Estado de seguridad del sistema (Android)
+  const integrity = r ? buildSystemIntegrity(r) : null;
+  if (integrity && integrity.hasAny) {
+    sectionTitle(NEXT(), "Estado de seguridad del sistema");
+    paragraph("Comprobaciones que indican si el sistema operativo conserva sus protecciones de fábrica o ha sido modificado.", { size: 9, color: MUTED });
+    ctx.y += 4;
+    if (integrity.combinedAlert) {
+      const lines = doc.splitTextToSize(integrity.combinedAlert, CW - 24);
+      const boxH = 12 + lines.length * 12 + 10;
+      ensure(boxH + 4);
+      setFill(SEV_BG.critical);
+      doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
+      setFill(SEV_COLOR.critical);
+      doc.rect(M.left, ctx.y, 3, boxH, "F");
+      setText(SEV_COLOR.critical);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+      doc.text("AVISO DE INTEGRIDAD", M.left + 12, ctx.y + 14);
+      setText(INK);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      doc.text(lines, M.left + 12, ctx.y + 28);
+      ctx.y += boxH + 8;
+    }
+    if (integrity.rootBinaries.length) {
+      ensure(40);
+      setText(MUTED);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+      doc.text("BINARIOS DE ROOT ENCONTRADOS", M.left, ctx.y);
+      ctx.y += 12;
+      setText(INK);
+      doc.setFont("courier", "normal"); doc.setFontSize(10);
+      doc.text(integrity.rootBinaries.join("  ·  "), M.left, ctx.y);
+      ctx.y += 14;
+      setText(MUTED);
+      doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+      const exp = "La presencia de binarios como su o magisk indica acceso root: una app con privilegios de superusuario puede leer datos de otras apps, modificar el sistema o desactivar protecciones.";
+      const expLines = doc.splitTextToSize(exp, CW);
+      doc.text(expLines, M.left, ctx.y);
+      ctx.y += expLines.length * 10 + 6;
+    }
+    if (integrity.selinux) {
+      ensure(28);
+      setText(MUTED);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+      doc.text("SELINUX", M.left, ctx.y);
+      severityChip(integrity.selinux.severity, M.left + 60, ctx.y);
+      ctx.y += 12;
+      setText(INK);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.text(integrity.selinux.label, M.left, ctx.y);
+      ctx.y += 12;
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      const lines = doc.splitTextToSize(integrity.selinux.explanation, CW);
+      doc.text(lines, M.left, ctx.y);
+      ctx.y += lines.length * 11 + 6;
+    }
+    if (integrity.bootloader) {
+      ensure(28);
+      setText(MUTED);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+      doc.text("BOOTLOADER", M.left, ctx.y);
+      severityChip(integrity.bootloader.severity, M.left + 80, ctx.y);
+      ctx.y += 12;
+      setText(INK);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.text(integrity.bootloader.label, M.left, ctx.y);
+      ctx.y += 12;
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      const exp = "El bootloader controla qué sistema operativo se carga al encender. Cuando no está bloqueado, el sistema puede haber sido modificado.";
+      const lines = doc.splitTextToSize(exp, CW);
+      doc.text(lines, M.left, ctx.y);
+      ctx.y += lines.length * 11 + 4;
+    }
+    ctx.y += 4;
+  }
+
+  // Servicios de accesibilidad activos (Android)
+  const accessList = r ? buildAccessibilityList(r) : [];
+  if (accessList.length > 0) {
+    sectionTitle(NEXT(), "Servicios de accesibilidad activos");
+    paragraph("Los servicios de accesibilidad pueden leer la pantalla y simular toques. Es el permiso que usan la mayoría de apps de vigilancia (stalkerware). Revisa los marcados como 'Origen no reconocido' y desactívalos en Ajustes → Accesibilidad si no los reconoces.", { size: 9, color: MUTED });
+    ctx.y += 4;
+    accessList.forEach((row) => {
+      const isUnknown = row.origin === "unknown";
+      const boxH = 32;
+      ensure(boxH + 4);
+      setFill(SOFT_BG);
+      doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
+      if (isUnknown) {
+        setFill(SEV_COLOR.high);
+        doc.rect(M.left, ctx.y, 3, boxH, "F");
+      }
+      setText(INK);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.text(row.displayName, M.left + 10, ctx.y + 13);
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.text(`${row.packageName}  →  ${row.service}`, M.left + 10, ctx.y + 24);
+      doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+      setText(isUnknown ? SEV_COLOR.high : MUTED);
+      doc.text(row.originLabel, M.left + CW - 10, ctx.y + 13, { align: "right" });
+      ctx.y += boxH + 4;
+    });
+    ctx.y += 4;
+  }
+
+  // Perfiles de configuración instalados (iOS)
+  const profiles = r ? buildConfigProfiles(r) : [];
+  if (profiles.length > 0) {
+    sectionTitle(NEXT(), "Perfiles de configuración instalados");
+    paragraph("Los perfiles de configuración pueden cambiar ajustes profundos del dispositivo (VPN, certificados, gestión remota). Revisa los que no hayas instalado tú mismo o tu empresa.", { size: 9, color: MUTED });
+    ctx.y += 4;
+    profiles.forEach((p) => {
+      const meta: string[] = [];
+      if (p.org) meta.push(`Emitido por: ${p.org}`);
+      if (p.installDate) meta.push(`Instalado: ${p.installDate}`);
+      if (p.uuid) meta.push(`UUID: ${p.uuid}…`);
+      const warnLines = p.warning ? doc.splitTextToSize(p.warning, CW - 24) : [];
+      const metaLines = meta.length ? doc.splitTextToSize(meta.join("   ·   "), CW - 24) : [];
+      const boxH = 30 + metaLines.length * 10 + warnLines.length * 11 + 6;
+      ensure(boxH + 4);
+      setFill(SOFT_BG);
+      doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
+      const [sr, sg, sb] = SEV_COLOR[p.severity] ?? MUTED;
+      setFill([sr, sg, sb]);
+      doc.rect(M.left, ctx.y, 3, boxH, "F");
+      let yy = ctx.y + 14;
+      const chipW = severityChip(p.severity, M.left + 12, yy);
+      setText(INK);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.text(p.name, M.left + 12 + chipW + 6, yy);
+      yy += 12;
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.text(`Tipo: ${p.typeLabel}`, M.left + 12, yy);
+      yy += 10;
+      if (metaLines.length) {
+        doc.text(metaLines, M.left + 12, yy);
+        yy += metaLines.length * 10;
+      }
+      if (warnLines.length) {
+        setText([sr, sg, sb]);
+        doc.setFont("helvetica", "italic"); doc.setFontSize(9);
+        doc.text(warnLines, M.left + 12, yy);
+      }
+      ctx.y += boxH + 4;
+    });
+    ctx.y += 4;
+  }
+
+  // Apps con más tráfico de red (iOS)
+  const netTop = r ? buildTopNetwork(r) : [];
+  if (netTop.length > 0) {
+    sectionTitle(NEXT(), "Apps con más tráfico de red");
+    paragraph("Procesos o apps que más datos han enviado o recibido (Wi-Fi + datos móviles). Un proceso desconocido con mucho tráfico en segundo plano puede estar enviando información del dispositivo.", { size: 9, color: MUTED });
+    ctx.y += 4;
+    netTop.forEach((app, i) => {
+      const boxH = 34;
+      ensure(boxH + 4);
+      setFill(SOFT_BG);
+      doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
+      if (app.origin === "unknown") {
+        setFill(SEV_COLOR.high);
+        doc.rect(M.left, ctx.y, 3, boxH, "F");
+      }
+      setText(INK);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.text(`${i + 1}. ${app.displayName}`, M.left + 10, ctx.y + 14);
+      setText(MUTED);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.text(app.packageName, M.left + 10, ctx.y + 26);
+      doc.setFont("helvetica", "italic");
+      setText(app.origin === "unknown" ? SEV_COLOR.high : MUTED);
+      doc.text(app.originLabel, M.left + 10, ctx.y + 34 - 4 + 4);
+      setText(NAVY);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.text(app.totalLabel, M.left + CW - 10, ctx.y + 20, { align: "right" });
+      ctx.y += boxH + 4;
+    });
+    ctx.y += 4;
+  }
+
+
   // 04 · Cómo leer este informe
-  sectionTitle("04", "Cómo leer este informe");
+  sectionTitle(NEXT(), "Cómo leer este informe");
   paragraph("MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo. Un indicio no equivale a una infección confirmada: puede tratarse de una app legítima instalada por el propio usuario. Revisa cada hallazgo y comprueba si reconoces la app o el comportamiento descrito.");
   ctx.y += 4;
   paragraph("Las severidades empleadas en este informe:", { color: NAVY_SOFT });
@@ -349,7 +537,7 @@ export function generatePdfReport(a: Analysis) {
   // 05 · Áreas analizadas (módulos)
   const rowH = 18;
   if (r && r.modules.length) {
-    sectionTitle("05", "Áreas del dispositivo analizadas");
+    sectionTitle(NEXT(), "Áreas del dispositivo analizadas");
     const visible = r.modules.filter((m) => m.entries > 0 || m.detected > 0);
     // Cabecera
     ensure(22);
@@ -461,7 +649,7 @@ export function generatePdfReport(a: Analysis) {
       uniqueTotal += arr.length;
     });
 
-    sectionTitle("06", `Indicios detectados · ${uniqueTotal} entidad${uniqueTotal === 1 ? "" : "es"} (${r.detections.length} ocurrencias)`);
+    sectionTitle(NEXT(), `Indicios detectados · ${uniqueTotal} entidad${uniqueTotal === 1 ? "" : "es"} (${r.detections.length} ocurrencias)`);
 
     // Distribución
     const distLine = (["mercenary", "stalkerware", "suspicious"] as Category[])
@@ -572,7 +760,7 @@ export function generatePdfReport(a: Analysis) {
   // 07 · Apps con más actividad sospechosa
   const topApps = r ? buildTopApps(r.detections, 10) : [];
   if (topApps.length > 0) {
-    sectionTitle("07", "Apps con más actividad sospechosa");
+    sectionTitle(NEXT(), "Apps con más actividad sospechosa");
     paragraph("Apps que más veces aparecen en los indicios técnicos. Revisa con calma las marcadas como 'Origen no reconocido'.", { size: 9, color: MUTED });
     ctx.y += 4;
     topApps.forEach((app, i) => {
@@ -613,7 +801,7 @@ export function generatePdfReport(a: Analysis) {
   // 08 · Cronología de eventos clave
   const humanEvents = r ? buildHumanTimeline(r.timeline, r.detections, 20) : [];
   if (humanEvents.length > 0) {
-    sectionTitle("08", "Cronología de eventos clave");
+    sectionTitle(NEXT(), "Cronología de eventos clave");
     paragraph("Reconstrucción en lenguaje natural de los eventos más relevantes, ordenados por fecha.", { size: 9, color: MUTED });
     ctx.y += 6;
     humanEvents.forEach((e) => {
@@ -638,7 +826,7 @@ export function generatePdfReport(a: Analysis) {
   }
 
   // 09 · Próximos pasos
-  sectionTitle("09", "Próximos pasos recomendados");
+  sectionTitle(NEXT(), "Próximos pasos recomendados");
   const recs = r ? nextSteps(r) : [
     "Aislar el dispositivo de redes sensibles hasta completar la verificación.",
     "Actualizar el sistema operativo y revocar credenciales potencialmente expuestas.",
@@ -658,7 +846,7 @@ export function generatePdfReport(a: Analysis) {
   });
 
   // 10 · Verificación cruzada
-  sectionTitle("10", "Cómo verificar este resultado");
+  sectionTitle(NEXT(), "Cómo verificar este resultado");
   ctx.y += 6;
   CROSS_CHECK_STEPS.forEach((step) => {
     const titleLines = doc.splitTextToSize(step.title, CW - 24);
@@ -681,7 +869,7 @@ export function generatePdfReport(a: Analysis) {
   });
 
   // 11 · Glosario de términos
-  sectionTitle("11", "Glosario de términos");
+  sectionTitle(NEXT(), "Glosario de términos");
   paragraph("Pequeño diccionario para entender los términos técnicos que aparecen en este informe.", { size: 9, color: MUTED });
   ctx.y += 4;
   GLOSSARY.forEach((g, i) => {
@@ -706,7 +894,7 @@ export function generatePdfReport(a: Analysis) {
   ctx.y += 8;
 
   // 12 · Aviso legal
-  sectionTitle("12", "Aviso legal y metodología");
+  sectionTitle(NEXT(), "Aviso legal y metodología");
   paragraph("Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.", { size: 9 });
   ctx.y += 2;
   paragraph("Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.", { size: 9 });

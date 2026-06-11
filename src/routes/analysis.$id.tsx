@@ -8,9 +8,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { riskColor, riskLabel, platformLabel, Analysis } from "@/lib/mock-store";
 import { getAnalysisById } from "@/lib/analyses.functions";
 import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
-import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Trash2, Activity, User, Code2, ChevronDown, ChevronRight, Smartphone, Clock, BookOpen, AppWindow } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Trash2, Activity, User, Code2, ChevronDown, ChevronRight, Smartphone, Clock, BookOpen, AppWindow, KeyRound, Accessibility, FileLock2, Network } from "lucide-react";
 import { generatePdfReport } from "@/lib/pdf-report";
-import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, explainSeverity, buildVerdict, nextSteps, buildModuleHighlights, CROSS_CHECK_STEPS, CATEGORY_LABEL, CATEGORY_DESC, type Category, buildDeviceCard, buildTopApps, buildHumanTimeline, GLOSSARY, type SuspiciousApp } from "@/lib/mvt-translate";
+import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, explainSeverity, buildVerdict, nextSteps, buildModuleHighlights, CROSS_CHECK_STEPS, CATEGORY_LABEL, CATEGORY_DESC, type Category, buildDeviceCard, buildTopApps, buildHumanTimeline, GLOSSARY, type SuspiciousApp, buildSystemIntegrity, buildAccessibilityList, buildConfigProfiles, buildTopNetwork, type AccessibilityRow, type ConfigProfileRow, type NetworkAppRow, type SystemIntegrityCard } from "@/lib/mvt-translate";
 import type { MvtDetection, MvtDeviceInfo, RiskLevel } from "@/lib/mvt-parser";
 
 function formatDeviceLine(d?: MvtDeviceInfo): string {
@@ -231,6 +231,10 @@ function UserReport({ analysis }: { analysis: Analysis }) {
   const deviceCard = useMemo(() => buildDeviceCard(r.deviceInfo), [r.deviceInfo]);
   const topApps = useMemo(() => buildTopApps(r.detections, 10), [r.detections]);
   const humanTimeline = useMemo(() => buildHumanTimeline(r.timeline, r.detections, 20), [r.timeline, r.detections]);
+  const systemIntegrity = useMemo(() => buildSystemIntegrity(r), [r]);
+  const accessibility = useMemo(() => buildAccessibilityList(r), [r]);
+  const configProfiles = useMemo(() => buildConfigProfiles(r), [r]);
+  const topNetwork = useMemo(() => buildTopNetwork(r), [r]);
   const verdictBorder =
     verdict.level === "mercenary" ? "border-destructive/40 bg-destructive/5"
     : verdict.level === "stalkerware" ? "border-destructive/30 bg-destructive/5"
@@ -240,11 +244,15 @@ function UserReport({ analysis }: { analysis: Analysis }) {
     verdict.level === "clean" ? "text-success" :
     verdict.level === "suspicious" ? "text-warning" : "text-destructive";
 
+  // Numeración dinámica de secciones: solo se incrementa cuando la sección se renderiza.
+  let __n = 0;
+  const sec = () => String(++__n).padStart(2, "0");
+
   return (
     <div className="space-y-10">
-      {/* 01 · Veredicto */}
+      {/* Veredicto */}
       <section>
-        <SectionTitle num="01" title="Veredicto" />
+        <SectionTitle num={sec()} title="Veredicto" />
         <div className={`rounded-xl border p-6 ${verdictBorder}`}>
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Veredicto</div>
           <div className={`text-xl font-semibold mt-1 ${verdictTitle}`}>{verdict.headline}</div>
@@ -252,9 +260,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         </div>
       </section>
 
-      {/* 02 · Resumen ejecutivo */}
+      {/* Resumen ejecutivo */}
       <section>
-        <SectionTitle num="02" title="Resumen ejecutivo" />
+        <SectionTitle num={sec()} title="Resumen ejecutivo" />
         <p className="text-sm text-foreground/90">
           Se ha analizado el archivo <strong>"{analysis.fileName}"</strong>. La plataforma detectada es{" "}
           <strong>{platformLabel(r.platform)}</strong>. Se procesaron{" "}
@@ -271,10 +279,10 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         </div>
       </section>
 
-      {/* 03 · Ficha del dispositivo */}
+      {/* Ficha del dispositivo */}
       {deviceCard.length > 0 && (
         <section>
-          <SectionTitle num="03" title="Ficha del dispositivo" />
+          <SectionTitle num={sec()} title="Ficha del dispositivo" />
           <p className="text-sm text-muted-foreground mb-4">
             Información del terminal extraída automáticamente del análisis. Por privacidad, números de serie e identificadores se muestran parcialmente.
           </p>
@@ -299,9 +307,66 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         </section>
       )}
 
+      {/* Estado de seguridad del sistema (Android) */}
+      {systemIntegrity.hasAny && (
+        <section>
+          <SectionTitle num={sec()} title="Estado de seguridad del sistema" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Comprobaciones que indican si el sistema operativo conserva sus protecciones de fábrica o ha sido modificado.
+          </p>
+          <SystemIntegrityCardView card={systemIntegrity} />
+        </section>
+      )}
+
+      {/* Servicios de accesibilidad activos (Android) */}
+      {accessibility.length > 0 && (
+        <section>
+          <SectionTitle num={sec()} title="Servicios de accesibilidad activos" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Los servicios de accesibilidad pueden leer la pantalla y simular toques. Es el permiso que utilizan la mayoría de apps de vigilancia (stalkerware). Si no reconoces alguno marcado como "Origen no reconocido", revísalo y desactívalo en Ajustes → Accesibilidad.
+          </p>
+          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {accessibility.map((row) => (
+              <AccessibilityRowView key={`${row.packageName}/${row.service}`} row={row} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Perfiles de configuración instalados (iOS) */}
+      {configProfiles.length > 0 && (
+        <section>
+          <SectionTitle num={sec()} title="Perfiles de configuración instalados" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Los perfiles de configuración pueden cambiar ajustes profundos del dispositivo (VPN, certificados, gestión remota). Revisa los que no hayas instalado tú mismo o tu empresa.
+          </p>
+          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {configProfiles.map((p) => (
+              <ConfigProfileRowView key={p.uuid || p.name} profile={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Apps con más tráfico de red (iOS) */}
+      {topNetwork.length > 0 && (
+        <section>
+          <SectionTitle num={sec()} title="Apps con más tráfico de red" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Procesos o apps que más datos han enviado o recibido (Wi-Fi + datos móviles). Un proceso desconocido con mucho tráfico en segundo plano puede estar enviando información del dispositivo a un servidor externo.
+          </p>
+          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {topNetwork.map((app, i) => (
+              <NetworkAppRowView key={app.packageName} app={app} index={i + 1} />
+            ))}
+          </div>
+        </section>
+      )}
+
+
       {/* 04 · Cómo leer este informe */}
       <section>
-        <SectionTitle num="04" title="Cómo leer este informe" />
+        <SectionTitle num={sec()} title="Cómo leer este informe" />
         <p className="text-sm text-foreground/80">
           MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo.
           Un indicio no equivale a una infección confirmada: puede tratarse de una app legítima instalada por el propio usuario.
@@ -323,7 +388,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 05 · Áreas del dispositivo analizadas */}
       <section>
-        <SectionTitle num="05" title="Áreas del dispositivo analizadas" />
+        <SectionTitle num={sec()} title="Áreas del dispositivo analizadas" />
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
             <div className="col-span-6">Área</div>
@@ -342,7 +407,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 06 · Indicios detectados */}
       <section>
-        <SectionTitle num="06" title="Indicios detectados" />
+        <SectionTitle num={sec()} title="Indicios detectados" />
         {r.detections.length === 0 ? (
           <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm">
             <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
@@ -356,7 +421,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* 07 · Apps con más actividad sospechosa */}
       {topApps.length > 0 && (
         <section>
-          <SectionTitle num="07" title="Apps con más actividad sospechosa" />
+          <SectionTitle num={sec()} title="Apps con más actividad sospechosa" />
           <p className="text-sm text-muted-foreground mb-4">
             Apps que más veces aparecen en los indicios técnicos. Si no reconoces alguna marcada como "Origen no reconocido", revísala con calma.
           </p>
@@ -371,7 +436,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* 08 · Cronología de eventos clave */}
       {humanTimeline.length > 0 && (
         <section>
-          <SectionTitle num="08" title="Cronología de eventos clave" />
+          <SectionTitle num={sec()} title="Cronología de eventos clave" />
           <p className="text-sm text-muted-foreground mb-4">
             Reconstrucción en lenguaje natural de los eventos más relevantes detectados, ordenados por fecha.
           </p>
@@ -394,7 +459,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 09 · Próximos pasos recomendados */}
       <section>
-        <SectionTitle num="09" title="Próximos pasos recomendados" />
+        <SectionTitle num={sec()} title="Próximos pasos recomendados" />
         <ol className="space-y-3">
           {recs.map((rec, i) => (
             <li key={i} className="flex gap-3">
@@ -407,7 +472,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 10 · Cómo verificar este resultado */}
       <section>
-        <SectionTitle num="10" title="Cómo verificar este resultado" />
+        <SectionTitle num={sec()} title="Cómo verificar este resultado" />
         <div className="space-y-3">
           {CROSS_CHECK_STEPS.map((step) => (
             <div key={step.title} className="rounded-lg border border-border bg-card p-4 border-l-4 border-l-primary">
@@ -420,7 +485,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 11 · Glosario */}
       <section>
-        <SectionTitle num="11" title="Glosario de términos" />
+        <SectionTitle num={sec()} title="Glosario de términos" />
         <p className="text-sm text-muted-foreground mb-4">
           Pequeño diccionario para entender los términos técnicos que aparecen en este informe.
         </p>
@@ -439,7 +504,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 12 · Aviso legal */}
       <section>
-        <SectionTitle num="12" title="Aviso legal y metodología" />
+        <SectionTitle num={sec()} title="Aviso legal y metodología" />
         <div className="space-y-3 text-xs text-muted-foreground">
           <p>Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.</p>
           <p>Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.</p>
@@ -469,6 +534,130 @@ function UserReport({ analysis }: { analysis: Analysis }) {
     </div>
   );
 }
+
+function originBadgeClass(origin: "system" | "known" | "unknown"): string {
+  return origin === "system" ? "bg-muted text-muted-foreground border-border"
+    : origin === "known" ? "bg-primary/10 text-primary border-primary/20"
+    : "bg-warning/15 text-warning border-warning/30";
+}
+
+function SystemIntegrityCardView({ card }: { card: SystemIntegrityCard }) {
+  return (
+    <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+      {card.combinedAlert && (
+        <div className="p-4 bg-destructive/5 border-l-4 border-l-destructive">
+          <div className="text-sm font-semibold text-destructive flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" /> Aviso de integridad
+          </div>
+          <p className="text-sm text-foreground/90 mt-1">{card.combinedAlert}</p>
+        </div>
+      )}
+      {card.rootBinaries.length > 0 && (
+        <div className="p-4 flex items-start gap-3">
+          <KeyRound className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Binarios de root encontrados</div>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {card.rootBinaries.map((b) => (
+                <span key={b} className="px-2 py-0.5 rounded-md border border-destructive/30 bg-destructive/10 text-destructive font-mono text-xs">{b}</span>
+              ))}
+            </div>
+            <div className="text-xs text-muted-foreground mt-2">
+              La presencia de binarios como <code>su</code> o <code>magisk</code> indica acceso root: cualquier app con privilegios de superusuario puede leer datos de otras apps, modificar el sistema o desactivar protecciones.
+            </div>
+          </div>
+        </div>
+      )}
+      {card.selinux && (
+        <div className="p-4 flex items-start gap-3">
+          <ShieldCheck className={`h-4 w-4 shrink-0 mt-0.5 ${card.selinux.severity === "low" ? "text-success" : "text-destructive"}`} />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">SELinux</div>
+            <div className="text-sm font-medium mt-0.5">{card.selinux.label}</div>
+            <div className="text-xs text-muted-foreground mt-1">{card.selinux.explanation}</div>
+          </div>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border h-fit ${SEV_BADGE[card.selinux.severity]}`}>
+            {severityLabel(card.selinux.severity)}
+          </span>
+        </div>
+      )}
+      {card.bootloader && (
+        <div className="p-4 flex items-start gap-3">
+          <ShieldAlert className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Bootloader</div>
+            <div className="text-sm font-medium mt-0.5">{card.bootloader.label}</div>
+            <div className="text-xs text-muted-foreground mt-1">El bootloader controla qué sistema operativo se carga al encender. Cuando no está bloqueado, el sistema puede haber sido modificado.</div>
+          </div>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border h-fit ${SEV_BADGE[card.bootloader.severity]}`}>
+            {severityLabel(card.bootloader.severity)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AccessibilityRowView({ row }: { row: AccessibilityRow }) {
+  return (
+    <div className="p-4 flex items-start gap-3">
+      <Accessibility className={`h-5 w-5 shrink-0 mt-0.5 ${row.origin === "unknown" ? "text-warning" : "text-muted-foreground"}`} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-sm">{row.displayName}</span>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${originBadgeClass(row.origin)}`}>
+            {row.originLabel}
+          </span>
+        </div>
+        <div className="text-xs text-muted-foreground font-mono mt-1 break-all">{row.packageName}</div>
+        <div className="text-xs text-muted-foreground font-mono break-all">↳ {row.service}</div>
+      </div>
+    </div>
+  );
+}
+
+function ConfigProfileRowView({ profile }: { profile: ConfigProfileRow }) {
+  return (
+    <div className="p-4 flex items-start gap-3">
+      <FileLock2 className={`h-5 w-5 shrink-0 mt-0.5 ${profile.severity === "critical" || profile.severity === "high" ? "text-destructive" : "text-muted-foreground"}`} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-sm">{profile.name}</span>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${SEV_BADGE[profile.severity]}`}>
+            {severityLabel(profile.severity)}
+          </span>
+          <span className="text-xs text-muted-foreground">· {profile.typeLabel}</span>
+        </div>
+        {profile.org && <div className="text-xs text-muted-foreground mt-1">Emitido por: <span className="font-medium text-foreground/80">{profile.org}</span></div>}
+        {profile.installDate && <div className="text-xs text-muted-foreground">Instalado: {profile.installDate}</div>}
+        {profile.uuid && <div className="text-xs text-muted-foreground font-mono">UUID: {profile.uuid}…</div>}
+        {profile.warning && <div className="text-xs text-destructive mt-2">{profile.warning}</div>}
+      </div>
+    </div>
+  );
+}
+
+function NetworkAppRowView({ app, index }: { app: NetworkAppRow; index: number }) {
+  return (
+    <div className="p-4 flex items-start gap-3">
+      <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0 tabular-nums text-xs font-semibold">
+        {index}
+      </div>
+      <Network className={`h-4 w-4 shrink-0 mt-2 ${app.origin === "unknown" ? "text-warning" : "text-muted-foreground"}`} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-sm">{app.displayName}</span>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${originBadgeClass(app.origin)}`}>
+            {app.originLabel}
+          </span>
+        </div>
+        <div className="text-xs text-muted-foreground font-mono mt-1 break-all">{app.packageName}</div>
+      </div>
+      <div className="text-sm font-semibold tabular-nums shrink-0">{app.totalLabel}</div>
+    </div>
+  );
+}
+
 
 function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {
   const originBadge =

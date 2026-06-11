@@ -1,16 +1,16 @@
-## Cambios en `src/routes/pricing.tsx`
+## Cambio de runner macOS Intel en workflow de GitHub Actions
 
-Eliminar los dos botones de la columna derecha de la card:
-- "Pagar con Tarjeta" (Link a `/login`)
-- "Pagar con Cripto — Próximamente" (botón deshabilitado)
+**Objetivo:** Resolver la cola infinita del job `darwin-x64` en el workflow `build-ios-tools.yml` sustituyendo el runner obsoleto/saturado `macos-13` por el nuevo runner oficial `macos-15-intel`.
 
-En su lugar, dejar únicamente los logos de medios de pago aceptados (`Card Payments` con Mastercard/Visa/Amex/Apple Pay/Google Pay y `Crypto Payments` con BTC/ETH/USDT/TRX/BNB) como elemento informativo.
+**Cambio técnico:**
+- Archivo: `.github/workflows/build-ios-tools.yml`
+- Línea 37: `os: macos-13` → `os: macos-15-intel`
 
-Añadir debajo de los logos un aviso discreto del tipo:
-> "Las compras se realizan desde el panel de control una vez iniciada sesión."
+**Motivación:**
+- `macos-13` está saturado o siendo retirado por GitHub → jobs se quedan horas esperando runner.
+- `macos-15-intel` es el reemplazo gratuito oficial para builds Intel (x64) en macOS.
+- El resto del job (Homebrew x86_64, PyInstaller, empaquetado) funciona igual sin modificaciones.
 
-Con un único CTA "Iniciar sesión" que lleve a `/login` (sin estilo de botón de pago — botón secundario discreto), para que el usuario sepa cómo proceder.
-
-El resto del diseño (gradiente, glow orbs, grid, selector de paquete, features, badge) se mantiene intacto.
-
-No se tocan otros archivos.
+**Impacto:**
+- El job `darwin-x64` pasará de quedarse atascado en cola a ejecutarse en minutos.
+- Las releases seguirán publicando `ios-tools-darwin-x64.tar.gz` como antes.

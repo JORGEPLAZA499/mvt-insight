@@ -34,7 +34,7 @@ jobs:
           - os: macos-14            # Apple Silicon (arm64)
             label: darwin-arm64
             ext: tar.gz
-          - os: macos-13            # Intel (x64)
+          - os: macos-15-intel      # Intel (x64) — reemplazo oficial de macos-13
             label: darwin-x64
             ext: tar.gz
           - os: ubuntu-latest

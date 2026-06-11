@@ -664,7 +664,37 @@ export function App() {
 
 
 
-        {error && (
+        {error === "IOS_DRIVERS_MISSING" ? (
+          <div className="card" style={{ borderColor: "var(--primary, #6ea8ff)" }}>
+            <strong>{tr("iosDrivers.title", "Faltan los drivers de Apple en este Windows")}</strong>
+            <div style={{ marginTop: 8, fontSize: 13, color: "var(--muted)" }}>
+              {tr(
+                "iosDrivers.body",
+                "Para que el ordenador reconozca el iPhone necesitamos los drivers de Apple Mobile Device. No podemos incluirlos en nuestra app por la licencia de Apple; instálalos en 1 clic desde la Microsoft Store (recomendado) o desde el instalador oficial de iTunes."
+              )}
+            </div>
+            <div className="row" style={{ marginTop: 12, flexWrap: "wrap", gap: 8 }}>
+              <button
+                className="btn"
+                onClick={() => window.mvt?.openExternal("ms-windows-store://pdp/?productid=9NP83LWLPZ9K")}
+              >
+                {tr("iosDrivers.installStore", "Instalar «Apple Devices» (Microsoft Store)")}
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => window.mvt?.openExternal("https://www.apple.com/itunes/download/win64")}
+              >
+                {tr("iosDrivers.installItunes", "Descargar iTunes (apple.com)")}
+              </button>
+              <button className="btn btn-secondary" onClick={retryIosAfterDrivers}>
+                {tr("iosDrivers.retry", "Ya lo he instalado — reintentar")}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
+                {tr("error.back", "Volver al inicio")}
+              </button>
+            </div>
+          </div>
+        ) : error && (
           <div className="card" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
             <strong>{tr("error.title", "Algo salió mal:")}</strong>
             <div style={{ marginTop: 6, fontSize: 13 }}>{error}</div>
@@ -675,6 +705,7 @@ export function App() {
             </div>
           </div>
         )}
+
         {VersionCorner}
       </div>
     );

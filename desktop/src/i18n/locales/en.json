@@ -145,5 +145,13 @@
     "passwordMismatch": "Passwords don't match.",
     "startAnalysis": "Start analysis",
     "cancel": "Cancel"
+  },
+  "iosDrivers": {
+    "title": "Apple drivers are missing on this Windows",
+    "body": "For the computer to recognize the iPhone we need Apple Mobile Device drivers. We can't bundle them in our app due to Apple's license; install them in 1 click from the Microsoft Store (recommended) or from Apple's official iTunes installer.",
+    "installStore": "Install «Apple Devices» (Microsoft Store)",
+    "installItunes": "Download iTunes (apple.com)",
+    "retry": "I've installed it — retry"
   }
 }
+

@@ -346,9 +346,10 @@ export function generatePdfReport(a: Analysis) {
   });
   ctx.y += 6;
 
-  // 04 · Áreas analizadas (módulos)
+  // 05 · Áreas analizadas (módulos)
+  const rowH = 18;
   if (r && r.modules.length) {
-    sectionTitle("04", "Áreas del dispositivo analizadas");
+    sectionTitle("05", "Áreas del dispositivo analizadas");
     const visible = r.modules.filter((m) => m.entries > 0 || m.detected > 0);
     // Cabecera
     ensure(22);

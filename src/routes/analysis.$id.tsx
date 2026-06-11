@@ -535,6 +535,130 @@ function UserReport({ analysis }: { analysis: Analysis }) {
   );
 }
 
+function originBadgeClass(origin: "system" | "known" | "unknown"): string {
+  return origin === "system" ? "bg-muted text-muted-foreground border-border"
+    : origin === "known" ? "bg-primary/10 text-primary border-primary/20"
+    : "bg-warning/15 text-warning border-warning/30";
+}
+
+function SystemIntegrityCardView({ card }: { card: ReturnType<typeof import("@/lib/mvt-translate").buildSystemIntegrity> }) {
+  return (
+    <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+      {card.combinedAlert && (
+        <div className="p-4 bg-destructive/5 border-l-4 border-l-destructive">
+          <div className="text-sm font-semibold text-destructive flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" /> Aviso de integridad
+          </div>
+          <p className="text-sm text-foreground/90 mt-1">{card.combinedAlert}</p>
+        </div>
+      )}
+      {card.rootBinaries.length > 0 && (
+        <div className="p-4 flex items-start gap-3">
+          <KeyRound className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Binarios de root encontrados</div>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {card.rootBinaries.map((b) => (
+                <span key={b} className="px-2 py-0.5 rounded-md border border-destructive/30 bg-destructive/10 text-destructive font-mono text-xs">{b}</span>
+              ))}
+            </div>
+            <div className="text-xs text-muted-foreground mt-2">
+              La presencia de binarios como <code>su</code> o <code>magisk</code> indica acceso root: cualquier app con privilegios de superusuario puede leer datos de otras apps, modificar el sistema o desactivar protecciones.
+            </div>
+          </div>
+        </div>
+      )}
+      {card.selinux && (
+        <div className="p-4 flex items-start gap-3">
+          <ShieldCheck className={`h-4 w-4 shrink-0 mt-0.5 ${card.selinux.severity === "low" ? "text-success" : "text-destructive"}`} />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">SELinux</div>
+            <div className="text-sm font-medium mt-0.5">{card.selinux.label}</div>
+            <div className="text-xs text-muted-foreground mt-1">{card.selinux.explanation}</div>
+          </div>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border h-fit ${SEV_BADGE[card.selinux.severity]}`}>
+            {severityLabel(card.selinux.severity)}
+          </span>
+        </div>
+      )}
+      {card.bootloader && (
+        <div className="p-4 flex items-start gap-3">
+          <ShieldAlert className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Bootloader</div>
+            <div className="text-sm font-medium mt-0.5">{card.bootloader.label}</div>
+            <div className="text-xs text-muted-foreground mt-1">El bootloader controla qué sistema operativo se carga al encender. Cuando no está bloqueado, el sistema puede haber sido modificado.</div>
+          </div>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border h-fit ${SEV_BADGE[card.bootloader.severity]}`}>
+            {severityLabel(card.bootloader.severity)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AccessibilityRowView({ row }: { row: AccessibilityRow }) {
+  return (
+    <div className="p-4 flex items-start gap-3">
+      <Accessibility className={`h-5 w-5 shrink-0 mt-0.5 ${row.origin === "unknown" ? "text-warning" : "text-muted-foreground"}`} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-sm">{row.displayName}</span>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${originBadgeClass(row.origin)}`}>
+            {row.originLabel}
+          </span>
+        </div>
+        <div className="text-xs text-muted-foreground font-mono mt-1 break-all">{row.packageName}</div>
+        <div className="text-xs text-muted-foreground font-mono break-all">↳ {row.service}</div>
+      </div>
+    </div>
+  );
+}
+
+function ConfigProfileRowView({ profile }: { profile: ConfigProfileRow }) {
+  return (
+    <div className="p-4 flex items-start gap-3">
+      <FileLock2 className={`h-5 w-5 shrink-0 mt-0.5 ${profile.severity === "critical" || profile.severity === "high" ? "text-destructive" : "text-muted-foreground"}`} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-sm">{profile.name}</span>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${SEV_BADGE[profile.severity]}`}>
+            {severityLabel(profile.severity)}
+          </span>
+          <span className="text-xs text-muted-foreground">· {profile.typeLabel}</span>
+        </div>
+        {profile.org && <div className="text-xs text-muted-foreground mt-1">Emitido por: <span className="font-medium text-foreground/80">{profile.org}</span></div>}
+        {profile.installDate && <div className="text-xs text-muted-foreground">Instalado: {profile.installDate}</div>}
+        {profile.uuid && <div className="text-xs text-muted-foreground font-mono">UUID: {profile.uuid}…</div>}
+        {profile.warning && <div className="text-xs text-destructive mt-2">{profile.warning}</div>}
+      </div>
+    </div>
+  );
+}
+
+function NetworkAppRowView({ app, index }: { app: NetworkAppRow; index: number }) {
+  return (
+    <div className="p-4 flex items-start gap-3">
+      <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0 tabular-nums text-xs font-semibold">
+        {index}
+      </div>
+      <Network className={`h-4 w-4 shrink-0 mt-2 ${app.origin === "unknown" ? "text-warning" : "text-muted-foreground"}`} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-sm">{app.displayName}</span>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${originBadgeClass(app.origin)}`}>
+            {app.originLabel}
+          </span>
+        </div>
+        <div className="text-xs text-muted-foreground font-mono mt-1 break-all">{app.packageName}</div>
+      </div>
+      <div className="text-sm font-semibold tabular-nums shrink-0">{app.totalLabel}</div>
+    </div>
+  );
+}
+
+
 function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {
   const originBadge =
     app.origin === "system" ? "bg-muted text-muted-foreground border-border"

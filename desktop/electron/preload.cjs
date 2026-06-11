@@ -2,7 +2,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("mvt", {
-  start: (device) => ipcRenderer.invoke("mvt:start", { device }),
+  start: (device, options = {}) => ipcRenderer.invoke("mvt:start", { device, ...options }),
   cancel: () => ipcRenderer.invoke("mvt:cancel"),
   onLog: (cb) => {
     const listener = (_e, msg) => cb(msg);

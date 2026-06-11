@@ -541,7 +541,7 @@ function originBadgeClass(origin: "system" | "known" | "unknown"): string {
     : "bg-warning/15 text-warning border-warning/30";
 }
 
-function SystemIntegrityCardView({ card }: { card: ReturnType<typeof import("@/lib/mvt-translate").buildSystemIntegrity> }) {
+function SystemIntegrityCardView({ card }: { card: SystemIntegrityCard }) {
   return (
     <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
       {card.combinedAlert && (

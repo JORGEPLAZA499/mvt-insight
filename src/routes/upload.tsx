@@ -91,15 +91,6 @@ function Upload() {
                   {t("upload.desktopOnly.cta", "Descargar y vincular")}
                 </Link>
               )}
-              {key === "step2" && (
-                <Link
-                  to="/settings/desktop"
-                  className="inline-flex items-center gap-2 mt-5 rounded-lg border border-primary/40 text-primary px-4 py-2.5 text-sm font-semibold hover:bg-primary/10 transition"
-                >
-                  <Monitor className="h-4 w-4" />
-                  {t("upload.desktopOnly.openSettings", "Abrir Ajustes → App de escritorio")}
-                </Link>
-              )}
             </div>
           </div>
 

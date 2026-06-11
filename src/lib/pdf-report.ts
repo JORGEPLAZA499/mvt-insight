@@ -64,6 +64,10 @@ export function generatePdfReport(a: Analysis) {
   const H = doc.internal.pageSize.getHeight();
   const CW = W - M.left - M.right;
 
+  // Numeración dinámica de secciones (se incrementa solo cuando se renderiza una).
+  let __secNum = 0;
+  const NEXT = () => String(++__secNum).padStart(2, "0");
+
   const ctx = {
     doc, W, H, CW,
     y: M.top,

@@ -39,8 +39,14 @@
   "phases": {
     "download": "Descargando AndroidQF",
     "connect": "Conectando con el dispositivo",
-    "collect": "Recolectando datos"
+    "collect": "Recolectando datos",
+    "ios": {
+      "tools": "Preparando herramientas iOS",
+      "connect": "Conectando con el iPhone",
+      "analyze": "Analizando backup"
+    }
   },
+
   "phaseStatus": {
     "resolvingVersion": "Buscando la última versión disponible…",
     "downloadingBinary": "Descargando herramienta de análisis…",

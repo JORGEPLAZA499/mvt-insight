@@ -124,7 +124,12 @@ function Login() {
       await touch({ data: { userId: data.user.id } });
       pwdBuf.current.clear();
       setPassword("");
-      navigate({ to: "/dashboard" });
+      const { data: acc } = await supabase
+        .from("accounts")
+        .select("user_code")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      navigate({ to: acc?.user_code === "Admin" ? "/admin" : "/dashboard" });
     } catch (err: any) {
       setError(err?.message || "No se pudo iniciar sesión.");
     } finally {

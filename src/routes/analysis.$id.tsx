@@ -10,7 +10,7 @@ import { getAnalysisById } from "@/lib/analyses.functions";
 import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Trash2, Activity, User, Code2, ChevronDown, ChevronRight, Smartphone, Clock, BookOpen, AppWindow, KeyRound, Accessibility, FileLock2, Network } from "lucide-react";
 import { generatePdfReport } from "@/lib/pdf-report";
-import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, explainSeverity, buildVerdict, nextSteps, buildModuleHighlights, CROSS_CHECK_STEPS, CATEGORY_LABEL, CATEGORY_DESC, type Category, buildDeviceCard, buildTopApps, buildHumanTimeline, GLOSSARY, type SuspiciousApp, buildSystemIntegrity, buildAccessibilityList, buildConfigProfiles, buildTopNetwork, type AccessibilityRow, type ConfigProfileRow, type NetworkAppRow, type SystemIntegrityCard } from "@/lib/mvt-translate";
+import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, explainSeverity, buildVerdict, nextSteps, buildModuleHighlights, CROSS_CHECK_STEPS, CATEGORY_LABEL, CATEGORY_DESC, type Category, buildDeviceCard, buildTopApps, buildHumanTimeline, GLOSSARY, type SuspiciousApp, buildSystemIntegrity, buildAccessibilityList, buildConfigProfiles, buildTopNetwork, buildNetworkInterpretation, type AccessibilityRow, type ConfigProfileRow, type NetworkAppRow, type NetworkRowOrigin, type SystemIntegrityCard } from "@/lib/mvt-translate";
 import type { MvtDetection, MvtDeviceInfo, RiskLevel } from "@/lib/mvt-parser";
 
 function formatDeviceLine(d?: MvtDeviceInfo): string {

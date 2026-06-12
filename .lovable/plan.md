@@ -1,59 +1,42 @@
-# Plan: corregir `mvt-ios.exe` en Windows (`--multiprocessing-fork`)
+## Objetivo
+
+Evitar que `mvt-ios.exe` falle o ensucie la salida con:
+
+```text
+Failed fetching 'https://publicsuffix.org/list/public_suffix_list.dat'. Reason: [Errno 2] No such file or directory: 'C:\\Users\\GAMING~1\\A…'
+```
 
 ## Diagnóstico
 
-El error:
+El mensaje viene de `tldextract`, una dependencia usada durante el análisis de dominios. Al ejecutarse dentro del binario empaquetado con PyInstaller en Windows, intenta crear/usar una caché para descargar la Public Suffix List y falla con una ruta temporal o de perfil no válida.
 
-```text
-Error: No such option: --multiprocessing-fork
-```
+Esto no requiere cambiar la app desktop ni subir versión todavía: el arreglo debe ir en el launcher Python que se empaqueta como `mvt-ios.exe` y luego regenerar los assets de `ios-tools-v1`.
 
-indica un problema del binario `mvt-ios.exe` empaquetado con PyInstaller en Windows.
+## Cambios propuestos
 
-`mvt-ios` usa procesos internos. En Windows, esos procesos relanzan el mismo `.exe` con un argumento especial llamado `--multiprocessing-fork`. Como nuestro launcher no llama a `multiprocessing.freeze_support()` antes de arrancar el CLI de MVT, Click interpreta ese argumento como si fuera una opción normal de `mvt-ios` y falla. Por eso aparecen muchas instancias `mvt-ios.exe` y el análisis no avanza.
+1. Editar `.github/workflows/mvt_ios_launcher.py` para inicializar un entorno seguro antes de arrancar el CLI de MVT:
+   - Mantener `multiprocessing.freeze_support()` para no romper el fix anterior de `--multiprocessing-fork`.
+   - Crear una carpeta de caché persistente y escribible para MVT/tldextract, preferentemente en `%LOCALAPPDATA%\\MvtInsight\\mvt-ios-cache` en Windows.
+   - Definir variables de entorno de caché (`TLDEXTRACT_CACHE`, `XDG_CACHE_HOME`) antes de importar `mvt.ios.cli`.
 
-## Cambio principal
+2. Hacer que el launcher cree la carpeta si no existe y siga funcionando en macOS/Linux usando una ruta equivalente bajo el home/cache del usuario.
 
-Editar:
+3. No modificar `desktop/package.json` ni bumpear `1.0.34`, porque el cambio vive en el asset descargable `ios-tools-v1`.
 
-```text
-.github/workflows/mvt_ios_launcher.py
-```
+4. Actualizar `.lovable/plan.md` para documentar este segundo fix del binario iOS.
 
-para que quede así:
+## Validación
 
-```python
-import multiprocessing
-
-if __name__ == "__main__":
-    multiprocessing.freeze_support()
-
-    from mvt.ios.cli import cli
-    cli()
-```
-
-Esto hace que los procesos worker de Windows se manejen antes de que el CLI procese los argumentos.
-
-## Qué no tocar
-
-- No tocar `desktop/package.json` ni subir versión todavía.
-- No revertir los timeouts ni el barrido preventivo de `mvt-ios.exe`; siguen siendo útiles como red de seguridad.
-- No cambiar el workflow salvo que sea necesario: ya copia `mvt_ios_launcher.py` y empaqueta el binario.
-
-## Pasos después del cambio
-
-1. Aplicar el fix en `mvt_ios_launcher.py`.
-2. Ejecutar el workflow de GitHub **Build iOS Tools** para regenerar los assets de `ios-tools-v1`.
-3. En el PC donde ya se descargaron herramientas antiguas, borrar la carpeta cacheada:
+1. Disparar el workflow `Build iOS Tools` para reconstruir y republicar `ios-tools-win-x64.zip` en `ios-tools-v1`.
+2. En el PC del usuario, cerrar MvtInsight, matar procesos `mvt-ios.exe` si quedan y borrar:
 
 ```text
 C:\Users\TU_USUARIO\Downloads\mvt-insight\ios-tools
 ```
 
-Así MvtInsight volverá a descargar el `mvt-ios.exe` corregido.
+3. Abrir MvtInsight y lanzar de nuevo el análisis iOS para confirmar que desaparece el error de `public_suffix_list.dat`.
 
-## Resultado esperado
+## Notas
 
-- Desaparece `Error: No such option: --multiprocessing-fork`.
-- No se acumulan decenas de `mvt-ios.exe`.
-- El análisis iOS puede avanzar a `decrypt-backup` y `check-backup` correctamente.
+- La versión desktop puede seguir siendo `1.0.34`.
+- Solo sería necesario sacar `1.0.35` si queremos publicar un nuevo instalador desktop, no para este arreglo del binario descargable.

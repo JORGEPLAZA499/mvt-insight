@@ -89,3 +89,18 @@ export const getAnalysisById = createServerFn({ method: "POST" })
     if (!row || row.user_id !== context.userId) return { analysis: null };
     return { analysis: row };
   });
+
+export const deleteAnalysis = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { error } = await supabaseAdmin
+      .from("analyses")
+      .delete()
+      .eq("id", data.id)
+      .eq("user_id", context.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });

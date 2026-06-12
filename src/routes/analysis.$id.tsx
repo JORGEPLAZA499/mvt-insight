@@ -10,7 +10,7 @@ import { getAnalysisById } from "@/lib/analyses.functions";
 import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Trash2, Activity, User, Code2, ChevronDown, ChevronRight, Smartphone, Clock, BookOpen, AppWindow, KeyRound, Accessibility, FileLock2, Network } from "lucide-react";
 import { generatePdfReport } from "@/lib/pdf-report";
-import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, explainSeverity, buildVerdict, nextSteps, buildModuleHighlights, CROSS_CHECK_STEPS, CATEGORY_LABEL, CATEGORY_DESC, type Category, buildDeviceCard, buildTopApps, buildHumanTimeline, GLOSSARY, type SuspiciousApp, buildSystemIntegrity, buildAccessibilityList, buildConfigProfiles, buildTopNetwork, type AccessibilityRow, type ConfigProfileRow, type NetworkAppRow, type SystemIntegrityCard } from "@/lib/mvt-translate";
+import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, explainSeverity, buildVerdict, nextSteps, buildModuleHighlights, CROSS_CHECK_STEPS, CATEGORY_LABEL, CATEGORY_DESC, type Category, buildDeviceCard, buildTopApps, buildHumanTimeline, GLOSSARY, type SuspiciousApp, buildSystemIntegrity, buildAccessibilityList, buildConfigProfiles, buildTopNetwork, buildNetworkInterpretation, type AccessibilityRow, type ConfigProfileRow, type NetworkAppRow, type NetworkRowOrigin, type SystemIntegrityCard } from "@/lib/mvt-translate";
 import type { MvtDetection, MvtDeviceInfo, RiskLevel } from "@/lib/mvt-parser";
 
 function formatDeviceLine(d?: MvtDeviceInfo): string {
@@ -235,6 +235,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
   const accessibility = useMemo(() => buildAccessibilityList(r), [r]);
   const configProfiles = useMemo(() => buildConfigProfiles(r), [r]);
   const topNetwork = useMemo(() => buildTopNetwork(r), [r]);
+  const networkInterp = useMemo(() => buildNetworkInterpretation(r), [r]);
   const verdictBorder =
     verdict.level === "mercenary" ? "border-destructive/40 bg-destructive/5"
     : verdict.level === "stalkerware" ? "border-destructive/30 bg-destructive/5"
@@ -353,15 +354,42 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         <section>
           <SectionTitle num={sec()} title="Apps con más tráfico de red" />
           <p className="text-sm text-muted-foreground mb-4">
-            Procesos o apps que más datos han enviado o recibido (Wi-Fi + datos móviles). Un proceso desconocido con mucho tráfico en segundo plano puede estar enviando información del dispositivo a un servidor externo.
+            Procesos o apps con mayor volumen de datos enviados o recibidos (Wi-Fi + datos móviles). Un volumen elevado no equivale por sí solo a spyware: consulta la interpretación inferior antes de sacar conclusiones.
           </p>
           <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
             {topNetwork.map((app, i) => (
               <NetworkAppRowView key={app.packageName} app={app} index={i + 1} />
             ))}
           </div>
+
+          {/* Interpretación del tráfico elevado */}
+          <div className="mt-4 rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold">Interpretación del tráfico elevado</span>
+              <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                networkInterp.band === "critical" ? "bg-destructive/15 text-destructive border-destructive/30"
+                : networkInterp.band === "high" ? "bg-destructive/10 text-destructive border-destructive/20"
+                : networkInterp.band === "medium" ? "bg-warning/15 text-warning border-warning/30"
+                : networkInterp.band === "low" ? "bg-warning/10 text-warning border-warning/20"
+                : "bg-muted text-muted-foreground border-border"
+              }`}>
+                {networkInterp.bandLabel}
+              </span>
+              <span className="text-xs text-muted-foreground tabular-nums">Traffic Risk Score: {networkInterp.score}/100</span>
+            </div>
+            <p className="text-sm text-foreground/85">{networkInterp.summary}</p>
+            {networkInterp.rationale.length > 0 && (
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Factores considerados</div>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-foreground/85">
+                  {networkInterp.rationale.map((r, i) => <li key={i}>{r}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
         </section>
       )}
+
 
 
       {/* 04 · Cómo leer este informe */}
@@ -637,26 +665,41 @@ function ConfigProfileRowView({ profile }: { profile: ConfigProfileRow }) {
   );
 }
 
+function networkOriginBadgeClass(origin: NetworkRowOrigin): string {
+  switch (origin) {
+    case "system": return "bg-muted text-muted-foreground border-border";
+    case "system_accumulator": return "bg-muted text-muted-foreground border-border";
+    case "known": return "bg-primary/10 text-primary border-primary/20";
+    case "unattributed": return "bg-warning/15 text-warning border-warning/30";
+  }
+}
+
 function NetworkAppRowView({ app, index }: { app: NetworkAppRow; index: number }) {
+  const iconColor =
+    app.severity === "high" || app.severity === "critical" ? "text-destructive"
+    : app.severity === "medium" ? "text-warning"
+    : "text-muted-foreground";
   return (
     <div className="p-4 flex items-start gap-3">
       <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0 tabular-nums text-xs font-semibold">
         {index}
       </div>
-      <Network className={`h-4 w-4 shrink-0 mt-2 ${app.origin === "unknown" ? "text-warning" : "text-muted-foreground"}`} />
+      <Network className={`h-4 w-4 shrink-0 mt-2 ${iconColor}`} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium text-sm">{app.displayName}</span>
-          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${originBadgeClass(app.origin)}`}>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${networkOriginBadgeClass(app.origin)}`}>
             {app.originLabel}
           </span>
         </div>
         <div className="text-xs text-muted-foreground font-mono mt-1 break-all">{app.packageName}</div>
+        {app.note && <div className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{app.note}</div>}
       </div>
       <div className="text-sm font-semibold tabular-nums shrink-0">{app.totalLabel}</div>
     </div>
   );
 }
+
 
 
 function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {

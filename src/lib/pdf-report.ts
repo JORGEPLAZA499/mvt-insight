@@ -29,6 +29,7 @@ import {
   buildAccessibilityList,
   buildConfigProfiles,
   buildTopNetwork,
+  buildNetworkInterpretation,
   GLOSSARY,
   type Category,
 } from "./mvt-translate";
@@ -494,36 +495,63 @@ export function generatePdfReport(a: Analysis) {
 
   // Apps con más tráfico de red (iOS)
   const netTop = r ? buildTopNetwork(r) : [];
-  if (netTop.length > 0) {
+  if (netTop.length > 0 && r) {
     sectionTitle(NEXT(), "Apps con más tráfico de red");
-    paragraph("Procesos o apps que más datos han enviado o recibido (Wi-Fi + datos móviles). Un proceso desconocido con mucho tráfico en segundo plano puede estar enviando información del dispositivo.", { size: 9, color: MUTED });
+    paragraph("Procesos o apps con mayor volumen de datos enviados/recibidos (Wi-Fi + datos móviles). Un volumen elevado no equivale por sí solo a spyware: consulta la interpretación al final de esta sección.", { size: 9, color: MUTED });
     ctx.y += 4;
     netTop.forEach((app, i) => {
-      const boxH = 34;
+      const hasNote = !!app.note;
+      const boxH = hasNote ? 52 : 34;
       ensure(boxH + 4);
       setFill(SOFT_BG);
       doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
-      if (app.origin === "unknown") {
+      const isAlert = app.severity === "high" || app.severity === "critical";
+      if (isAlert) {
         setFill(SEV_COLOR.high);
         doc.rect(M.left, ctx.y, 3, boxH, "F");
       }
       setText(INK);
       doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-
       doc.text(`${i + 1}. ${app.displayName}`, M.left + 10, ctx.y + 14);
       setText(MUTED);
       doc.setFont("helvetica", "normal"); doc.setFontSize(9);
       doc.text(app.packageName, M.left + 10, ctx.y + 26);
       doc.setFont("helvetica", "italic");
-      setText(app.origin === "unknown" ? SEV_COLOR.high : MUTED);
-      doc.text(app.originLabel, M.left + 10, ctx.y + 34 - 4 + 4);
+      setText(isAlert ? SEV_COLOR.high : MUTED);
+      doc.text(app.originLabel, M.left + 10, ctx.y + 34);
+      if (hasNote) {
+        doc.setFont("helvetica", "normal");
+        setText(MUTED);
+        const noteLines = doc.splitTextToSize(app.note!, CW - 90);
+        doc.text(noteLines.slice(0, 1), M.left + 10, ctx.y + 46);
+      }
       setText(NAVY);
       doc.setFont("helvetica", "bold"); doc.setFontSize(11);
       doc.text(app.totalLabel, M.left + CW - 10, ctx.y + 20, { align: "right" });
       ctx.y += boxH + 4;
     });
+    ctx.y += 2;
+
+    // Interpretación del tráfico elevado
+    const interp = buildNetworkInterpretation(r);
+    ensure(40);
+    setFill(SOFT_BG);
+    const headerH = 18;
+    doc.roundedRect(M.left, ctx.y, CW, headerH, 4, 4, "F");
+    setText(NAVY);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    doc.text(`Interpretación del tráfico elevado — ${interp.bandLabel} (score ${interp.score}/100)`, M.left + 8, ctx.y + 12);
+    ctx.y += headerH + 4;
+    paragraph(interp.summary, { size: 9 });
+    if (interp.rationale.length > 0) {
+      ctx.y += 2;
+      paragraph("Factores considerados:", { size: 9, color: NAVY_SOFT });
+      interp.rationale.forEach((f) => paragraph(`• ${f}`, { size: 9, color: MUTED }));
+    }
     ctx.y += 4;
   }
+
+
 
 
   // 04 · Cómo leer este informe

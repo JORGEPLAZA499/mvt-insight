@@ -112,7 +112,9 @@ export function App() {
   // Cronómetro de fase: re-renderiza cada segundo mientras estamos analizando,
   // para que el usuario vea que el proceso sigue vivo aunque mvt-ios tarde.
   const [phaseStartedAt, setPhaseStartedAt] = useState<number | null>(null);
+  const [lastLogAt, setLastLogAt] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState(0);
+
   useEffect(() => {
     if (screen !== "running" || !phaseStartedAt) return;
     const id = setInterval(() => setNowTick((n) => n + 1), 1000);

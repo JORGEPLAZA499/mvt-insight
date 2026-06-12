@@ -386,7 +386,7 @@
       },
       "step5Ios": {
         "title": "Paso 5: Conecta y ejecuta el análisis",
-        "body": "Con el iPhone desbloqueado y conectado por USB, en la app de escritorio pulsa «iPhone». La app realiza el backup y lo procesa localmente."
+        "body": "Antes de empezar, configura la pantalla para que no se bloquee (Ajustes → Pantalla y brillo → Bloqueo automático → Nunca). Conecta el iPhone por USB y, en la app de escritorio, pulsa «iPhone». Mantente atento al teléfono: pedirá la contraseña de desbloqueo varias veces durante el proceso y, si no la introduces, el análisis no podrá avanzar."
       },
       "step6": {
         "title": "Paso 6: Recibe el informe aquí",

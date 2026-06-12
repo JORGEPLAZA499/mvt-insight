@@ -89,18 +89,6 @@ function Dashboard() {
       <PurchaseCard />
       <PaymentSuccessModal open={successOpen} onClose={() => setSuccessOpen(false)} />
       <div className="p-6 md:p-10 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-8 animate-fade-in">
-          <div>
-            <div className="text-xs uppercase tracking-[0.25em] text-primary/80 mb-2">
-              {t("dashboard.eyebrow")}
-            </div>
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
-              {t("dashboard.title")}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">{t("dashboard.subtitle")}</p>
-          </div>
-        </div>
 
         {/* Quick action shortcuts */}
         <section className="animate-fade-in">

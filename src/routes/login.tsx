@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { CheckCircle2, Copy, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,6 @@ const CODE_RE = /^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}$/;
 
 function formatCodeInput(raw: string): string {
   const trimmed = raw.trim();
-  // Permitir códigos alfabéticos especiales (ej. "Admin") sin máscara
   if (/^[A-Za-z]+$/.test(trimmed)) {
     return trimmed.toUpperCase().slice(0, 20);
   }
@@ -48,20 +47,20 @@ function formatCodeInput(raw: string): string {
   return parts.join("-");
 }
 
-function validatePassword(pwd: string): string | null {
-  if (pwd.length < 8) return "Mínimo 8 caracteres.";
-  if (!/[a-z]/.test(pwd)) return "Debe incluir una minúscula.";
-  if (!/[A-Z]/.test(pwd)) return "Debe incluir una mayúscula.";
-  if (!/[0-9]/.test(pwd)) return "Debe incluir un número.";
-  return null;
-}
-
 function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const register = useServerFn(registerAccount);
   const resolveEmail = useServerFn(resolveLoginEmail);
   const touch = useServerFn(touchLastLogin);
+
+  const validatePassword = (pwd: string): string | null => {
+    if (pwd.length < 8) return t("loginExt.errors.pwdMin");
+    if (!/[a-z]/.test(pwd)) return t("loginExt.errors.pwdLower");
+    if (!/[A-Z]/.test(pwd)) return t("loginExt.errors.pwdUpper");
+    if (!/[0-9]/.test(pwd)) return t("loginExt.errors.pwdNumber");
+    return null;
+  };
 
   const search = Route.useSearch();
   const [mode, setMode] = useState<"login" | "register">(search.mode ?? "login");
@@ -72,7 +71,6 @@ function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Buffers ofuscados en memoria — espejo del estado para poder wipear al desmontar/enviar
   const pwdBuf = useRef(createSecureBuffer());
   const confirmBuf = useRef(createSecureBuffer());
 
@@ -93,7 +91,6 @@ function Login() {
     };
   }, []);
 
-  // Estado post-registro
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
 
@@ -104,11 +101,11 @@ function Login() {
     const isWord = /^[A-Za-z]{2,20}$/.test(trimmed);
     const normalized = isWord ? trimmed.toUpperCase() : trimmed.toUpperCase();
     if (!isWord && !CODE_RE.test(normalized)) {
-      setError("El código debe tener el formato XXX-XXX-XXX.");
+      setError(t("loginExt.errors.format"));
       return;
     }
     if (!password) {
-      setError("Introduce tu contraseña.");
+      setError(t("loginExt.errors.enterPwd"));
       return;
     }
     setBusy(true);
@@ -119,7 +116,7 @@ function Login() {
         password,
       });
       if (signErr || !data.user) {
-        throw new Error("Código o contraseña incorrectos.");
+        throw new Error(t("loginExt.errors.bad"));
       }
       await touch({ data: { userId: data.user.id } });
       pwdBuf.current.clear();
@@ -131,7 +128,7 @@ function Login() {
         .maybeSingle();
       navigate({ to: acc?.user_code === "Admin" ? "/admin" : "/dashboard" });
     } catch (err: any) {
-      setError(err?.message || "No se pudo iniciar sesión.");
+      setError(err?.message || t("loginExt.errors.generic"));
     } finally {
       setBusy(false);
     }
@@ -146,31 +143,28 @@ function Login() {
       return;
     }
     if (scorePassword(password).level === "low") {
-      setError("La contraseña es demasiado débil. Mejora la seguridad antes de continuar.");
+      setError(t("loginExt.errors.weak"));
       return;
     }
     if (password !== confirm) {
-      setError("Las contraseñas no coinciden.");
+      setError(t("loginExt.mismatch"));
       return;
     }
     setBusy(true);
     try {
       const { code: newCode, email } = await register({ data: { password } });
-      // Inicia sesión automáticamente para que el usuario quede autenticado
       await supabase.auth.signInWithPassword({ email, password });
-      // Wipe de buffers tras enviar
       pwdBuf.current.clear();
       confirmBuf.current.clear();
       setPassword("");
       setConfirm("");
       setIssuedCode(newCode);
     } catch (err: any) {
-      setError(err?.message || "No se pudo crear la cuenta.");
+      setError(err?.message || t("loginExt.errors.signupFail"));
     } finally {
       setBusy(false);
     }
   };
-
 
   const copyCode = async () => {
     if (!issuedCode) return;
@@ -181,7 +175,6 @@ function Login() {
     }
   };
 
-  // Pantalla post-registro: muestra el código una sola vez
   if (issuedCode) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
@@ -189,17 +182,16 @@ function Login() {
           <div className="rounded-2xl border border-border bg-card p-8 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <CheckCircle2 className="h-7 w-7 text-success" />
-              <h1 className="text-2xl font-semibold tracking-tight">Cuenta activada</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">{t("loginExt.activated")}</h1>
             </div>
             <p className="text-sm text-muted-foreground">
-              Guarda en un lugar seguro tu <b>código de usuario</b>. Es la única forma de
-              acceder al panel de control.
+              <Trans i18nKey="loginExt.savePwd" components={{ b: <b /> }} />
             </p>
 
             <div className="mt-6 rounded-xl bg-gradient-primary p-px shadow-glow">
               <div className="rounded-[11px] bg-background px-6 py-5 text-center">
                 <div className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground mb-1">
-                  Tu código
+                  {t("loginExt.yourCode")}
                 </div>
                 <div className="font-mono text-3xl sm:text-4xl tracking-[0.2em] font-semibold text-primary select-all">
                   {issuedCode}
@@ -212,18 +204,15 @@ function Login() {
               className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent transition"
             >
               <Copy className="h-4 w-4" />
-              Copiar código
+              {t("loginExt.copyCode")}
             </button>
 
             <div className="mt-6 flex gap-3 items-start rounded-lg border border-destructive/30 bg-destructive/5 p-4">
               <ShieldAlert className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
               <p className="text-xs text-destructive leading-relaxed">
-                Si pierdes este código, <b>nadie —ni siquiera la organización—</b> podrá
-                acceder a tu cuenta ni recuperarla. Esto garantiza tu privacidad.
+                <Trans i18nKey="loginExt.lossWarn" components={{ b: <b /> }} />
                 <br />
-                <span className="text-muted-foreground">
-                  Si no inicias sesión durante 10 días, la cuenta se elimina automáticamente.
-                </span>
+                <span className="text-muted-foreground">{t("loginExt.autoDelete")}</span>
               </p>
             </div>
 
@@ -234,7 +223,7 @@ function Login() {
                 checked={acknowledged}
                 onChange={(e) => setAcknowledged(e.target.checked)}
               />
-              <span>He guardado mi código en un lugar seguro.</span>
+              <span>{t("loginExt.ack")}</span>
             </label>
 
             <Button
@@ -243,7 +232,7 @@ function Login() {
               onClick={() => navigate({ to: "/dashboard" })}
               className="mt-5 w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
             >
-              Continuar al panel
+              {t("loginExt.continueToPanel")}
             </Button>
           </div>
         </div>
@@ -272,18 +261,16 @@ function Login() {
         </div>
         <div className="w-full max-w-sm">
           <h1 className="text-2xl font-semibold tracking-tight">
-            {mode === "login" ? "Acceder con tu código" : "Crear cuenta anónima"}
+            {mode === "login" ? t("loginExt.loginTitle") : t("loginExt.registerTitle")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {mode === "login"
-              ? "Introduce tu código de usuario y contraseña."
-              : "Sin email. El sistema generará tu código de usuario único."}
+            {mode === "login" ? t("loginExt.loginSubtitle") : t("loginExt.registerSubtitle")}
           </p>
 
           {mode === "login" ? (
             <form onSubmit={submitLogin} className="mt-8 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="code">Código de usuario</Label>
+                <Label htmlFor="code">{t("loginExt.codeLabel")}</Label>
                 <Input
                   id="code"
                   required
@@ -296,7 +283,7 @@ function Login() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pwd">Contraseña</Label>
+                <Label htmlFor="pwd">{t("loginExt.pwdLabel")}</Label>
                 <PasswordField
                   id="pwd"
                   required
@@ -312,7 +299,7 @@ function Login() {
                 disabled={busy}
                 className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
               >
-                {busy ? "Accediendo…" : "Entrar"}
+                {busy ? t("loginExt.signingIn") : t("loginExt.signIn")}
               </Button>
             </form>
           ) : (
@@ -320,14 +307,14 @@ function Login() {
               {registerStep === 1 ? (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="pwd">Contraseña</Label>
+                    <Label htmlFor="pwd">{t("loginExt.pwdLabel")}</Label>
                     <PasswordField
                       id="pwd"
                       required
                       autoComplete="new-password"
                       value={password}
                       onChange={(v) => { setPassword(v); syncBuffer(pwdBuf, v); }}
-                      placeholder="Mín 8 · May + min + número"
+                      placeholder={t("loginExt.pwdHint")}
                     />
                     <PasswordStrengthMeter password={password} />
                   </div>
@@ -342,7 +329,7 @@ function Login() {
                         return;
                       }
                       if (scorePassword(password).level === "low") {
-                        setError("La contraseña es demasiado débil. Mejora la seguridad antes de continuar.");
+                        setError(t("loginExt.errors.weak"));
                         return;
                       }
                       setError(null);
@@ -350,13 +337,13 @@ function Login() {
                     }}
                     className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
                   >
-                    Continuar
+                    {t("loginExt.continue")}
                   </Button>
                 </>
               ) : (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="pwd2">Repite la contraseña</Label>
+                    <Label htmlFor="pwd2">{t("loginExt.repeatPwd")}</Label>
                     <PasswordField
                       id="pwd2"
                       required
@@ -366,13 +353,11 @@ function Login() {
                       placeholder="••••••••"
                     />
                     {confirm && confirm !== password && (
-                      <p className="text-[11px] text-destructive">Las contraseñas no coinciden.</p>
+                      <p className="text-[11px] text-destructive">{t("loginExt.mismatch")}</p>
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Al crear la cuenta el sistema generará un código único{" "}
-                    <span className="font-mono">XXX-XXX-XXX</span>. Será tu único identificador:
-                    guárdalo en un lugar seguro porque <b>no se puede recuperar</b>.
+                    <Trans i18nKey="loginExt.codeIntro" components={[<span className="font-mono" />, <b />]} />
                   </p>
                   {error && <p className="text-xs text-destructive">{error}</p>}
                   <Button
@@ -380,14 +365,14 @@ function Login() {
                     disabled={busy || !password || password !== confirm || scorePassword(password).level === "low"}
                     className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
                   >
-                    {busy ? "Creando…" : "Crear cuenta"}
+                    {busy ? t("loginExt.creating") : t("loginExt.createAccount")}
                   </Button>
                   <button
                     type="button"
                     onClick={() => { setRegisterStep(1); setError(null); setConfirm(""); confirmBuf.current.clear(); }}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    ← Volver a contraseña
+                    {t("loginExt.backToPwd")}
                   </button>
                 </>
               )}
@@ -404,18 +389,14 @@ function Login() {
             }}
             className="mt-6 text-xs text-muted-foreground hover:text-foreground"
           >
-            {mode === "login"
-              ? "¿No tienes cuenta? Crea una"
-              : "¿Ya tienes código? Inicia sesión"}
+            {mode === "login" ? t("loginExt.toggleRegister") : t("loginExt.toggleLogin")}
           </button>
 
           <p className="mt-6 text-[11px] text-muted-foreground leading-relaxed">
-            Privacidad por diseño: no pedimos email ni datos personales. Si no inicias
-            sesión durante <b>10 días</b>, la cuenta se elimina automáticamente.
+            <Trans i18nKey="loginExt.privacyNote" components={{ b: <b /> }} />
           </p>
           <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
-            Teclado virtual con orden aleatorio que se reordena tras cada tecla y
-            contraseña ofuscada en memoria. Úsalo desde un equipo de confianza.
+            {t("loginExt.virtualNote")}
           </p>
         </div>
       </div>

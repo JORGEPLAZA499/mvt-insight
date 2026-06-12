@@ -202,7 +202,7 @@
     "shortcuts": {
       "eyebrow": "Accesos directos",
       "title": "¿Qué quieres hacer?",
-      "newAnalysis": { "title": "Nuevo análisis", "desc": "Sube artefactos y lanza un análisis forense.", "cta": "Iniciar" },
+      "newAnalysis": { "title": "Nuevo análisis", "desc": "La app de escritorio sube los artefactos y ejecuta el análisis forense automáticamente.", "cta": "Iniciar" },
       "reports": { "title": "Informes", "desc": "Consulta los informes PDF de tus análisis.", "cta": "Ver informes" },
       "history": { "title": "Historial", "desc": "Revisa todos los análisis previos.", "cta": "Abrir historial" },
       "desktop": { "title": "App de escritorio", "desc": "Vincula la app y ejecuta análisis locales.", "cta": "Configurar" },

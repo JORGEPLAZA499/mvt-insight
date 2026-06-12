@@ -202,7 +202,7 @@
     "shortcuts": {
       "eyebrow": "Quick actions",
       "title": "What do you want to do?",
-      "newAnalysis": { "title": "New analysis", "desc": "Upload artifacts and launch a forensic scan.", "cta": "Start" },
+      "newAnalysis": { "title": "New analysis", "desc": "The desktop app uploads artifacts and runs the forensic scan automatically.", "cta": "Start" },
       "reports": { "title": "Reports", "desc": "Browse PDF reports of your analyses.", "cta": "View reports" },
       "history": { "title": "History", "desc": "Review all previous analyses.", "cta": "Open history" },
       "desktop": { "title": "Desktop app", "desc": "Pair the desktop app and run local scans.", "cta": "Set up" },

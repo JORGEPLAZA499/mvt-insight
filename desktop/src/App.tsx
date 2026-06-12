@@ -626,7 +626,7 @@ export function App() {
         {TopBarWithLogo}
         <div className="header">
           <h1>{device === "android" ? tr("running.title.android", "Analizando Android…") : tr("running.title.ios", "Analizando iPhone…")}</h1>
-          <p>{tr("running.subtitle", "No cierres esta ventana. Tarda entre 5 y 15 minutos.")}</p>
+          <p>{device === "android" ? tr("running.subtitle.android", "No cierres esta ventana. Tarda entre 5 y 15 minutos.") : tr("running.subtitle.ios", "No cierres esta ventana. Puede tardar entre 15 y 40 minutos según el tamaño del backup.")}</p>
         </div>
 
         <div className="card">

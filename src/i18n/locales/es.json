@@ -647,12 +647,20 @@
   },
   "a11y": {
     "copyCommand": "Copiar comando",
+    "copied": "¡Copiado!",
+    "copy": "Copiar",
     "virtualKeyboard": "Teclado virtual",
     "key": "Tecla {{label}}",
     "reorderKeys": "Reordenar teclas",
+    "reorder": "Reordenar",
     "closeKeyboard": "Cerrar teclado",
     "deleteLast": "Borrar último carácter",
-    "close": "Cerrar"
+    "delete": "Borrar",
+    "close": "Cerrar",
+    "normalOrder": "Orden normal",
+    "random": "Aleatorio",
+    "shift": "Mayús",
+    "space": "Espacio"
   },
   "codeBlock": {
     "copy": "Copiar",

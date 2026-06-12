@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -9,6 +10,7 @@ import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses
 import { Button } from "@/components/ui/button";
 import { Download, FileText, Trash2 } from "lucide-react";
 import { generatePdfReport } from "@/lib/pdf-report";
+import i18n from "@/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,11 +24,15 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/reports")({
-  head: () => ({ meta: [{ title: "Informes — Spyware Forensic Analyzer" }] }),
+  head: () => {
+    const t = i18n.getFixedT(null, "translation");
+    return { meta: [{ title: t("reports.metaTitle") }] };
+  },
   component: Reports,
 });
 
 function Reports() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<Analysis[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fetchAnalyses = useServerFn(listMyAnalyses);
@@ -49,9 +55,9 @@ function Reports() {
     try {
       await removeAnalysis({ data: { id } });
       setItems((prev) => prev.filter((x) => x.id !== id));
-      toast.success("Informe eliminado");
+      toast.success(t("reports.toastDeleted"));
     } catch (e) {
-      toast.error("No se pudo eliminar el informe", {
+      toast.error(t("reports.toastError"), {
         description: e instanceof Error ? e.message : undefined,
       });
     } finally {
@@ -62,12 +68,12 @@ function Reports() {
   return (
     <AppShell>
       <div className="p-6 md:p-10 max-w-7xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Informes</h1>
-        <p className="text-sm text-muted-foreground mt-1">Descarga el informe PDF de cada análisis completado.</p>
+        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">{t("reports.title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t("reports.subtitle")}</p>
 
         {items.length === 0 ? (
           <div className="mt-10 rounded-xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
-            Aún no hay informes disponibles.
+            {t("reports.empty")}
           </div>
         ) : (
           <div className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -83,12 +89,12 @@ function Reports() {
                   </div>
                 </div>
                 <div className="mt-4 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{a.result?.totalDetections ?? 0} detecciones</span>
+                  <span className="text-muted-foreground">{t("reports.detections", { count: a.result?.totalDetections ?? 0 })}</span>
                   <span className={`font-semibold ${riskColor(a.result?.risk)}`}>{riskLabel(a.result?.risk)}</span>
                 </div>
                 <div className="mt-4 flex gap-2">
                   <Button asChild size="sm" variant="outline" className="flex-1">
-                    <Link to="/analysis/$id" params={{ id: a.id }}>Ver</Link>
+                    <Link to="/analysis/$id" params={{ id: a.id }}>{t("reports.view")}</Link>
                   </Button>
                   <Button size="sm" className="flex-1 bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(a)}>
                     <Download className="h-4 w-4 mr-1" /> PDF
@@ -98,7 +104,7 @@ function Reports() {
                       <Button
                         size="sm"
                         variant="outline"
-                        aria-label="Eliminar informe"
+                        aria-label={t("reports.deleteAria")}
                         disabled={deletingId === a.id}
                         className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
                       >
@@ -107,18 +113,18 @@ function Reports() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>¿Eliminar este informe?</AlertDialogTitle>
+                        <AlertDialogTitle>{t("reports.confirmTitle")}</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Se eliminará permanentemente el análisis de <span className="font-medium">{a.fileName}</span>. Esta acción no se puede deshacer.
+                          <Trans i18nKey="reports.confirmBody" values={{ name: a.fileName }} components={[<span className="font-medium" />]} />
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel>{t("reports.cancel")}</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDelete(a.id)}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          Eliminar
+                          {t("reports.delete")}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

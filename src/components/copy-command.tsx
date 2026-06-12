@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Copy, Terminal } from "lucide-react";
 
 interface CopyCommandProps {
@@ -7,6 +8,7 @@ interface CopyCommandProps {
 }
 
 export function CopyCommand({ command, label }: CopyCommandProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -43,15 +45,15 @@ export function CopyCommand({ command, label }: CopyCommandProps) {
               ? "bg-success/15 text-success"
               : "bg-primary text-primary-foreground hover:bg-primary/90"
           }`}
-          aria-label="Copiar comando"
+          aria-label={t("a11y.copyCommand")}
         >
           {copied ? (
             <>
-              <Check className="h-4 w-4" /> ¡Copiado!
+              <Check className="h-4 w-4" /> {t("a11y.copied")}
             </>
           ) : (
             <>
-              <Copy className="h-4 w-4" /> Copiar
+              <Copy className="h-4 w-4" /> {t("a11y.copy")}
             </>
           )}
         </button>

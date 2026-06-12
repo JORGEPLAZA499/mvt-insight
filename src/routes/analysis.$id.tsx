@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,10 @@ function formatDeviceLine(d?: MvtDeviceInfo): string {
 }
 
 export const Route = createFileRoute("/analysis/$id")({
-  head: () => ({ meta: [{ title: "Resultado de análisis — Spyware Forensic Analyzer" }] }),
+  head: () => {
+    const t = i18n.getFixedT(null, "translation");
+    return { meta: [{ title: t("analysisPage.metaTitle") }] };
+  },
   component: AnalysisPage,
 });
 
@@ -51,7 +55,7 @@ function AnalysisPage() {
   if (loading) {
     return (
       <AppShell>
-        <div className="p-10 text-center text-muted-foreground">Cargando análisis…</div>
+        <div className="p-10 text-center text-muted-foreground">{t("analysisPage.loading")}</div>
       </AppShell>
     );
   }
@@ -59,7 +63,7 @@ function AnalysisPage() {
   if (!analysis) {
     return (
       <AppShell>
-        <div className="p-10 text-center text-muted-foreground">Análisis no encontrado.</div>
+        <div className="p-10 text-center text-muted-foreground">{t("analysisPage.notFound")}</div>
       </AppShell>
     );
   }
@@ -71,8 +75,8 @@ function AnalysisPage() {
           <div className="mx-auto h-14 w-14 rounded-full bg-gradient-primary grid place-items-center shadow-glow animate-pulse">
             <Activity className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-semibold mt-4">Procesando archivos MVT…</h1>
-          <p className="text-sm text-muted-foreground mt-2">Esto ocurre en tu navegador y suele tardar unos segundos.</p>
+          <h1 className="text-xl font-semibold mt-4">{t("analysisPage.processingTitle")}</h1>
+          <p className="text-sm text-muted-foreground mt-2">{t("analysisPage.processingBody")}</p>
         </div>
       </AppShell>
     );
@@ -82,9 +86,9 @@ function AnalysisPage() {
     return (
       <AppShell>
         <div className="p-10 max-w-2xl mx-auto">
-          <h1 className="text-xl font-semibold">Error procesando archivos</h1>
-          <p className="text-sm text-muted-foreground mt-2">{analysis.error || "Los archivos no parecen resultados válidos de MVT."}</p>
-          <Link to="/upload" className="text-primary hover:underline text-sm mt-4 inline-block">← Subir otros archivos</Link>
+          <h1 className="text-xl font-semibold">{t("analysisPage.errorTitle")}</h1>
+          <p className="text-sm text-muted-foreground mt-2">{analysis.error || t("analysisPage.errorBody")}</p>
+          <Link to="/upload" className="text-primary hover:underline text-sm mt-4 inline-block">{t("analysisPage.uploadOther")}</Link>
         </div>
       </AppShell>
     );
@@ -97,7 +101,7 @@ function AnalysisPage() {
       <div className="p-6 md:p-10 max-w-6xl mx-auto">
         <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
           <div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider">Resultado de análisis</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">{t("analysisPage.eyebrow")}</div>
             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mt-1 truncate max-w-2xl">{analysis.fileName}</h1>
             <p className="text-sm text-muted-foreground mt-1">{platformLabel(r.platform)} · {new Date(analysis.uploadedAt).toLocaleString()}</p>
             {formatDeviceLine(r.deviceInfo) && (
@@ -106,7 +110,7 @@ function AnalysisPage() {
           </div>
           <div className="flex gap-2">
             <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(analysis)}>
-              <Download className="h-4 w-4 mr-2" /> Descargar PDF
+              <Download className="h-4 w-4 mr-2" /> {t("analysisPage.downloadPdf")}
             </Button>
           </div>
         </div>
@@ -119,11 +123,11 @@ function AnalysisPage() {
           <div className="flex items-center gap-4">
             {r.risk === "low" ? <ShieldCheck className="h-10 w-10 text-success" /> : <ShieldAlert className="h-10 w-10 text-destructive" />}
             <div className="flex-1">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">Nivel de riesgo estimado</div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">{t("analysisPage.riskLevel")}</div>
               <div className={`text-2xl font-semibold ${riskColor(r.risk)}`}>{riskLabel(r.risk)}</div>
               <p className="text-sm text-muted-foreground mt-1">
-                MVT generó <strong className="text-foreground">{r.totalDetections}</strong> detección(es) sobre <strong className="text-foreground">{r.modules.length}</strong> módulo(s) analizado(s).
-                {r.totalDetections === 0 && " No se encontraron coincidencias con indicadores conocidos."}
+                <Trans i18nKey="analysisPage.summarySentence" values={{ detections: r.totalDetections, modules: r.modules.length }} components={[<strong className="text-foreground" />, <strong className="text-foreground" />, <strong className="text-foreground" />, <strong className="text-foreground" />]} />
+                {r.totalDetections === 0 && t("analysisPage.noMatches")}
               </p>
             </div>
           </div>
@@ -142,12 +146,12 @@ function AnalysisPage() {
 
           {/* ---------- Pestaña modo desarrollador ---------- */}
           <TabsContent value="dev" className="mt-6">
-            <h2 className="text-lg font-semibold mb-4">Módulos MVT analizados</h2>
+            <h2 className="text-lg font-semibold mb-4">{t("analysisPage.devModules")}</h2>
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
-                <div className="col-span-6">Módulo</div>
-                <div className="col-span-3 text-right">Entradas</div>
-                <div className="col-span-3 text-right">Detecciones</div>
+                <div className="col-span-6">{t("analysisPage.module")}</div>
+                <div className="col-span-3 text-right">{t("analysisPage.entries")}</div>
+                <div className="col-span-3 text-right">{t("analysisPage.detectionsCol")}</div>
               </div>
               {r.modules.map((m) => (
                 <div key={m.key} className="grid grid-cols-12 px-4 py-3 border-b border-border last:border-0 text-sm items-center">
@@ -162,14 +166,14 @@ function AnalysisPage() {
                 </div>
               ))}
               {r.modules.length === 0 && (
-                <div className="p-6 text-sm text-muted-foreground text-center">No se reconocieron módulos MVT en los archivos subidos.</div>
+                <div className="p-6 text-sm text-muted-foreground text-center">{t("analysisPage.noModules")}</div>
               )}
             </div>
 
-            <h2 className="text-lg font-semibold mt-10 mb-4">Detecciones crudas</h2>
+            <h2 className="text-lg font-semibold mt-10 mb-4">{t("analysisPage.rawDetections")}</h2>
             {r.detections.length === 0 ? (
               <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground text-center">
-                Sin detecciones registradas.
+                {t("analysisPage.noDetections")}
               </div>
             ) : (
               <DevDetections detections={r.detections} />
@@ -177,7 +181,7 @@ function AnalysisPage() {
 
             {r.timeline.length > 0 && (
               <>
-                <h2 className="text-lg font-semibold mt-10 mb-4">Línea de tiempo ({r.timeline.length} eventos)</h2>
+                <h2 className="text-lg font-semibold mt-10 mb-4">{t("analysisPage.timeline", { count: r.timeline.length })}</h2>
                 <div className="rounded-xl border border-border bg-card p-6">
                   <ol className="relative border-l border-border ml-3 space-y-4">
                     {r.timeline.slice(0, 30).map((e, i) => (
@@ -197,7 +201,7 @@ function AnalysisPage() {
 
 
         <div className="mt-8 text-xs text-muted-foreground">
-          <Link to="/dashboard" className="hover:text-foreground">← Volver al dashboard</Link>
+          <Link to="/dashboard" className="hover:text-foreground">{t("analysisPage.backDashboard")}</Link>
         </div>
       </div>
     </AppShell>
@@ -225,6 +229,7 @@ const SEV_BADGE: Record<string, string> = {
 };
 
 function UserReport({ analysis }: { analysis: Analysis }) {
+  const { t } = useTranslation();
   const r = analysis.result!;
   const verdict = useMemo(() => buildVerdict(r), [r]);
   const recs = useMemo(() => nextSteps(r), [r]);
@@ -253,9 +258,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
     <div className="space-y-10">
       {/* Veredicto */}
       <section>
-        <SectionTitle num={sec()} title="Veredicto" />
+        <SectionTitle num={sec()} title={t("analysisPage.verdict")} />
         <div className={`rounded-xl border p-6 ${verdictBorder}`}>
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Veredicto</div>
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("analysisPage.verdict")}</div>
           <div className={`text-xl font-semibold mt-1 ${verdictTitle}`}>{verdict.headline}</div>
           <p className="text-sm text-foreground/80 mt-2">{verdict.detail}</p>
         </div>
@@ -263,29 +268,24 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* Resumen ejecutivo */}
       <section>
-        <SectionTitle num={sec()} title="Resumen ejecutivo" />
+        <SectionTitle num={sec()} title={t("analysisPage.execSummary")} />
         <p className="text-sm text-foreground/90">
-          Se ha analizado el archivo <strong>"{analysis.fileName}"</strong>. La plataforma detectada es{" "}
-          <strong>{platformLabel(r.platform)}</strong>. Se procesaron{" "}
-          <strong>{r.modules.length}</strong> módulos MVT con un total de{" "}
-          <strong>{r.totalEntries.toLocaleString()}</strong> entradas y se identificaron{" "}
-          <strong>{r.totalDetections}</strong> indicios técnicos. El nivel de riesgo estimado es{" "}
-          <strong className={riskColor(r.risk)}>{riskLabel(r.risk)}</strong>.
+          {t("analysisPage.execSummary")}: <strong>"{analysis.fileName}"</strong> · <strong>{platformLabel(r.platform)}</strong> · <strong>{r.modules.length}</strong> {t("analysisPage.modulesWithIndicia").toLowerCase()} · <strong>{r.totalEntries.toLocaleString()}</strong> {t("analysisPage.entries").toLowerCase()} · <strong>{r.totalDetections}</strong> {t("analysisPage.indicia").toLowerCase()} · <strong className={riskColor(r.risk)}>{riskLabel(r.risk)}</strong>
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
-          <SmallStat icon={AlertOctagon} label="Indicios" value={r.totalDetections} />
-          <SmallStat icon={Layers} label="Módulos con indicios" value={r.modules.filter((m) => m.detected > 0).length} />
-          <SmallStat icon={Database} label="Entradas analizadas" value={r.totalEntries.toLocaleString()} />
-          <SmallStat icon={ShieldAlert} label="Riesgo" value={riskLabel(r.risk)} />
+          <SmallStat icon={AlertOctagon} label={t("analysisPage.indicia")} value={r.totalDetections} />
+          <SmallStat icon={Layers} label={t("analysisPage.modulesWithIndicia")} value={r.modules.filter((m) => m.detected > 0).length} />
+          <SmallStat icon={Database} label={t("analysisPage.entriesAnalyzed")} value={r.totalEntries.toLocaleString()} />
+          <SmallStat icon={ShieldAlert} label={t("analysisPage.risk")} value={riskLabel(r.risk)} />
         </div>
       </section>
 
       {/* Ficha del dispositivo */}
       {deviceCard.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Ficha del dispositivo" />
+          <SectionTitle num={sec()} title={t("analysisPage.deviceCard")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Información del terminal extraída automáticamente del análisis. Por privacidad, números de serie e identificadores se muestran parcialmente.
+            {t("analysisPage.deviceCardDesc")}
           </p>
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
@@ -311,9 +311,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* Estado de seguridad del sistema (Android) */}
       {systemIntegrity.hasAny && (
         <section>
-          <SectionTitle num={sec()} title="Estado de seguridad del sistema" />
+          <SectionTitle num={sec()} title={t("analysisPage.systemSecurity")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Comprobaciones que indican si el sistema operativo conserva sus protecciones de fábrica o ha sido modificado.
+            {t("analysisPage.systemSecurityDesc")}
           </p>
           <SystemIntegrityCardView card={systemIntegrity} />
         </section>
@@ -322,9 +322,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* Servicios de accesibilidad activos (Android) */}
       {accessibility.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Servicios de accesibilidad activos" />
+          <SectionTitle num={sec()} title={t("analysisPage.accessibility")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Los servicios de accesibilidad pueden leer la pantalla y simular toques. Es el permiso que utilizan la mayoría de apps de vigilancia (stalkerware). Si no reconoces alguno marcado como "Origen no reconocido", revísalo y desactívalo en Ajustes → Accesibilidad.
+            {t("analysisPage.accessibilityDesc")}
           </p>
           <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
             {accessibility.map((row) => (
@@ -337,9 +337,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* Perfiles de configuración instalados (iOS) */}
       {configProfiles.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Perfiles de configuración instalados" />
+          <SectionTitle num={sec()} title={t("analysisPage.configProfiles")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Los perfiles de configuración pueden cambiar ajustes profundos del dispositivo (VPN, certificados, gestión remota). Revisa los que no hayas instalado tú mismo o tu empresa.
+            {t("analysisPage.configProfilesDesc")}
           </p>
           <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
             {configProfiles.map((p) => (
@@ -352,9 +352,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* Apps con más tráfico de red (iOS) */}
       {topNetwork.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Apps con más tráfico de red" />
+          <SectionTitle num={sec()} title={t("analysisPage.topNetwork")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Procesos o apps con mayor volumen de datos enviados o recibidos (Wi-Fi + datos móviles). Un volumen elevado no equivale por sí solo a spyware: consulta la interpretación inferior antes de sacar conclusiones.
+            {t("analysisPage.topNetworkDesc")}
           </p>
           <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
             {topNetwork.map((app, i) => (
@@ -365,7 +365,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
           {/* Interpretación del tráfico elevado */}
           <div className="mt-4 rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold">Interpretación del tráfico elevado</span>
+              <span className="text-sm font-semibold">{t("analysisPage.trafficInterp")}</span>
               <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${
                 networkInterp.band === "critical" ? "bg-destructive/15 text-destructive border-destructive/30"
                 : networkInterp.band === "high" ? "bg-destructive/10 text-destructive border-destructive/20"
@@ -375,12 +375,12 @@ function UserReport({ analysis }: { analysis: Analysis }) {
               }`}>
                 {networkInterp.bandLabel}
               </span>
-              <span className="text-xs text-muted-foreground tabular-nums">Traffic Risk Score: {networkInterp.score}/100</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{t("analysisPage.trafficScore", { score: networkInterp.score })}</span>
             </div>
             <p className="text-sm text-foreground/85">{networkInterp.summary}</p>
             {networkInterp.rationale.length > 0 && (
               <div>
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Factores considerados</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{t("analysisPage.factors")}</div>
                 <ul className="list-disc pl-5 space-y-1 text-sm text-foreground/85">
                   {networkInterp.rationale.map((r, i) => <li key={i}>{r}</li>)}
                 </ul>
@@ -394,11 +394,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 04 · Cómo leer este informe */}
       <section>
-        <SectionTitle num={sec()} title="Cómo leer este informe" />
+        <SectionTitle num={sec()} title={t("analysisPage.howToRead")} />
         <p className="text-sm text-foreground/80">
-          MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo.
-          Un indicio no equivale a una infección confirmada: puede tratarse de una app legítima instalada por el propio usuario.
-          Revisa cada hallazgo y comprueba si reconoces la app o el comportamiento descrito.
+          {t("analysisPage.howToReadIntro")}
         </p>
         <div className="mt-4 rounded-xl border border-border bg-card divide-y divide-border">
           {(["critical", "high", "medium", "low"] as const).map((lvl) => (
@@ -416,30 +414,30 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 05 · Áreas del dispositivo analizadas */}
       <section>
-        <SectionTitle num={sec()} title="Áreas del dispositivo analizadas" />
+        <SectionTitle num={sec()} title={t("analysisPage.deviceAreas")} />
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
-            <div className="col-span-6">Área</div>
-            <div className="col-span-2 text-right">Entradas</div>
-            <div className="col-span-2 text-right">Indicios</div>
-            <div className="col-span-2 text-right">Estado</div>
+            <div className="col-span-6">{t("analysisPage.area")}</div>
+            <div className="col-span-2 text-right">{t("analysisPage.entries")}</div>
+            <div className="col-span-2 text-right">{t("analysisPage.indiciaCol")}</div>
+            <div className="col-span-2 text-right">{t("analysisPage.statusCol")}</div>
           </div>
           {r.modules.filter((m) => m.entries > 0 || m.detected > 0).map((m) => (
             <ModuleRow key={m.key} module={m} detections={r.detections} />
           ))}
           {r.modules.length === 0 && (
-            <div className="p-6 text-sm text-muted-foreground text-center">No se reconocieron módulos MVT.</div>
+            <div className="p-6 text-sm text-muted-foreground text-center">{t("analysisPage.noModules2")}</div>
           )}
         </div>
       </section>
 
       {/* 06 · Indicios detectados */}
       <section>
-        <SectionTitle num={sec()} title="Indicios detectados" />
+        <SectionTitle num={sec()} title={t("analysisPage.indiciaDetected")} />
         {r.detections.length === 0 ? (
           <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm">
             <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
-            MVT no encontró coincidencias con indicadores conocidos en los archivos subidos.
+            {t("analysisPage.noMatchesBox")}
           </div>
         ) : (
           <UserDetections detections={r.detections} />
@@ -449,9 +447,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* 07 · Apps con más actividad sospechosa */}
       {topApps.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Apps con más actividad sospechosa" />
+          <SectionTitle num={sec()} title={t("analysisPage.topApps")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Apps que más veces aparecen en los indicios técnicos. Si no reconoces alguna marcada como "Origen no reconocido", revísala con calma.
+            {t("analysisPage.topAppsDesc")}
           </p>
           <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
             {topApps.map((app, i) => (
@@ -464,9 +462,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* 08 · Cronología de eventos clave */}
       {humanTimeline.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Cronología de eventos clave" />
+          <SectionTitle num={sec()} title={t("analysisPage.chronology")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Reconstrucción en lenguaje natural de los eventos más relevantes detectados, ordenados por fecha.
+            {t("analysisPage.chronologyDesc")}
           </p>
           <ol className="relative border-l border-border ml-3 space-y-4">
             {humanTimeline.map((e, i) => (
@@ -487,7 +485,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 09 · Próximos pasos recomendados */}
       <section>
-        <SectionTitle num={sec()} title="Próximos pasos recomendados" />
+        <SectionTitle num={sec()} title={t("analysisPage.nextSteps")} />
         <ol className="space-y-3">
           {recs.map((rec, i) => (
             <li key={i} className="flex gap-3">
@@ -500,7 +498,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 10 · Cómo verificar este resultado */}
       <section>
-        <SectionTitle num={sec()} title="Cómo verificar este resultado" />
+        <SectionTitle num={sec()} title={t("analysisPage.howVerify")} />
         <div className="space-y-3">
           {CROSS_CHECK_STEPS.map((step) => (
             <div key={step.title} className="rounded-lg border border-border bg-card p-4 border-l-4 border-l-primary">
@@ -513,9 +511,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 11 · Glosario */}
       <section>
-        <SectionTitle num={sec()} title="Glosario de términos" />
+        <SectionTitle num={sec()} title={t("analysisPage.glossary")} />
         <p className="text-sm text-muted-foreground mb-4">
-          Pequeño diccionario para entender los términos técnicos que aparecen en este informe.
+          {t("analysisPage.glossaryDesc")}
         </p>
         <div className="rounded-xl border border-border bg-card divide-y divide-border">
           {GLOSSARY.map((g) => (
@@ -532,12 +530,12 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 12 · Aviso legal */}
       <section>
-        <SectionTitle num={sec()} title="Aviso legal y metodología" />
+        <SectionTitle num={sec()} title={t("analysisPage.legal")} />
         <div className="space-y-3 text-xs text-muted-foreground">
-          <p>Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.</p>
-          <p>Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.</p>
+          <p>{t("analysisPage.legalP1")}</p>
+          <p>{t("analysisPage.legalP2")}</p>
           <div>
-            <p className="font-semibold text-foreground mb-2">Familias de spyware cubiertas por los IOCs públicos de MVT</p>
+            <p className="font-semibold text-foreground mb-2">{t("analysisPage.families")}</p>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {[
                 "Pegasus (NSO Group)",
@@ -552,11 +550,11 @@ function UserReport({ analysis }: { analysis: Analysis }) {
                 </span>
               ))}
             </div>
-            <p>La lista exacta evoluciona con cada actualización de los repositorios públicos de Amnesty International, Citizen Lab y Google TAG, por lo que la cobertura real depende de la versión de MVT y de los indicadores vigentes en el momento del análisis.</p>
+            <p>{t("analysisPage.legalP3")}</p>
           </div>
-          <p>La ausencia de indicios no garantiza que el dispositivo esté limpio: MVT solo cubre amenazas con firma pública conocida. Spyware nuevo o muestras privadas pueden no detectarse.</p>
+          <p>{t("analysisPage.legalP4")}</p>
 
-          <p className="italic">Los archivos se procesan localmente en el navegador. No se transmite información del dispositivo analizado a terceros. El análisis se realiza con el consentimiento del propietario del dispositivo.</p>
+          <p className="italic">{t("analysisPage.legalP5")}</p>
         </div>
       </section>
     </div>
@@ -570,12 +568,13 @@ function originBadgeClass(origin: "system" | "known" | "unknown"): string {
 }
 
 function SystemIntegrityCardView({ card }: { card: SystemIntegrityCard }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
       {card.combinedAlert && (
         <div className="p-4 bg-destructive/5 border-l-4 border-l-destructive">
           <div className="text-sm font-semibold text-destructive flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4" /> Aviso de integridad
+            <ShieldAlert className="h-4 w-4" /> {t("analysisPage.integrityAlert")}
           </div>
           <p className="text-sm text-foreground/90 mt-1">{card.combinedAlert}</p>
         </div>
@@ -584,14 +583,14 @@ function SystemIntegrityCardView({ card }: { card: SystemIntegrityCard }) {
         <div className="p-4 flex items-start gap-3">
           <KeyRound className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Binarios de root encontrados</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("analysisPage.rootBinaries")}</div>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
               {card.rootBinaries.map((b) => (
                 <span key={b} className="px-2 py-0.5 rounded-md border border-destructive/30 bg-destructive/10 text-destructive font-mono text-xs">{b}</span>
               ))}
             </div>
             <div className="text-xs text-muted-foreground mt-2">
-              La presencia de binarios como <code>su</code> o <code>magisk</code> indica acceso root: cualquier app con privilegios de superusuario puede leer datos de otras apps, modificar el sistema o desactivar protecciones.
+              {t("analysisPage.rootBinariesNote")}
             </div>
           </div>
         </div>
@@ -600,7 +599,7 @@ function SystemIntegrityCardView({ card }: { card: SystemIntegrityCard }) {
         <div className="p-4 flex items-start gap-3">
           <ShieldCheck className={`h-4 w-4 shrink-0 mt-0.5 ${card.selinux.severity === "low" ? "text-success" : "text-destructive"}`} />
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">SELinux</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("analysisPage.selinux")}</div>
             <div className="text-sm font-medium mt-0.5">{card.selinux.label}</div>
             <div className="text-xs text-muted-foreground mt-1">{card.selinux.explanation}</div>
           </div>
@@ -613,9 +612,9 @@ function SystemIntegrityCardView({ card }: { card: SystemIntegrityCard }) {
         <div className="p-4 flex items-start gap-3">
           <ShieldAlert className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Bootloader</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("analysisPage.bootloader")}</div>
             <div className="text-sm font-medium mt-0.5">{card.bootloader.label}</div>
-            <div className="text-xs text-muted-foreground mt-1">El bootloader controla qué sistema operativo se carga al encender. Cuando no está bloqueado, el sistema puede haber sido modificado.</div>
+            <div className="text-xs text-muted-foreground mt-1">{t("analysisPage.bootloaderNote")}</div>
           </div>
           <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border h-fit ${SEV_BADGE[card.bootloader.severity]}`}>
             {severityLabel(card.bootloader.severity)}
@@ -645,6 +644,7 @@ function AccessibilityRowView({ row }: { row: AccessibilityRow }) {
 }
 
 function ConfigProfileRowView({ profile }: { profile: ConfigProfileRow }) {
+  const { t } = useTranslation();
   return (
     <div className="p-4 flex items-start gap-3">
       <FileLock2 className={`h-5 w-5 shrink-0 mt-0.5 ${profile.severity === "critical" || profile.severity === "high" ? "text-destructive" : "text-muted-foreground"}`} />
@@ -656,9 +656,9 @@ function ConfigProfileRowView({ profile }: { profile: ConfigProfileRow }) {
           </span>
           <span className="text-xs text-muted-foreground">· {profile.typeLabel}</span>
         </div>
-        {profile.org && <div className="text-xs text-muted-foreground mt-1">Emitido por: <span className="font-medium text-foreground/80">{profile.org}</span></div>}
-        {profile.installDate && <div className="text-xs text-muted-foreground">Instalado: {profile.installDate}</div>}
-        {profile.uuid && <div className="text-xs text-muted-foreground font-mono">UUID: {profile.uuid}…</div>}
+        {profile.org && <div className="text-xs text-muted-foreground mt-1">{t("analysisPage.issuedBy")} <span className="font-medium text-foreground/80">{profile.org}</span></div>}
+        {profile.installDate && <div className="text-xs text-muted-foreground">{t("analysisPage.installed")} {profile.installDate}</div>}
+        {profile.uuid && <div className="text-xs text-muted-foreground font-mono">{t("analysisPage.uuid")} {profile.uuid}…</div>}
         {profile.warning && <div className="text-xs text-destructive mt-2">{profile.warning}</div>}
       </div>
     </div>
@@ -703,6 +703,7 @@ function NetworkAppRowView({ app, index }: { app: NetworkAppRow; index: number }
 
 
 function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {
+  const { t } = useTranslation();
   const originBadge =
     app.origin === "system" ? "bg-muted text-muted-foreground border-border"
     : app.origin === "known" ? "bg-primary/10 text-primary border-primary/20"
@@ -719,7 +720,7 @@ function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {
           <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${SEV_BADGE[app.severity]}`}>
             {severityLabel(app.severity)}
           </span>
-          <span className="text-xs text-muted-foreground tabular-nums">· {app.count} indicio(s)</span>
+          <span className="text-xs text-muted-foreground tabular-nums">· {t("analysisPage.indicio", { count: app.count })}</span>
         </div>
         <div className="text-xs text-muted-foreground font-mono mt-1 break-all">{app.packageName}</div>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -728,7 +729,7 @@ function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {
           </span>
           {app.categories.length > 0 && (
             <span className="text-xs text-muted-foreground">
-              Visto en: {app.categories.join(", ")}
+              {t("analysisPage.seenIn", { list: app.categories.join(", ") })}
             </span>
           )}
         </div>
@@ -747,6 +748,7 @@ function SectionTitle({ num, title }: { num: string; title: string }) {
 }
 
 function ModuleRow({ module: m, detections }: { module: { key: string; label: string; entries: number; detected: number }; detections: MvtDetection[] }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(m.detected > 0);
   const highlights = useMemo(
     () => (m.detected > 0 ? buildModuleHighlights(detections, m.key, 8) : []),
@@ -771,13 +773,13 @@ function ModuleRow({ module: m, detections }: { module: { key: string; label: st
         <div className={`col-span-2 text-right tabular-nums font-semibold ${m.detected > 0 ? "text-destructive" : "text-muted-foreground"}`}>{m.detected}</div>
         <div className="col-span-2 text-right">
           {m.detected > 0
-            ? <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${SEV_BADGE.high}`}>ALTO</span>
-            : <span className="text-xs text-muted-foreground">limpio</span>}
+            ? <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${SEV_BADGE.high}`}>{t("analysisPage.high")}</span>
+            : <span className="text-xs text-muted-foreground">{t("analysisPage.clean")}</span>}
         </div>
       </button>
       {open && hasHighlights && (
         <div className="px-4 pb-4 pl-10">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Detalle</div>
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">{t("analysisPage.detail")}</div>
           <ul className="space-y-1.5">
             {highlights.map((h, i) => (
               <li key={i} className="text-sm flex items-start gap-2">
@@ -855,13 +857,14 @@ function severityClasses(level: RiskLevel | undefined): string {
 }
 
 function UserDetections({ detections }: { detections: MvtDetection[] }) {
+  const { t } = useTranslation();
   const groups = useMemo(() => buildGroups(detections), [detections]);
   const uniqueTotal = groups.mercenary.length + groups.stalkerware.length + groups.suspicious.length;
 
   return (
     <div>
       <div className="text-xs text-muted-foreground mb-3">
-        {uniqueTotal} entidad(es) única(s) agrupadas a partir de {detections.length} indicio(s) técnico(s).
+        {t("analysisPage.uniqueGroups", { unique: uniqueTotal, total: detections.length })}
       </div>
       <div className="space-y-6">
         {CATEGORY_ORDER.map((cat) => {
@@ -873,7 +876,7 @@ function UserDetections({ detections }: { detections: MvtDetection[] }) {
               <div className="flex items-baseline justify-between mb-2">
                 <h3 className="text-sm font-semibold">{CATEGORY_LABEL[cat]}</h3>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {list.length} entidad(es) · {totalOccur} ocurrencias
+                  {t("analysisPage.entitiesOcc", { entities: list.length, occ: totalOccur })}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">{CATEGORY_DESC[cat]}</p>
@@ -892,20 +895,20 @@ function UserDetections({ detections }: { detections: MvtDetection[] }) {
                         <span className="text-xs text-muted-foreground tabular-nums">· {g.count}×</span>
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        Detectado en:{" "}
+                        {t("analysisPage.detectedIn")}
                         {[...g.modules.entries()]
                           .sort((a, b) => b[1] - a[1])
                           .slice(0, 4)
                           .map(([m, c]) => `${humanizeModule(m)} (${c})`)
                           .join(" · ")}
-                        {g.modules.size > 4 && ` · +${g.modules.size - 4} más`}
+                        {g.modules.size > 4 && t("analysisPage.andMore", { count: g.modules.size - 4 })}
                       </div>
                       <div className="text-sm mt-1.5">{humanizeDetection(g.sample.summary)}</div>
                       {(g.firstSeen || g.lastSeen) && (
                         <div className="text-[11px] text-muted-foreground mt-1">
-                          {g.firstSeen && <>1ª vez: <span className="font-mono">{g.firstSeen}</span></>}
+                          {g.firstSeen && <>{t("analysisPage.firstSeen")} <span className="font-mono">{g.firstSeen}</span></>}
                           {g.firstSeen && g.lastSeen && g.firstSeen !== g.lastSeen && " · "}
-                          {g.lastSeen && g.firstSeen !== g.lastSeen && <>última: <span className="font-mono">{g.lastSeen}</span></>}
+                          {g.lastSeen && g.firstSeen !== g.lastSeen && <>{t("analysisPage.lastSeen")} <span className="font-mono">{g.lastSeen}</span></>}
                         </div>
                       )}
                     </div>
@@ -921,10 +924,11 @@ function UserDetections({ detections }: { detections: MvtDetection[] }) {
 }
 
 function DevDetections({ detections }: { detections: MvtDetection[] }) {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="text-xs text-muted-foreground mb-3">
-        Salida cruda de MVT — un registro por cada indicio detectado ({detections.length} en total).
+        {t("analysisPage.rawIntro", { count: detections.length })}
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         {detections.slice(0, 200).map((d, i) => (
@@ -948,7 +952,7 @@ function DevDetections({ detections }: { detections: MvtDetection[] }) {
         ))}
         {detections.length > 200 && (
           <div className="p-3 text-xs text-muted-foreground text-center border-t border-border">
-            Mostrando 200 de {detections.length}. Descarga el PDF para el listado completo.
+            {t("analysisPage.showingOf", { total: detections.length })}
           </div>
         )}
       </div>

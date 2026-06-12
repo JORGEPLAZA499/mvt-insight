@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,13 @@ import {
   revokeDesktopToken,
 } from "@/lib/desktop-pairing.functions";
 import { Monitor, Copy, Check, X, RefreshCw } from "lucide-react";
+import i18n from "@/i18n";
 
 export const Route = createFileRoute("/settings/desktop")({
-  head: () => ({ meta: [{ title: "App de escritorio — Spyware Forensic Analyzer" }] }),
+  head: () => {
+    const t = i18n.getFixedT(null, "translation");
+    return { meta: [{ title: t("settingsDesktop.metaTitle") }] };
+  },
   component: SettingsDesktop,
 });
 
@@ -24,6 +29,7 @@ type TokenRow = {
 };
 
 function SettingsDesktop() {
+  const { t } = useTranslation();
   const getCodeFn = useServerFn(getMyUserCode);
   const listFn = useServerFn(listDesktopTokens);
   const revokeFn = useServerFn(revokeDesktopToken);
@@ -59,10 +65,10 @@ function SettingsDesktop() {
   };
 
   const revoke = async (token: string) => {
-    if (!confirm("¿Revocar este dispositivo? Tendrá que vincularse de nuevo.")) return;
+    if (!confirm(t("settingsDesktop.revokeConfirm"))) return;
     try {
       await revokeFn({ data: { token } });
-      setTokens((t) => t.filter((x) => x.id !== token));
+      setTokens((tk) => tk.filter((x) => x.id !== token));
     } catch (e: any) {
       setError(e?.message ?? "Error");
     }
@@ -74,11 +80,9 @@ function SettingsDesktop() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <Monitor className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-semibold">App de escritorio</h1>
+            <h1 className="text-2xl font-semibold">{t("settingsDesktop.title")}</h1>
           </div>
-          <p className="text-muted-foreground text-sm">
-            Vincula MVT Insight Desktop para que los análisis se suban a tu cuenta automáticamente.
-          </p>
+          <p className="text-muted-foreground text-sm">{t("settingsDesktop.subtitle")}</p>
         </div>
 
         {error && (
@@ -88,13 +92,11 @@ function SettingsDesktop() {
         )}
 
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-          <h2 className="font-semibold">Tu código de usuario</h2>
-          <p className="text-sm text-muted-foreground">
-            Introduce este código en la app de escritorio para vincularla. Puedes usarlo en varios dispositivos.
-          </p>
+          <h2 className="font-semibold">{t("settingsDesktop.yourCodeTitle")}</h2>
+          <p className="text-sm text-muted-foreground">{t("settingsDesktop.yourCodeDesc")}</p>
           <div className="rounded-lg bg-background/60 border border-border p-4 text-center">
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
-              Código de usuario
+              {t("settingsDesktop.codeLabel")}
             </div>
             <div
               className="font-mono text-4xl font-bold tracking-[0.2em] select-all"
@@ -105,34 +107,34 @@ function SettingsDesktop() {
           </div>
           <Button variant="outline" size="sm" onClick={copy} disabled={!userCode} className="gap-2">
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            {copied ? "Copiado" : "Copiar"}
+            {copied ? t("settingsDesktop.copied") : t("settingsDesktop.copy")}
           </Button>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Dispositivos vinculados</h2>
+            <h2 className="font-semibold">{t("settingsDesktop.devicesTitle")}</h2>
             <Button variant="ghost" size="sm" onClick={refresh} className="gap-2">
-              <RefreshCw className="h-3 w-3" /> Actualizar
+              <RefreshCw className="h-3 w-3" /> {t("settingsDesktop.refresh")}
             </Button>
           </div>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Cargando…</p>
+            <p className="text-sm text-muted-foreground">{t("settingsDesktop.loading")}</p>
           ) : tokens.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No tienes ningún dispositivo vinculado todavía.</p>
+            <p className="text-sm text-muted-foreground">{t("settingsDesktop.noDevices")}</p>
           ) : (
             <ul className="divide-y divide-border">
-              {tokens.map((t) => (
-                <li key={t.id} className="flex items-center justify-between py-3 text-sm">
+              {tokens.map((tk) => (
+                <li key={tk.id} className="flex items-center justify-between py-3 text-sm">
                   <div>
-                    <div className="font-medium">{t.label} · ••••{t.last4}</div>
+                    <div className="font-medium">{tk.label} · ••••{tk.last4}</div>
                     <div className="text-xs text-muted-foreground">
-                      Vinculado {new Date(t.createdAt).toLocaleString()}
-                      {t.lastUsedAt && <> · Último uso {new Date(t.lastUsedAt).toLocaleString()}</>}
+                      {t("settingsDesktop.paired", { when: new Date(tk.createdAt).toLocaleString() })}
+                      {tk.lastUsedAt && <> · {t("settingsDesktop.lastUsed", { when: new Date(tk.lastUsedAt).toLocaleString() })}</>}
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => revoke(t.id)} className="gap-1 text-destructive">
-                    <X className="h-4 w-4" /> Revocar
+                  <Button variant="ghost" size="sm" onClick={() => revoke(tk.id)} className="gap-1 text-destructive">
+                    <X className="h-4 w-4" /> {t("settingsDesktop.revoke")}
                   </Button>
                 </li>
               ))}
@@ -142,7 +144,7 @@ function SettingsDesktop() {
 
         <div>
           <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-            ← Volver al dashboard
+            {t("settingsDesktop.back")}
           </Link>
         </div>
       </div>

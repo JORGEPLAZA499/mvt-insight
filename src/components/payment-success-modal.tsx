@@ -92,7 +92,7 @@ export function PaymentSuccessModal({
 
           <button
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("a11y.close")}
             className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground transition z-10"
           >
             <X className="h-4 w-4" />

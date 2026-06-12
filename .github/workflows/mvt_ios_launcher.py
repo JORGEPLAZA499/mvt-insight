@@ -110,6 +110,9 @@ if __name__ == "__main__":
     # TLDEXTRACT_CACHE sea respetada al construir el extractor por defecto.
     _ensure_cache_dirs()
 
+    # Parchea tldextract para no depender de descargar la PSL en runtime.
+    _patch_tldextract()
+
     from mvt.ios.cli import cli
 
     cli()

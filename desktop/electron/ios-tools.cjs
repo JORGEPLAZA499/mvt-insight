@@ -463,5 +463,6 @@ module.exports = {
   iosBinPath,
   iosToolsDir,
   checkAppleDriversWindows,
+  killAllMvtIosProcesses,
 };
 

@@ -568,12 +568,13 @@ function originBadgeClass(origin: "system" | "known" | "unknown"): string {
 }
 
 function SystemIntegrityCardView({ card }: { card: SystemIntegrityCard }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
       {card.combinedAlert && (
         <div className="p-4 bg-destructive/5 border-l-4 border-l-destructive">
           <div className="text-sm font-semibold text-destructive flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4" /> Aviso de integridad
+            <ShieldAlert className="h-4 w-4" /> {t("analysisPage.integrityAlert")}
           </div>
           <p className="text-sm text-foreground/90 mt-1">{card.combinedAlert}</p>
         </div>
@@ -582,14 +583,14 @@ function SystemIntegrityCardView({ card }: { card: SystemIntegrityCard }) {
         <div className="p-4 flex items-start gap-3">
           <KeyRound className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Binarios de root encontrados</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("analysisPage.rootBinaries")}</div>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
               {card.rootBinaries.map((b) => (
                 <span key={b} className="px-2 py-0.5 rounded-md border border-destructive/30 bg-destructive/10 text-destructive font-mono text-xs">{b}</span>
               ))}
             </div>
             <div className="text-xs text-muted-foreground mt-2">
-              La presencia de binarios como <code>su</code> o <code>magisk</code> indica acceso root: cualquier app con privilegios de superusuario puede leer datos de otras apps, modificar el sistema o desactivar protecciones.
+              {t("analysisPage.rootBinariesNote")}
             </div>
           </div>
         </div>
@@ -598,7 +599,7 @@ function SystemIntegrityCardView({ card }: { card: SystemIntegrityCard }) {
         <div className="p-4 flex items-start gap-3">
           <ShieldCheck className={`h-4 w-4 shrink-0 mt-0.5 ${card.selinux.severity === "low" ? "text-success" : "text-destructive"}`} />
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">SELinux</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("analysisPage.selinux")}</div>
             <div className="text-sm font-medium mt-0.5">{card.selinux.label}</div>
             <div className="text-xs text-muted-foreground mt-1">{card.selinux.explanation}</div>
           </div>
@@ -611,9 +612,9 @@ function SystemIntegrityCardView({ card }: { card: SystemIntegrityCard }) {
         <div className="p-4 flex items-start gap-3">
           <ShieldAlert className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Bootloader</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("analysisPage.bootloader")}</div>
             <div className="text-sm font-medium mt-0.5">{card.bootloader.label}</div>
-            <div className="text-xs text-muted-foreground mt-1">El bootloader controla qué sistema operativo se carga al encender. Cuando no está bloqueado, el sistema puede haber sido modificado.</div>
+            <div className="text-xs text-muted-foreground mt-1">{t("analysisPage.bootloaderNote")}</div>
           </div>
           <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border h-fit ${SEV_BADGE[card.bootloader.severity]}`}>
             {severityLabel(card.bootloader.severity)}
@@ -643,6 +644,7 @@ function AccessibilityRowView({ row }: { row: AccessibilityRow }) {
 }
 
 function ConfigProfileRowView({ profile }: { profile: ConfigProfileRow }) {
+  const { t } = useTranslation();
   return (
     <div className="p-4 flex items-start gap-3">
       <FileLock2 className={`h-5 w-5 shrink-0 mt-0.5 ${profile.severity === "critical" || profile.severity === "high" ? "text-destructive" : "text-muted-foreground"}`} />
@@ -654,9 +656,9 @@ function ConfigProfileRowView({ profile }: { profile: ConfigProfileRow }) {
           </span>
           <span className="text-xs text-muted-foreground">· {profile.typeLabel}</span>
         </div>
-        {profile.org && <div className="text-xs text-muted-foreground mt-1">Emitido por: <span className="font-medium text-foreground/80">{profile.org}</span></div>}
-        {profile.installDate && <div className="text-xs text-muted-foreground">Instalado: {profile.installDate}</div>}
-        {profile.uuid && <div className="text-xs text-muted-foreground font-mono">UUID: {profile.uuid}…</div>}
+        {profile.org && <div className="text-xs text-muted-foreground mt-1">{t("analysisPage.issuedBy")} <span className="font-medium text-foreground/80">{profile.org}</span></div>}
+        {profile.installDate && <div className="text-xs text-muted-foreground">{t("analysisPage.installed")} {profile.installDate}</div>}
+        {profile.uuid && <div className="text-xs text-muted-foreground font-mono">{t("analysisPage.uuid")} {profile.uuid}…</div>}
         {profile.warning && <div className="text-xs text-destructive mt-2">{profile.warning}</div>}
       </div>
     </div>

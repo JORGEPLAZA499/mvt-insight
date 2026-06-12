@@ -99,6 +99,7 @@
     "perAnalysis": "/análisis",
     "selectPackage": "Selecciona tu paquete",
     "option": "{{credits}} créditos — {{analyses}} análisis — {{credits}} €",
+    "optionStarter": "100 créditos — 1 €",
     "description": "Verificación técnica de indicios de spyware, malware y actividad sospechosa en dispositivos móviles mediante artefactos, indicadores IOC/STIX2 y herramientas forenses compatibles con MVT.",
     "features": {
       "evidence": "Revisión de evidencias",

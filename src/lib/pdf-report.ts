@@ -29,6 +29,7 @@ import {
   buildAccessibilityList,
   buildConfigProfiles,
   buildTopNetwork,
+  buildNetworkInterpretation,
   GLOSSARY,
   type Category,
 } from "./mvt-translate";

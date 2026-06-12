@@ -230,6 +230,9 @@ if __name__ == "__main__":
     # Parchea tldextract para no depender de descargar la PSL en runtime.
     _patch_tldextract()
 
+    # Parchea también `tld`, que es quien emite el error "Failed fetching...".
+    _patch_tld_package()
+
     from mvt.ios.cli import cli
 
     cli()

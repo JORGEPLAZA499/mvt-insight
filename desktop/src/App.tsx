@@ -698,9 +698,20 @@ export function App() {
                             );
                           })()}
                           <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
+                          {(() => {
+                            if (!lastLogAt) return null;
+                            const idleMin = Math.floor((Date.now() - lastLogAt) / 60000);
+                            if (idleMin < 5) return null;
+                            return (
+                              <div style={{ marginTop: 8, padding: "6px 8px", background: "rgba(255, 200, 0, 0.08)", border: "1px solid rgba(255, 200, 0, 0.35)", borderRadius: 6, fontSize: 12, color: "#e6c200" }}>
+                                ⚠ Sin actividad de mvt-ios desde hace {idleMin} min. Si pasa de 10 min, el análisis probablemente esté colgado — la app cortará automáticamente.
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                     </>
+
                   )}
                 </div>
               </div>

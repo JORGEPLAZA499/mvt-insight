@@ -665,26 +665,41 @@ function ConfigProfileRowView({ profile }: { profile: ConfigProfileRow }) {
   );
 }
 
+function networkOriginBadgeClass(origin: NetworkRowOrigin): string {
+  switch (origin) {
+    case "system": return "bg-muted text-muted-foreground border-border";
+    case "system_accumulator": return "bg-muted text-muted-foreground border-border";
+    case "known": return "bg-primary/10 text-primary border-primary/20";
+    case "unattributed": return "bg-warning/15 text-warning border-warning/30";
+  }
+}
+
 function NetworkAppRowView({ app, index }: { app: NetworkAppRow; index: number }) {
+  const iconColor =
+    app.severity === "high" || app.severity === "critical" ? "text-destructive"
+    : app.severity === "medium" ? "text-warning"
+    : "text-muted-foreground";
   return (
     <div className="p-4 flex items-start gap-3">
       <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0 tabular-nums text-xs font-semibold">
         {index}
       </div>
-      <Network className={`h-4 w-4 shrink-0 mt-2 ${app.origin === "unknown" ? "text-warning" : "text-muted-foreground"}`} />
+      <Network className={`h-4 w-4 shrink-0 mt-2 ${iconColor}`} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium text-sm">{app.displayName}</span>
-          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${originBadgeClass(app.origin)}`}>
+          <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${networkOriginBadgeClass(app.origin)}`}>
             {app.originLabel}
           </span>
         </div>
         <div className="text-xs text-muted-foreground font-mono mt-1 break-all">{app.packageName}</div>
+        {app.note && <div className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{app.note}</div>}
       </div>
       <div className="text-sm font-semibold tabular-nums shrink-0">{app.totalLabel}</div>
     </div>
   );
 }
+
 
 
 function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {

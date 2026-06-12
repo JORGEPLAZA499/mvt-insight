@@ -29,6 +29,15 @@ type UploadState =
   | { state: "done"; analysisId: string; remainingCredits: number }
   | { state: "error"; error: string; code?: string };
 
+function formatElapsed(ms: number): string {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
 export function App() {
   const { t } = useTranslation();
   const tr = (key: string, fallback: string) => {
@@ -87,10 +96,25 @@ export function App() {
     });
     const offPhase = window.mvt.onPhase((payload: any) => {
       const { phase: num, label, statusKey, progress } = payload || {};
-      setPhase({ num, label, statusKey, progress });
+      setPhase((prev) => {
+        if (prev.num !== num) {
+          setPhaseStartedAt(Date.now());
+        }
+        return { num, label, statusKey, progress };
+      });
     });
     return () => { offLog(); offPhase(); };
   }, []);
+
+  // Cronómetro de fase: re-renderiza cada segundo mientras estamos analizando,
+  // para que el usuario vea que el proceso sigue vivo aunque mvt-ios tarde.
+  const [phaseStartedAt, setPhaseStartedAt] = useState<number | null>(null);
+  const [nowTick, setNowTick] = useState(0);
+  useEffect(() => {
+    if (screen !== "running" || !phaseStartedAt) return;
+    const id = setInterval(() => setNowTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [screen, phaseStartedAt]);
 
   useEffect(() => {
     if (!window.mvt) return;
@@ -642,14 +666,36 @@ export function App() {
                 <div className="phase-body">
                   <div className="phase-label">{label}</div>
                   {active && (
-                    <div className="phase-sub">
-                      {phase.statusKey
-                        ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"))
-                        : (phase.label || tr("running.working", "Analizando"))}
-                      <span className="dot-pulse">
-                        <span /><span /><span />
-                      </span>
-                    </div>
+                    <>
+                      <div className="phase-sub">
+                        {phase.statusKey
+                          ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"))
+                          : (phase.label || tr("running.working", "Analizando"))}
+                        <span className="dot-pulse">
+                          <span /><span /><span />
+                        </span>
+                      </div>
+                      {phaseStartedAt && (
+                        <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>
+                          ⏱ {formatElapsed(Date.now() - phaseStartedAt)}
+                          {(() => {
+                            const recent = logs
+                              .map((l) => l.replace(/\x1b\[[0-9;]*m/g, "").trim())
+                              .filter((l) => l && !/^[\s.·•]+$/.test(l))
+                              .slice(-3);
+                            if (!recent.length) return null;
+                            return (
+                              <div style={{ marginTop: 6, padding: "6px 8px", background: "rgba(255,255,255,0.04)", borderRadius: 6, fontFamily: "SF Mono, Menlo, monospace", fontSize: 11, lineHeight: 1.5, color: "var(--muted)", maxHeight: 64, overflow: "hidden", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                                {recent.map((line, idx) => (
+                                  <div key={idx} style={{ opacity: idx === recent.length - 1 ? 1 : 0.6 }}>{line.length > 140 ? line.slice(0, 140) + "…" : line}</div>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                          <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

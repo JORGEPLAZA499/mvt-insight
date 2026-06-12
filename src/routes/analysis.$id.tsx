@@ -857,13 +857,14 @@ function severityClasses(level: RiskLevel | undefined): string {
 }
 
 function UserDetections({ detections }: { detections: MvtDetection[] }) {
+  const { t } = useTranslation();
   const groups = useMemo(() => buildGroups(detections), [detections]);
   const uniqueTotal = groups.mercenary.length + groups.stalkerware.length + groups.suspicious.length;
 
   return (
     <div>
       <div className="text-xs text-muted-foreground mb-3">
-        {uniqueTotal} entidad(es) única(s) agrupadas a partir de {detections.length} indicio(s) técnico(s).
+        {t("analysisPage.uniqueGroups", { unique: uniqueTotal, total: detections.length })}
       </div>
       <div className="space-y-6">
         {CATEGORY_ORDER.map((cat) => {
@@ -875,7 +876,7 @@ function UserDetections({ detections }: { detections: MvtDetection[] }) {
               <div className="flex items-baseline justify-between mb-2">
                 <h3 className="text-sm font-semibold">{CATEGORY_LABEL[cat]}</h3>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {list.length} entidad(es) · {totalOccur} ocurrencias
+                  {t("analysisPage.entitiesOcc", { entities: list.length, occ: totalOccur })}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">{CATEGORY_DESC[cat]}</p>
@@ -894,20 +895,20 @@ function UserDetections({ detections }: { detections: MvtDetection[] }) {
                         <span className="text-xs text-muted-foreground tabular-nums">· {g.count}×</span>
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        Detectado en:{" "}
+                        {t("analysisPage.detectedIn")}
                         {[...g.modules.entries()]
                           .sort((a, b) => b[1] - a[1])
                           .slice(0, 4)
                           .map(([m, c]) => `${humanizeModule(m)} (${c})`)
                           .join(" · ")}
-                        {g.modules.size > 4 && ` · +${g.modules.size - 4} más`}
+                        {g.modules.size > 4 && t("analysisPage.andMore", { count: g.modules.size - 4 })}
                       </div>
                       <div className="text-sm mt-1.5">{humanizeDetection(g.sample.summary)}</div>
                       {(g.firstSeen || g.lastSeen) && (
                         <div className="text-[11px] text-muted-foreground mt-1">
-                          {g.firstSeen && <>1ª vez: <span className="font-mono">{g.firstSeen}</span></>}
+                          {g.firstSeen && <>{t("analysisPage.firstSeen")} <span className="font-mono">{g.firstSeen}</span></>}
                           {g.firstSeen && g.lastSeen && g.firstSeen !== g.lastSeen && " · "}
-                          {g.lastSeen && g.firstSeen !== g.lastSeen && <>última: <span className="font-mono">{g.lastSeen}</span></>}
+                          {g.lastSeen && g.firstSeen !== g.lastSeen && <>{t("analysisPage.lastSeen")} <span className="font-mono">{g.lastSeen}</span></>}
                         </div>
                       )}
                     </div>
@@ -923,10 +924,11 @@ function UserDetections({ detections }: { detections: MvtDetection[] }) {
 }
 
 function DevDetections({ detections }: { detections: MvtDetection[] }) {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="text-xs text-muted-foreground mb-3">
-        Salida cruda de MVT — un registro por cada indicio detectado ({detections.length} en total).
+        {t("analysisPage.rawIntro", { count: detections.length })}
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         {detections.slice(0, 200).map((d, i) => (
@@ -950,7 +952,7 @@ function DevDetections({ detections }: { detections: MvtDetection[] }) {
         ))}
         {detections.length > 200 && (
           <div className="p-3 text-xs text-muted-foreground text-center border-t border-border">
-            Mostrando 200 de {detections.length}. Descarga el PDF para el listado completo.
+            {t("analysisPage.showingOf", { total: detections.length })}
           </div>
         )}
       </div>

@@ -117,11 +117,11 @@ export function generatePdfReport(a: Analysis) {
   function sectionTitle(num: string, title: string) {
     ensure(52);
     setText(MUTED);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11);
     doc.text(num, M.left, ctx.y);
     setText(INK);
-    doc.setFontSize(17);
-    doc.text(title, M.left + 24, ctx.y);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text(title, M.left + 28, ctx.y);
     ctx.y += 10;
     setStroke(LINE); doc.setLineWidth(0.8);
     doc.line(M.left, ctx.y, W - M.right, ctx.y);
@@ -197,10 +197,10 @@ export function generatePdfReport(a: Analysis) {
   let cy = cardY + 28;
   metaCover.forEach(([k, v]) => {
     setText([148, 163, 184]);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
     doc.text(k.toUpperCase(), M.left + 20, cy);
     setText(WHITE);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
     const val = doc.splitTextToSize(String(v), CW - 40)[0];
     doc.text(val, M.left + 20, cy + 14);
     cy += 28;
@@ -214,15 +214,15 @@ export function generatePdfReport(a: Analysis) {
     setFill([sr, sg, sb]);
     doc.roundedRect(M.left, bandY, CW, 70, 6, 6, "F");
     setText(WHITE);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
     doc.text("NIVEL DE RIESGO ESTIMADO", M.left + 20, bandY + 22);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(22);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(18);
     doc.text(riskLabel(r.risk).toUpperCase(), M.left + 20, bandY + 50);
     // Stats a la derecha
-    doc.setFont("helvetica", "bold"); doc.setFontSize(22);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(18);
     doc.text(String(r.totalDetections), W - M.right - 20, bandY + 32, { align: "right" });
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    doc.text("indicios detectados", W - M.right - 20, bandY + 48, { align: "right" });
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+    doc.text("INDICIOS DETECTADOS", W - M.right - 20, bandY + 48, { align: "right" });
   }
 
   // Pie de portada
@@ -249,24 +249,24 @@ export function generatePdfReport(a: Analysis) {
     doc.roundedRect(M.left, ctx.y, CW, 8, 2, 2, "F");
     ctx.y += 14;
     // Pre-medir contenido para calcular alto real
-    doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
     const hLines = doc.splitTextToSize(v.headline, CW - 32);
     doc.setFont("helvetica", "normal"); doc.setFontSize(10);
     const dLines = doc.splitTextToSize(v.detail, CW - 32);
-    const boxH = 22 + hLines.length * 18 + 6 + dLines.length * 12 + 14;
+    const boxH = 22 + hLines.length * 16 + 6 + dLines.length * 13 + 14;
     setFill(SOFT_BG);
     doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
     setStroke(LINE); doc.setLineWidth(0.5);
     doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "S");
     setText(MUTED);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
     doc.text("VEREDICTO", M.left + 16, ctx.y + 18);
     setText(verdictColor);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
     doc.text(hLines, M.left + 16, ctx.y + 40);
     setText(INK);
     doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-    doc.text(dLines, M.left + 16, ctx.y + 40 + hLines.length * 18 + 4);
+    doc.text(dLines, M.left + 16, ctx.y + 40 + hLines.length * 16 + 4);
     ctx.y += boxH + 14;
   }
 
@@ -297,10 +297,10 @@ export function generatePdfReport(a: Analysis) {
       setStroke(LINE); doc.setLineWidth(0.5);
       doc.roundedRect(x, ctx.y, kw, 60, 4, 4, "S");
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
       doc.text(label.toUpperCase(), x + 10, ctx.y + 16);
       setText(color);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(20);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(18);
       doc.text(value, x + 10, ctx.y + 42);
     });
     ctx.y += 72;
@@ -314,7 +314,7 @@ export function generatePdfReport(a: Analysis) {
     ctx.y += 4;
     const rowH2 = 22;
     deviceCard.forEach((f, i) => {
-      const hintH = f.hint ? 10 : 0;
+      const hintH = f.hint ? 12 : 0;
       const totalH = rowH2 + hintH;
       ensure(totalH);
       if (i % 2 === 0) {
@@ -322,17 +322,17 @@ export function generatePdfReport(a: Analysis) {
         doc.rect(M.left, ctx.y - 12, CW, totalH, "F");
       }
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-      doc.text(f.label, M.left + 10, ctx.y);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+      doc.text(f.label.toUpperCase(), M.left + 10, ctx.y);
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
 
       const val = doc.splitTextToSize(String(f.value), CW - 200)[0];
       doc.text(val, M.left + 200, ctx.y);
       if (f.hint) {
         setText(MUTED);
-        doc.setFont("helvetica", "italic"); doc.setFontSize(8);
-        doc.text(f.hint, M.left + 200, ctx.y + 10);
+        doc.setFont("helvetica", "italic"); doc.setFontSize(9);
+        doc.text(f.hint, M.left + 200, ctx.y + 11);
       }
       ctx.y += totalH;
     });
@@ -364,54 +364,54 @@ export function generatePdfReport(a: Analysis) {
     if (integrity.rootBinaries.length) {
       ensure(40);
       setText(MUTED);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
       doc.text("BINARIOS DE ROOT ENCONTRADOS", M.left, ctx.y);
-      ctx.y += 12;
+      ctx.y += 13;
       setText(INK);
       doc.setFont("courier", "normal"); doc.setFontSize(10);
       doc.text(integrity.rootBinaries.join("  ·  "), M.left, ctx.y);
       ctx.y += 14;
       setText(MUTED);
-      doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+      doc.setFont("helvetica", "italic"); doc.setFontSize(9);
       const exp = "La presencia de binarios como su o magisk indica acceso root: una app con privilegios de superusuario puede leer datos de otras apps, modificar el sistema o desactivar protecciones.";
       const expLines = doc.splitTextToSize(exp, CW);
       doc.text(expLines, M.left, ctx.y);
-      ctx.y += expLines.length * 10 + 6;
+      ctx.y += expLines.length * 11 + 6;
     }
     if (integrity.selinux) {
       ensure(28);
       setText(MUTED);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
       doc.text("SELINUX", M.left, ctx.y);
       severityChip(integrity.selinux.severity, M.left + 60, ctx.y);
-      ctx.y += 12;
+      ctx.y += 13;
       setText(INK);
       doc.setFont("helvetica", "bold"); doc.setFontSize(10);
       doc.text(integrity.selinux.label, M.left, ctx.y);
-      ctx.y += 12;
+      ctx.y += 13;
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
       const lines = doc.splitTextToSize(integrity.selinux.explanation, CW);
       doc.text(lines, M.left, ctx.y);
-      ctx.y += lines.length * 11 + 6;
+      ctx.y += lines.length * 12 + 6;
     }
     if (integrity.bootloader) {
       ensure(28);
       setText(MUTED);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
       doc.text("BOOTLOADER", M.left, ctx.y);
       severityChip(integrity.bootloader.severity, M.left + 80, ctx.y);
-      ctx.y += 12;
+      ctx.y += 13;
       setText(INK);
       doc.setFont("helvetica", "bold"); doc.setFontSize(10);
       doc.text(integrity.bootloader.label, M.left, ctx.y);
-      ctx.y += 12;
+      ctx.y += 13;
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
       const exp = "El bootloader controla qué sistema operativo se carga al encender. Cuando no está bloqueado, el sistema puede haber sido modificado.";
       const lines = doc.splitTextToSize(exp, CW);
       doc.text(lines, M.left, ctx.y);
-      ctx.y += lines.length * 11 + 4;
+      ctx.y += lines.length * 12 + 4;
     }
     ctx.y += 4;
   }
@@ -433,13 +433,13 @@ export function generatePdfReport(a: Analysis) {
         doc.rect(M.left, ctx.y, 3, boxH, "F");
       }
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
 
       doc.text(row.displayName, M.left + 10, ctx.y + 13);
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-      doc.text(`${row.packageName}  →  ${row.service}`, M.left + 10, ctx.y + 24);
-      doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.text(`${row.packageName}  →  ${row.service}`, M.left + 10, ctx.y + 25);
+      doc.setFont("helvetica", "italic"); doc.setFontSize(9);
       setText(isUnknown ? SEV_COLOR.high : MUTED);
       doc.text(row.originLabel, M.left + CW - 10, ctx.y + 13, { align: "right" });
       ctx.y += boxH + 4;
@@ -470,17 +470,17 @@ export function generatePdfReport(a: Analysis) {
       let yy = ctx.y + 14;
       const chipW = severityChip(p.severity, M.left + 12, yy);
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
 
       doc.text(p.name, M.left + 12 + chipW + 6, yy);
       yy += 12;
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
       doc.text(`Tipo: ${p.typeLabel}`, M.left + 12, yy);
-      yy += 10;
+      yy += 11;
       if (metaLines.length) {
         doc.text(metaLines, M.left + 12, yy);
-        yy += metaLines.length * 10;
+        yy += metaLines.length * 11;
       }
       if (warnLines.length) {
         setText([sr, sg, sb]);
@@ -508,17 +508,17 @@ export function generatePdfReport(a: Analysis) {
         doc.rect(M.left, ctx.y, 3, boxH, "F");
       }
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
 
       doc.text(`${i + 1}. ${app.displayName}`, M.left + 10, ctx.y + 14);
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
       doc.text(app.packageName, M.left + 10, ctx.y + 26);
       doc.setFont("helvetica", "italic");
       setText(app.origin === "unknown" ? SEV_COLOR.high : MUTED);
       doc.text(app.originLabel, M.left + 10, ctx.y + 34 - 4 + 4);
       setText(NAVY);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
       doc.text(app.totalLabel, M.left + CW - 10, ctx.y + 20, { align: "right" });
       ctx.y += boxH + 4;
     });
@@ -564,12 +564,12 @@ export function generatePdfReport(a: Analysis) {
       ensure(rowH);
       if (i % 2 === 0) { setFill(SOFT_BG); doc.rect(M.left, ctx.y - 12, CW, rowH, "F"); }
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
 
       const human = humanizeModule(m.key, m.label);
       doc.text(doc.splitTextToSize(human, CW - 320)[0], M.left + 10, ctx.y);
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
       doc.text(`(${m.key})`, M.left + 10, ctx.y + 10);
       setText(INK);
       doc.setFont("helvetica", "normal"); doc.setFontSize(10);
@@ -592,12 +592,12 @@ export function generatePdfReport(a: Analysis) {
         if (highlights.length) {
           highlights.forEach((h) => {
             const line = `• ${h.count}× ${h.label}${h.detail ? ` — ${h.detail}` : ""}`;
-            doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+            doc.setFont("helvetica", "normal"); doc.setFontSize(9);
             setText(NAVY_SOFT);
             const lines = doc.splitTextToSize(line, CW - 24);
-            ensure(lines.length * 10 + 2);
+            ensure(lines.length * 11 + 2);
             doc.text(lines, M.left + 18, ctx.y);
-            ctx.y += lines.length * 10 + 1;
+            ctx.y += lines.length * 11 + 1;
           });
           ctx.y += 4;
         }
@@ -691,13 +691,13 @@ export function generatePdfReport(a: Analysis) {
       doc.roundedRect(M.left, ctx.y, CW, 4, 1, 1, "F");
       ctx.y += 12;
       setText([cr, cg, cb]);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
 
       const occ = groups.reduce((s, g) => s + g.count, 0);
       doc.text(`${CATEGORY_LABEL[cat]}  ·  ${groups.length} entidad${groups.length === 1 ? "" : "es"}  ·  ${occ} ocurr.`, M.left, ctx.y);
       ctx.y += 14;
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
       const descLines = doc.splitTextToSize(CATEGORY_DESC[cat], CW);
       doc.text(descLines, M.left, ctx.y);
       ctx.y += descLines.length * 12 + 6;
@@ -711,16 +711,16 @@ export function generatePdfReport(a: Analysis) {
 
         doc.setFont("helvetica", "normal"); doc.setFontSize(10);
         const humanLines = doc.splitTextToSize(human, CW - 24);
-        doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9);
         const modulesLines = doc.splitTextToSize(modulesLine, CW - 24);
-        doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+        doc.setFont("helvetica", "italic"); doc.setFontSize(9);
         const techLines = doc.splitTextToSize(`Evidencia representativa: ${g.sampleSummary}`, CW - 24);
         const hasRange = g.firstSeen && g.lastSeen && g.firstSeen !== g.lastSeen;
         const rangeLines = hasRange
           ? [`Visto entre ${g.firstSeen} y ${g.lastSeen}`]
           : g.firstSeen ? [`Visto el ${g.firstSeen}`] : [];
 
-        const cardH2 = 22 + humanLines.length * 12 + modulesLines.length * 10 + techLines.length * 10 + rangeLines.length * 10 + 16;
+        const cardH2 = 22 + humanLines.length * 12 + modulesLines.length * 11 + techLines.length * 11 + rangeLines.length * 11 + 16;
         ensure(cardH2 + 6);
 
         setFill(SOFT_BG);
@@ -732,16 +732,16 @@ export function generatePdfReport(a: Analysis) {
         let yy = ctx.y + 12;
         const chipW = severityChip(g.level, M.left + 12, yy);
         setText(INK);
-        doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(10);
 
         const head = `${idx + 1}. ${g.label}${g.count > 1 ? `  ·  ${g.count}×` : ""}`;
         doc.text(head, M.left + 12 + chipW + 6, yy);
         yy += 14;
 
         setText(MUTED);
-        doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9);
         doc.text(modulesLines, M.left + 12, yy);
-        yy += modulesLines.length * 10 + 2;
+        yy += modulesLines.length * 11 + 2;
 
         setText(INK);
         doc.setFont("helvetica", "normal"); doc.setFontSize(10);
@@ -750,13 +750,13 @@ export function generatePdfReport(a: Analysis) {
 
         if (rangeLines.length) {
           setText(MUTED);
-          doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+          doc.setFont("helvetica", "normal"); doc.setFontSize(9);
           doc.text(rangeLines, M.left + 12, yy);
-          yy += rangeLines.length * 10;
+          yy += rangeLines.length * 11;
         }
 
         setText(MUTED);
-        doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+        doc.setFont("helvetica", "italic"); doc.setFontSize(9);
         doc.text(techLines, M.left + 12, yy);
 
         ctx.y += cardH2 + 6;
@@ -792,18 +792,18 @@ export function generatePdfReport(a: Analysis) {
       let yy = ctx.y + 16;
       const chipW = severityChip(app.severity, M.left + 12, yy);
       setText(INK);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
       doc.text(`${i + 1}. ${app.displayName}  ·  ${app.count} indicio(s)`, M.left + 12 + chipW + 6, yy);
       yy += 12;
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
       doc.text(app.packageName, M.left + 12, yy);
       yy += 11;
-      doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+      doc.setFont("helvetica", "italic"); doc.setFontSize(9);
       doc.text(originText, M.left + 12, yy);
       if (catLine) {
         yy += 11;
-        doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9);
         doc.text(doc.splitTextToSize(catLine, CW - 24)[0], M.left + 12, yy);
       }
       ctx.y += cardH3 + 6;
@@ -820,16 +820,16 @@ export function generatePdfReport(a: Analysis) {
     humanEvents.forEach((e) => {
       const whenLines = doc.splitTextToSize(e.when, CW - 24);
       const sentLines = doc.splitTextToSize(e.sentence, CW - 24);
-      const boxH = 6 + whenLines.length * 10 + sentLines.length * 12 + 8;
+      const boxH = 6 + whenLines.length * 11 + sentLines.length * 12 + 8;
       ensure(boxH + 4);
       const [sr, sg, sb] = SEV_COLOR[e.severity] ?? MUTED;
       setFill([sr, sg, sb]);
       doc.rect(M.left, ctx.y, 3, boxH, "F");
       let yy = ctx.y + 12;
       setText(MUTED);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
       doc.text(whenLines, M.left + 12, yy);
-      yy += whenLines.length * 10 + 2;
+      yy += whenLines.length * 11 + 2;
       setText(INK);
       doc.setFont("helvetica", "normal"); doc.setFontSize(10);
       doc.text(sentLines, M.left + 12, yy);
@@ -849,10 +849,10 @@ export function generatePdfReport(a: Analysis) {
     setFill(ACCENT);
     doc.circle(M.left + 8, ctx.y - 3, 8, "F");
     setText(WHITE);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
     doc.text(String(i + 1), M.left + 8, ctx.y, { align: "center" });
     setText(INK);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(11);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
     const lines = doc.splitTextToSize(rec, CW - 32);
     doc.text(lines, M.left + 24, ctx.y);
     ctx.y += Math.max(22, lines.length * 14 + 4);
@@ -864,9 +864,9 @@ export function generatePdfReport(a: Analysis) {
   CROSS_CHECK_STEPS.forEach((step) => {
     doc.setFont("helvetica", "bold"); doc.setFontSize(12);
     const titleLines = doc.splitTextToSize(step.title, CW - 28);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
     const detailLines = doc.splitTextToSize(step.detail, CW - 28);
-    const boxH = 16 + titleLines.length * 15 + 4 + detailLines.length * 12 + 14;
+    const boxH = 16 + titleLines.length * 15 + 4 + detailLines.length * 13 + 14;
     ensure(boxH + 6);
     setFill(SOFT_BG);
     doc.roundedRect(M.left, ctx.y, CW, boxH, 4, 4, "F");
@@ -878,7 +878,7 @@ export function generatePdfReport(a: Analysis) {
     doc.text(titleLines, M.left + 14, yy);
     yy += titleLines.length * 15 + 4;
     setText(INK);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
     doc.text(detailLines, M.left + 14, yy);
     ctx.y += boxH + 6;
   });
@@ -912,13 +912,13 @@ export function generatePdfReport(a: Analysis) {
 
   // 12 · Aviso legal
   sectionTitle(NEXT(), "Aviso legal y metodología");
-  paragraph("Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.", { size: 9 });
+  paragraph("Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.", { size: 10 });
   ctx.y += 2;
-  paragraph("Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.", { size: 9 });
+  paragraph("Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.", { size: 10 });
   ctx.y += 2;
-  paragraph("Familias de spyware cubiertas por los IOCs públicos de MVT: Pegasus (NSO Group), Predator (Intellexa/Cytrox), Reign (QuaDream), Hermit (RCS Lab), la operación Triangulation contra iOS y diversas familias de stalkerware comercial identificadas por nombre de paquete. La lista exacta evoluciona con cada actualización de los repositorios públicos de Amnesty International, Citizen Lab y Google TAG, por lo que la cobertura real depende de la versión de MVT y de los indicadores vigentes en el momento del análisis.", { size: 9 });
+  paragraph("Familias de spyware cubiertas por los IOCs públicos de MVT: Pegasus (NSO Group), Predator (Intellexa/Cytrox), Reign (QuaDream), Hermit (RCS Lab), la operación Triangulation contra iOS y diversas familias de stalkerware comercial identificadas por nombre de paquete. La lista exacta evoluciona con cada actualización de los repositorios públicos de Amnesty International, Citizen Lab y Google TAG, por lo que la cobertura real depende de la versión de MVT y de los indicadores vigentes en el momento del análisis.", { size: 10 });
   ctx.y += 2;
-  paragraph("La ausencia de indicios no garantiza que el dispositivo esté limpio: MVT solo cubre amenazas con firma pública conocida. Spyware nuevo o muestras privadas pueden no detectarse.", { size: 9 });
+  paragraph("La ausencia de indicios no garantiza que el dispositivo esté limpio: MVT solo cubre amenazas con firma pública conocida. Spyware nuevo o muestras privadas pueden no detectarse.", { size: 10 });
   ctx.y += 2;
   paragraph("Los archivos se procesan localmente en el navegador. No se transmite información del dispositivo analizado a terceros. El análisis se realiza con el consentimiento del propietario del dispositivo.", { size: 9, italic: true, color: MUTED });
 

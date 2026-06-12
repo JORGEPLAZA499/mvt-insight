@@ -83,8 +83,10 @@ function createMainWindow() {
   });
 
   win.on("closed", () => {
+    cancelled = true;
     if (mainWindow === win) mainWindow = null;
   });
+
 
   const indexPath = path.join(__dirname, "..", "dist", "index.html");
   win.loadFile(indexPath).catch((err) => {

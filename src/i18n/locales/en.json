@@ -163,7 +163,7 @@
     "how": {
       "title": "Three steps for a preliminary analysis",
       "steps": {
-        "s1": { "t": "Upload artifacts", "d": "Upload the JSON/CSV results exported by MVT or a backup prepared for analysis." },
+        "s1": { "t": "Upload your evidence", "d": "Drop MVT artifacts (JSON/CSV), an iOS/Android backup, or log files. The system detects the format automatically." },
         "s2": { "t": "Secure processing", "d": "The backend runs MVT in an isolated environment and correlates IOCs against public feeds." },
         "s3": { "t": "Structured report", "d": "Receive matches, estimated risk level, timeline, and a downloadable PDF." }
       }

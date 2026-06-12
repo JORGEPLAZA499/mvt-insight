@@ -211,7 +211,7 @@ function ActionCard({
           : undefined,
       }}
     >
-      <div className="relative h-full rounded-[15px] bg-card/95 backdrop-blur-xl p-5 overflow-hidden">
+      <div className="relative flex h-full flex-col rounded-[15px] bg-card/95 backdrop-blur-xl p-5 overflow-hidden">
         {/* glow orb */}
         <div
           aria-hidden
@@ -259,7 +259,7 @@ function ActionCard({
         <p className="relative mt-1 text-sm text-muted-foreground leading-relaxed">{desc}</p>
 
         <div
-          className="relative mt-5 flex items-center gap-1.5 text-sm font-medium transition-transform duration-300 group-hover:translate-x-0.5"
+          className="relative mt-auto pt-5 flex items-center gap-1.5 text-sm font-medium transition-transform duration-300 group-hover:translate-x-0.5"
           style={{ color }}
         >
           <span>{cta}</span>

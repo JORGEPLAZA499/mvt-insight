@@ -14,6 +14,17 @@ const iosTools = require("./ios-tools.cjs");
 
 const isDev = !app.isPackaged;
 
+process.on("uncaughtException", (err) => {
+  if (err && /Object has been destroyed/i.test(err.message || "")) {
+    console.warn("[main] ignored post-destroy IPC:", err.message);
+    return;
+  }
+  console.error("[main] uncaughtException:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[main] unhandledRejection:", reason);
+});
+
 autoUpdater.logger = {
   info: (m) => console.log("[updater]", m),
   warn: (m) => console.warn("[updater]", m),
@@ -83,8 +94,10 @@ function createMainWindow() {
   });
 
   win.on("closed", () => {
+    cancelled = true;
     if (mainWindow === win) mainWindow = null;
   });
+
 
   const indexPath = path.join(__dirname, "..", "dist", "index.html");
   win.loadFile(indexPath).catch((err) => {
@@ -378,7 +391,15 @@ ipcMain.handle("mvt:cancel", async () => {
 });
 
 ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
-  const send = (channel, payload) => event.sender.send(channel, payload);
+  const send = (channel, payload) => {
+    try {
+      if (event.sender && !event.sender.isDestroyed()) {
+        event.sender.send(channel, payload);
+      }
+    } catch {
+      // sender destruido entre el check y el send: ignorar
+    }
+  };
   cancelled = false;
 
 

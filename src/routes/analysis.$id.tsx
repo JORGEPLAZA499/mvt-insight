@@ -229,6 +229,7 @@ const SEV_BADGE: Record<string, string> = {
 };
 
 function UserReport({ analysis }: { analysis: Analysis }) {
+  const { t } = useTranslation();
   const r = analysis.result!;
   const verdict = useMemo(() => buildVerdict(r), [r]);
   const recs = useMemo(() => nextSteps(r), [r]);
@@ -257,9 +258,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
     <div className="space-y-10">
       {/* Veredicto */}
       <section>
-        <SectionTitle num={sec()} title="Veredicto" />
+        <SectionTitle num={sec()} title={t("analysisPage.verdict")} />
         <div className={`rounded-xl border p-6 ${verdictBorder}`}>
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Veredicto</div>
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("analysisPage.verdict")}</div>
           <div className={`text-xl font-semibold mt-1 ${verdictTitle}`}>{verdict.headline}</div>
           <p className="text-sm text-foreground/80 mt-2">{verdict.detail}</p>
         </div>
@@ -267,29 +268,24 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* Resumen ejecutivo */}
       <section>
-        <SectionTitle num={sec()} title="Resumen ejecutivo" />
+        <SectionTitle num={sec()} title={t("analysisPage.execSummary")} />
         <p className="text-sm text-foreground/90">
-          Se ha analizado el archivo <strong>"{analysis.fileName}"</strong>. La plataforma detectada es{" "}
-          <strong>{platformLabel(r.platform)}</strong>. Se procesaron{" "}
-          <strong>{r.modules.length}</strong> módulos MVT con un total de{" "}
-          <strong>{r.totalEntries.toLocaleString()}</strong> entradas y se identificaron{" "}
-          <strong>{r.totalDetections}</strong> indicios técnicos. El nivel de riesgo estimado es{" "}
-          <strong className={riskColor(r.risk)}>{riskLabel(r.risk)}</strong>.
+          {t("analysisPage.execSummary")}: <strong>"{analysis.fileName}"</strong> · <strong>{platformLabel(r.platform)}</strong> · <strong>{r.modules.length}</strong> {t("analysisPage.modulesWithIndicia").toLowerCase()} · <strong>{r.totalEntries.toLocaleString()}</strong> {t("analysisPage.entries").toLowerCase()} · <strong>{r.totalDetections}</strong> {t("analysisPage.indicia").toLowerCase()} · <strong className={riskColor(r.risk)}>{riskLabel(r.risk)}</strong>
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
-          <SmallStat icon={AlertOctagon} label="Indicios" value={r.totalDetections} />
-          <SmallStat icon={Layers} label="Módulos con indicios" value={r.modules.filter((m) => m.detected > 0).length} />
-          <SmallStat icon={Database} label="Entradas analizadas" value={r.totalEntries.toLocaleString()} />
-          <SmallStat icon={ShieldAlert} label="Riesgo" value={riskLabel(r.risk)} />
+          <SmallStat icon={AlertOctagon} label={t("analysisPage.indicia")} value={r.totalDetections} />
+          <SmallStat icon={Layers} label={t("analysisPage.modulesWithIndicia")} value={r.modules.filter((m) => m.detected > 0).length} />
+          <SmallStat icon={Database} label={t("analysisPage.entriesAnalyzed")} value={r.totalEntries.toLocaleString()} />
+          <SmallStat icon={ShieldAlert} label={t("analysisPage.risk")} value={riskLabel(r.risk)} />
         </div>
       </section>
 
       {/* Ficha del dispositivo */}
       {deviceCard.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Ficha del dispositivo" />
+          <SectionTitle num={sec()} title={t("analysisPage.deviceCard")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Información del terminal extraída automáticamente del análisis. Por privacidad, números de serie e identificadores se muestran parcialmente.
+            {t("analysisPage.deviceCardDesc")}
           </p>
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
@@ -315,9 +311,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* Estado de seguridad del sistema (Android) */}
       {systemIntegrity.hasAny && (
         <section>
-          <SectionTitle num={sec()} title="Estado de seguridad del sistema" />
+          <SectionTitle num={sec()} title={t("analysisPage.systemSecurity")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Comprobaciones que indican si el sistema operativo conserva sus protecciones de fábrica o ha sido modificado.
+            {t("analysisPage.systemSecurityDesc")}
           </p>
           <SystemIntegrityCardView card={systemIntegrity} />
         </section>
@@ -326,9 +322,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* Servicios de accesibilidad activos (Android) */}
       {accessibility.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Servicios de accesibilidad activos" />
+          <SectionTitle num={sec()} title={t("analysisPage.accessibility")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Los servicios de accesibilidad pueden leer la pantalla y simular toques. Es el permiso que utilizan la mayoría de apps de vigilancia (stalkerware). Si no reconoces alguno marcado como "Origen no reconocido", revísalo y desactívalo en Ajustes → Accesibilidad.
+            {t("analysisPage.accessibilityDesc")}
           </p>
           <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
             {accessibility.map((row) => (
@@ -341,9 +337,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* Perfiles de configuración instalados (iOS) */}
       {configProfiles.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Perfiles de configuración instalados" />
+          <SectionTitle num={sec()} title={t("analysisPage.configProfiles")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Los perfiles de configuración pueden cambiar ajustes profundos del dispositivo (VPN, certificados, gestión remota). Revisa los que no hayas instalado tú mismo o tu empresa.
+            {t("analysisPage.configProfilesDesc")}
           </p>
           <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
             {configProfiles.map((p) => (
@@ -356,9 +352,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* Apps con más tráfico de red (iOS) */}
       {topNetwork.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Apps con más tráfico de red" />
+          <SectionTitle num={sec()} title={t("analysisPage.topNetwork")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Procesos o apps con mayor volumen de datos enviados o recibidos (Wi-Fi + datos móviles). Un volumen elevado no equivale por sí solo a spyware: consulta la interpretación inferior antes de sacar conclusiones.
+            {t("analysisPage.topNetworkDesc")}
           </p>
           <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
             {topNetwork.map((app, i) => (
@@ -369,7 +365,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
           {/* Interpretación del tráfico elevado */}
           <div className="mt-4 rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold">Interpretación del tráfico elevado</span>
+              <span className="text-sm font-semibold">{t("analysisPage.trafficInterp")}</span>
               <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${
                 networkInterp.band === "critical" ? "bg-destructive/15 text-destructive border-destructive/30"
                 : networkInterp.band === "high" ? "bg-destructive/10 text-destructive border-destructive/20"
@@ -379,12 +375,12 @@ function UserReport({ analysis }: { analysis: Analysis }) {
               }`}>
                 {networkInterp.bandLabel}
               </span>
-              <span className="text-xs text-muted-foreground tabular-nums">Traffic Risk Score: {networkInterp.score}/100</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{t("analysisPage.trafficScore", { score: networkInterp.score })}</span>
             </div>
             <p className="text-sm text-foreground/85">{networkInterp.summary}</p>
             {networkInterp.rationale.length > 0 && (
               <div>
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Factores considerados</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{t("analysisPage.factors")}</div>
                 <ul className="list-disc pl-5 space-y-1 text-sm text-foreground/85">
                   {networkInterp.rationale.map((r, i) => <li key={i}>{r}</li>)}
                 </ul>
@@ -398,11 +394,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 04 · Cómo leer este informe */}
       <section>
-        <SectionTitle num={sec()} title="Cómo leer este informe" />
+        <SectionTitle num={sec()} title={t("analysisPage.howToRead")} />
         <p className="text-sm text-foreground/80">
-          MVT (Mobile Verification Toolkit) busca rastros conocidos de spyware y apps de vigilancia en una copia del dispositivo.
-          Un indicio no equivale a una infección confirmada: puede tratarse de una app legítima instalada por el propio usuario.
-          Revisa cada hallazgo y comprueba si reconoces la app o el comportamiento descrito.
+          {t("analysisPage.howToReadIntro")}
         </p>
         <div className="mt-4 rounded-xl border border-border bg-card divide-y divide-border">
           {(["critical", "high", "medium", "low"] as const).map((lvl) => (
@@ -420,30 +414,30 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 05 · Áreas del dispositivo analizadas */}
       <section>
-        <SectionTitle num={sec()} title="Áreas del dispositivo analizadas" />
+        <SectionTitle num={sec()} title={t("analysisPage.deviceAreas")} />
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
-            <div className="col-span-6">Área</div>
-            <div className="col-span-2 text-right">Entradas</div>
-            <div className="col-span-2 text-right">Indicios</div>
-            <div className="col-span-2 text-right">Estado</div>
+            <div className="col-span-6">{t("analysisPage.area")}</div>
+            <div className="col-span-2 text-right">{t("analysisPage.entries")}</div>
+            <div className="col-span-2 text-right">{t("analysisPage.indiciaCol")}</div>
+            <div className="col-span-2 text-right">{t("analysisPage.statusCol")}</div>
           </div>
           {r.modules.filter((m) => m.entries > 0 || m.detected > 0).map((m) => (
             <ModuleRow key={m.key} module={m} detections={r.detections} />
           ))}
           {r.modules.length === 0 && (
-            <div className="p-6 text-sm text-muted-foreground text-center">No se reconocieron módulos MVT.</div>
+            <div className="p-6 text-sm text-muted-foreground text-center">{t("analysisPage.noModules2")}</div>
           )}
         </div>
       </section>
 
       {/* 06 · Indicios detectados */}
       <section>
-        <SectionTitle num={sec()} title="Indicios detectados" />
+        <SectionTitle num={sec()} title={t("analysisPage.indiciaDetected")} />
         {r.detections.length === 0 ? (
           <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm">
             <ShieldCheck className="h-5 w-5 inline-block text-success mr-2" />
-            MVT no encontró coincidencias con indicadores conocidos en los archivos subidos.
+            {t("analysisPage.noMatchesBox")}
           </div>
         ) : (
           <UserDetections detections={r.detections} />
@@ -453,9 +447,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* 07 · Apps con más actividad sospechosa */}
       {topApps.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Apps con más actividad sospechosa" />
+          <SectionTitle num={sec()} title={t("analysisPage.topApps")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Apps que más veces aparecen en los indicios técnicos. Si no reconoces alguna marcada como "Origen no reconocido", revísala con calma.
+            {t("analysisPage.topAppsDesc")}
           </p>
           <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
             {topApps.map((app, i) => (
@@ -468,9 +462,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       {/* 08 · Cronología de eventos clave */}
       {humanTimeline.length > 0 && (
         <section>
-          <SectionTitle num={sec()} title="Cronología de eventos clave" />
+          <SectionTitle num={sec()} title={t("analysisPage.chronology")} />
           <p className="text-sm text-muted-foreground mb-4">
-            Reconstrucción en lenguaje natural de los eventos más relevantes detectados, ordenados por fecha.
+            {t("analysisPage.chronologyDesc")}
           </p>
           <ol className="relative border-l border-border ml-3 space-y-4">
             {humanTimeline.map((e, i) => (
@@ -491,7 +485,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 09 · Próximos pasos recomendados */}
       <section>
-        <SectionTitle num={sec()} title="Próximos pasos recomendados" />
+        <SectionTitle num={sec()} title={t("analysisPage.nextSteps")} />
         <ol className="space-y-3">
           {recs.map((rec, i) => (
             <li key={i} className="flex gap-3">
@@ -504,7 +498,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 10 · Cómo verificar este resultado */}
       <section>
-        <SectionTitle num={sec()} title="Cómo verificar este resultado" />
+        <SectionTitle num={sec()} title={t("analysisPage.howVerify")} />
         <div className="space-y-3">
           {CROSS_CHECK_STEPS.map((step) => (
             <div key={step.title} className="rounded-lg border border-border bg-card p-4 border-l-4 border-l-primary">
@@ -517,9 +511,9 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 11 · Glosario */}
       <section>
-        <SectionTitle num={sec()} title="Glosario de términos" />
+        <SectionTitle num={sec()} title={t("analysisPage.glossary")} />
         <p className="text-sm text-muted-foreground mb-4">
-          Pequeño diccionario para entender los términos técnicos que aparecen en este informe.
+          {t("analysisPage.glossaryDesc")}
         </p>
         <div className="rounded-xl border border-border bg-card divide-y divide-border">
           {GLOSSARY.map((g) => (
@@ -536,12 +530,12 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 12 · Aviso legal */}
       <section>
-        <SectionTitle num={sec()} title="Aviso legal y metodología" />
+        <SectionTitle num={sec()} title={t("analysisPage.legal")} />
         <div className="space-y-3 text-xs text-muted-foreground">
-          <p>Este informe ha sido generado automáticamente a partir de los resultados de Mobile Verification Toolkit (MVT), un proyecto de Amnesty International Security Lab. MVT compara los artefactos extraídos del dispositivo con un conjunto público de indicadores de compromiso (IOCs) conocidos.</p>
-          <p>Un indicio detectado en este informe no constituye una certificación absoluta de infección: puede tratarse de software legítimo (control parental, gestión empresarial, apps de seguimiento autorizadas). La clasificación por categorías y la traducción a lenguaje claro son heurísticas que ofrece esta herramienta; la interpretación final corresponde a un analista cualificado.</p>
+          <p>{t("analysisPage.legalP1")}</p>
+          <p>{t("analysisPage.legalP2")}</p>
           <div>
-            <p className="font-semibold text-foreground mb-2">Familias de spyware cubiertas por los IOCs públicos de MVT</p>
+            <p className="font-semibold text-foreground mb-2">{t("analysisPage.families")}</p>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {[
                 "Pegasus (NSO Group)",
@@ -556,11 +550,11 @@ function UserReport({ analysis }: { analysis: Analysis }) {
                 </span>
               ))}
             </div>
-            <p>La lista exacta evoluciona con cada actualización de los repositorios públicos de Amnesty International, Citizen Lab y Google TAG, por lo que la cobertura real depende de la versión de MVT y de los indicadores vigentes en el momento del análisis.</p>
+            <p>{t("analysisPage.legalP3")}</p>
           </div>
-          <p>La ausencia de indicios no garantiza que el dispositivo esté limpio: MVT solo cubre amenazas con firma pública conocida. Spyware nuevo o muestras privadas pueden no detectarse.</p>
+          <p>{t("analysisPage.legalP4")}</p>
 
-          <p className="italic">Los archivos se procesan localmente en el navegador. No se transmite información del dispositivo analizado a terceros. El análisis se realiza con el consentimiento del propietario del dispositivo.</p>
+          <p className="italic">{t("analysisPage.legalP5")}</p>
         </div>
       </section>
     </div>

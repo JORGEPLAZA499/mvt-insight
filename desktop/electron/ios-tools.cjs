@@ -255,21 +255,68 @@ function createBackup(workDir, udid, destDir, onData) {
 function runMvtIos(workDir, backupDir, resultsDir, password, onData) {
   if (!fs.existsSync(resultsDir)) fs.mkdirSync(resultsDir, { recursive: true });
   const bin = iosBinPath(workDir, "mvt-ios");
-  // mvt-ios check-backup -o <results> --backup-password <pwd> <backup>
-  // El backup queda en `<destDir>/<UDID>/`; check-backup acepta cualquiera de los dos.
-  const args = ["check-backup", "-o", resultsDir, "--backup-password", password, backupDir];
-  return new Promise((resolve, reject) => {
-    const child = spawn(bin, args, { env: toolEnv(workDir), windowsHide: true });
-    let stderr = "";
-    child.stdout?.on("data", (d) => onData?.(d.toString()));
-    child.stderr?.on("data", (d) => { stderr += d.toString(); onData?.(d.toString()); });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) resolve({ ok: true });
-      else reject(new Error(`mvt-ios falló (código ${code}): ${stderr.trim()}`));
+
+  // mvt-ios check-backup NO acepta --backup-password. Hay que descifrar
+  // primero con `decrypt-backup -d <dest> -p <pwd> <backup>` y luego
+  // analizar la carpeta descifrada con `check-backup -o <results> <decrypted>`.
+  const decryptedDir = path.join(workDir, "ios-backup-decrypted");
+  try {
+    if (fs.existsSync(decryptedDir)) {
+      fs.rmSync(decryptedDir, { recursive: true, force: true });
+    }
+  } catch {}
+  fs.mkdirSync(decryptedDir, { recursive: true });
+
+  const runStep = (args) =>
+    new Promise((resolve, reject) => {
+      const child = spawn(bin, args, { env: toolEnv(workDir), windowsHide: true });
+      let stderr = "";
+      let stdout = "";
+      child.stdout?.on("data", (d) => {
+        const s = d.toString();
+        stdout += s;
+        onData?.(s);
+      });
+      child.stderr?.on("data", (d) => {
+        const s = d.toString();
+        stderr += s;
+        onData?.(s);
+      });
+      child.on("error", reject);
+      child.on("close", (code) => resolve({ code, stdout, stderr }));
     });
-  });
+
+  return (async () => {
+    onData?.("→ Descifrando backup del iPhone…\n");
+    const dec = await runStep(["decrypt-backup", "-d", decryptedDir, "-p", password, backupDir]);
+    if (dec.code !== 0) {
+      const combined = (dec.stdout + dec.stderr).toLowerCase();
+      if (
+        combined.includes("invalid password") ||
+        combined.includes("failed to decrypt") ||
+        combined.includes("wrong password") ||
+        combined.includes("incorrect password")
+      ) {
+        throw new Error("Contraseña del backup incorrecta. Vuelve al inicio y prueba de nuevo.");
+      }
+      throw new Error(`mvt-ios decrypt-backup falló (código ${dec.code}): ${(dec.stderr || dec.stdout).trim()}`);
+    }
+
+    onData?.("→ Analizando backup descifrado con MVT-iOS…\n");
+    const chk = await runStep(["check-backup", "-o", resultsDir, decryptedDir]);
+    if (chk.code !== 0) {
+      throw new Error(`mvt-ios check-backup falló (código ${chk.code}): ${(chk.stderr || chk.stdout).trim()}`);
+    }
+
+    // Limpieza best-effort del backup descifrado (puede contener datos sensibles).
+    try {
+      fs.rmSync(decryptedDir, { recursive: true, force: true });
+    } catch {}
+
+    return { ok: true };
+  })();
 }
+
 
 /**
  * Comprueba si Windows tiene instalados los drivers de Apple Mobile Device.

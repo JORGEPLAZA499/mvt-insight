@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,10 @@ function formatDeviceLine(d?: MvtDeviceInfo): string {
 }
 
 export const Route = createFileRoute("/analysis/$id")({
-  head: () => ({ meta: [{ title: "Resultado de análisis — Spyware Forensic Analyzer" }] }),
+  head: () => {
+    const t = i18n.getFixedT(null, "translation");
+    return { meta: [{ title: t("analysisPage.metaTitle") }] };
+  },
   component: AnalysisPage,
 });
 
@@ -51,7 +55,7 @@ function AnalysisPage() {
   if (loading) {
     return (
       <AppShell>
-        <div className="p-10 text-center text-muted-foreground">Cargando análisis…</div>
+        <div className="p-10 text-center text-muted-foreground">{t("analysisPage.loading")}</div>
       </AppShell>
     );
   }
@@ -59,7 +63,7 @@ function AnalysisPage() {
   if (!analysis) {
     return (
       <AppShell>
-        <div className="p-10 text-center text-muted-foreground">Análisis no encontrado.</div>
+        <div className="p-10 text-center text-muted-foreground">{t("analysisPage.notFound")}</div>
       </AppShell>
     );
   }
@@ -71,8 +75,8 @@ function AnalysisPage() {
           <div className="mx-auto h-14 w-14 rounded-full bg-gradient-primary grid place-items-center shadow-glow animate-pulse">
             <Activity className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-semibold mt-4">Procesando archivos MVT…</h1>
-          <p className="text-sm text-muted-foreground mt-2">Esto ocurre en tu navegador y suele tardar unos segundos.</p>
+          <h1 className="text-xl font-semibold mt-4">{t("analysisPage.processingTitle")}</h1>
+          <p className="text-sm text-muted-foreground mt-2">{t("analysisPage.processingBody")}</p>
         </div>
       </AppShell>
     );
@@ -82,9 +86,9 @@ function AnalysisPage() {
     return (
       <AppShell>
         <div className="p-10 max-w-2xl mx-auto">
-          <h1 className="text-xl font-semibold">Error procesando archivos</h1>
-          <p className="text-sm text-muted-foreground mt-2">{analysis.error || "Los archivos no parecen resultados válidos de MVT."}</p>
-          <Link to="/upload" className="text-primary hover:underline text-sm mt-4 inline-block">← Subir otros archivos</Link>
+          <h1 className="text-xl font-semibold">{t("analysisPage.errorTitle")}</h1>
+          <p className="text-sm text-muted-foreground mt-2">{analysis.error || t("analysisPage.errorBody")}</p>
+          <Link to="/upload" className="text-primary hover:underline text-sm mt-4 inline-block">{t("analysisPage.uploadOther")}</Link>
         </div>
       </AppShell>
     );
@@ -97,7 +101,7 @@ function AnalysisPage() {
       <div className="p-6 md:p-10 max-w-6xl mx-auto">
         <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
           <div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider">Resultado de análisis</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">{t("analysisPage.eyebrow")}</div>
             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mt-1 truncate max-w-2xl">{analysis.fileName}</h1>
             <p className="text-sm text-muted-foreground mt-1">{platformLabel(r.platform)} · {new Date(analysis.uploadedAt).toLocaleString()}</p>
             {formatDeviceLine(r.deviceInfo) && (
@@ -106,7 +110,7 @@ function AnalysisPage() {
           </div>
           <div className="flex gap-2">
             <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(analysis)}>
-              <Download className="h-4 w-4 mr-2" /> Descargar PDF
+              <Download className="h-4 w-4 mr-2" /> {t("analysisPage.downloadPdf")}
             </Button>
           </div>
         </div>
@@ -119,11 +123,11 @@ function AnalysisPage() {
           <div className="flex items-center gap-4">
             {r.risk === "low" ? <ShieldCheck className="h-10 w-10 text-success" /> : <ShieldAlert className="h-10 w-10 text-destructive" />}
             <div className="flex-1">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">Nivel de riesgo estimado</div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">{t("analysisPage.riskLevel")}</div>
               <div className={`text-2xl font-semibold ${riskColor(r.risk)}`}>{riskLabel(r.risk)}</div>
               <p className="text-sm text-muted-foreground mt-1">
-                MVT generó <strong className="text-foreground">{r.totalDetections}</strong> detección(es) sobre <strong className="text-foreground">{r.modules.length}</strong> módulo(s) analizado(s).
-                {r.totalDetections === 0 && " No se encontraron coincidencias con indicadores conocidos."}
+                <Trans i18nKey="analysisPage.summarySentence" values={{ detections: r.totalDetections, modules: r.modules.length }} components={[<strong className="text-foreground" />, <strong className="text-foreground" />, <strong className="text-foreground" />, <strong className="text-foreground" />]} />
+                {r.totalDetections === 0 && t("analysisPage.noMatches")}
               </p>
             </div>
           </div>
@@ -142,12 +146,12 @@ function AnalysisPage() {
 
           {/* ---------- Pestaña modo desarrollador ---------- */}
           <TabsContent value="dev" className="mt-6">
-            <h2 className="text-lg font-semibold mb-4">Módulos MVT analizados</h2>
+            <h2 className="text-lg font-semibold mb-4">{t("analysisPage.devModules")}</h2>
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
-                <div className="col-span-6">Módulo</div>
-                <div className="col-span-3 text-right">Entradas</div>
-                <div className="col-span-3 text-right">Detecciones</div>
+                <div className="col-span-6">{t("analysisPage.module")}</div>
+                <div className="col-span-3 text-right">{t("analysisPage.entries")}</div>
+                <div className="col-span-3 text-right">{t("analysisPage.detectionsCol")}</div>
               </div>
               {r.modules.map((m) => (
                 <div key={m.key} className="grid grid-cols-12 px-4 py-3 border-b border-border last:border-0 text-sm items-center">
@@ -162,14 +166,14 @@ function AnalysisPage() {
                 </div>
               ))}
               {r.modules.length === 0 && (
-                <div className="p-6 text-sm text-muted-foreground text-center">No se reconocieron módulos MVT en los archivos subidos.</div>
+                <div className="p-6 text-sm text-muted-foreground text-center">{t("analysisPage.noModules")}</div>
               )}
             </div>
 
-            <h2 className="text-lg font-semibold mt-10 mb-4">Detecciones crudas</h2>
+            <h2 className="text-lg font-semibold mt-10 mb-4">{t("analysisPage.rawDetections")}</h2>
             {r.detections.length === 0 ? (
               <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground text-center">
-                Sin detecciones registradas.
+                {t("analysisPage.noDetections")}
               </div>
             ) : (
               <DevDetections detections={r.detections} />
@@ -177,7 +181,7 @@ function AnalysisPage() {
 
             {r.timeline.length > 0 && (
               <>
-                <h2 className="text-lg font-semibold mt-10 mb-4">Línea de tiempo ({r.timeline.length} eventos)</h2>
+                <h2 className="text-lg font-semibold mt-10 mb-4">{t("analysisPage.timeline", { count: r.timeline.length })}</h2>
                 <div className="rounded-xl border border-border bg-card p-6">
                   <ol className="relative border-l border-border ml-3 space-y-4">
                     {r.timeline.slice(0, 30).map((e, i) => (
@@ -197,7 +201,7 @@ function AnalysisPage() {
 
 
         <div className="mt-8 text-xs text-muted-foreground">
-          <Link to="/dashboard" className="hover:text-foreground">← Volver al dashboard</Link>
+          <Link to="/dashboard" className="hover:text-foreground">{t("analysisPage.backDashboard")}</Link>
         </div>
       </div>
     </AppShell>

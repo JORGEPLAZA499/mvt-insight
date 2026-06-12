@@ -683,11 +683,7 @@ export function App() {
                               </div>
                             );
                           })()}
-                          {nowTick >= 0 && phaseStartedAt && (Date.now() - phaseStartedAt) > 5 * 60 * 1000 && logs.length > 0 && (() => {
-                            // Aviso de "puede estar lento" si llevamos >5 min sin que llegue ningún log nuevo.
-                            // (heurística: comparamos con el snapshot anterior de logs.length usando lastLogCountRef)
-                            return null;
-                          })()}
+                          <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
                         </div>
                       )}
                     </>

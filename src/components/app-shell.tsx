@@ -14,6 +14,7 @@ import {
   Ticket,
   Activity,
   Monitor,
+  Headset,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -67,6 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
         { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
         { to: "/settings/desktop", label: "App de escritorio", icon: Monitor, hint: "Vincular la app de escritorio" },
+        { href: "https://www.rpjsoftware.com/help#contacto", label: t("shell.nav.support"), icon: Headset, hint: t("shell.nav.supportHint") },
         ...(isAdmin
           ? [{ to: "/admin", label: t("shell.nav.admin"), icon: ShieldCheck, hint: t("shell.adminHint") }]
           : []),
@@ -211,36 +213,32 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <nav className="space-y-1">
             {nav.map((n) => {
-              const active = inAdminMode
-                ? (n as any).tabKey === adminTab
-                : path.startsWith(n.to);
+              const isExternal = !!(n as any).href;
+              const active = isExternal
+                ? false
+                : inAdminMode
+                  ? (n as any).tabKey === adminTab
+                  : path.startsWith(n.to);
               const Icon = n.icon;
               const badge =
-                !inAdminMode && n.to === "/history" && historyCount > 0
+                !inAdminMode && !isExternal && n.to === "/history" && historyCount > 0
                   ? String(historyCount)
                   : !inAdminMode && (n as any).highlight && !active
                     ? "new"
                     : null;
-              return (
-                <Link
-                  key={`${n.to}-${(n as any).tabKey ?? ""}`}
-                  to={n.to}
-                  search={(n as any).search}
-                  className={`relative group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
-                    active
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:translate-x-0.5"
-                  }`}
-                  style={
-                    active
-                      ? {
-                          background:
-                            "linear-gradient(90deg, color-mix(in oklab, var(--primary) 18%, transparent) 0%, transparent 100%)",
-                        }
-                      : undefined
+              const className = `relative group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                active
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:translate-x-0.5"
+              }`;
+              const style = active
+                ? {
+                    background:
+                      "linear-gradient(90deg, color-mix(in oklab, var(--primary) 18%, transparent) 0%, transparent 100%)",
                   }
-                >
-                  {/* Active indicator bar */}
+                : undefined;
+              const inner = (
+                <>
                   {active && (
                     <span
                       aria-hidden
@@ -251,8 +249,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                       }}
                     />
                   )}
-
-                  {/* Hover bg layer (non-active) */}
                   {!active && (
                     <span
                       aria-hidden
@@ -262,7 +258,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                       }}
                     />
                   )}
-
                   <Icon
                     className={`relative h-4 w-4 transition-transform duration-200 group-hover:scale-110 ${
                       active ? "text-primary" : ""
@@ -274,7 +269,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                     }
                   />
                   <span className="relative flex-1 truncate">{n.label}</span>
-
                   {badge && (
                     <span
                       className={`relative inline-flex items-center justify-center text-[10px] font-semibold rounded-full px-1.5 min-w-[18px] h-[18px] ${
@@ -293,6 +287,33 @@ export function AppShell({ children }: { children: ReactNode }) {
                       )}
                     </span>
                   )}
+                </>
+              );
+
+              if (isExternal) {
+                return (
+                  <a
+                    key={(n as any).href}
+                    href={(n as any).href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={className}
+                    style={style}
+                  >
+                    {inner}
+                  </a>
+                );
+              }
+
+              return (
+                <Link
+                  key={`${n.to}-${(n as any).tabKey ?? ""}`}
+                  to={n.to}
+                  search={(n as any).search}
+                  className={className}
+                  style={style}
+                >
+                  {inner}
                 </Link>
               );
             })}

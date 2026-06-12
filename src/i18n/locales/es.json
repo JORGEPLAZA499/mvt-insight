@@ -57,7 +57,9 @@
       "uploadHint": "Subir artefactos",
       "reportsHint": "Resultados",
       "historyHint": "Análisis previos",
-      "admin": "Administración"
+      "admin": "Administración",
+      "support": "Atención al cliente",
+      "supportHint": "Contactar con soporte"
     },
     "admin": {
       "clients": "Clientes",

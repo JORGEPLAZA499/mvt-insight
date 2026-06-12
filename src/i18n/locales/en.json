@@ -57,7 +57,9 @@
       "uploadHint": "Upload artifacts",
       "reportsHint": "Results",
       "historyHint": "Previous analyses",
-      "admin": "Administration"
+      "admin": "Administration",
+      "support": "Customer support",
+      "supportHint": "Contact support"
     },
     "admin": {
       "clients": "Clients",

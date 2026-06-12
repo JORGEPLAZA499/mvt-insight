@@ -8,6 +8,7 @@ type Device = "android" | "ios";
 type Screen = "welcome" | "running" | "done" | "link" | "iosSetup";
 
 const WEB_BASE_URL = "https://spyware.rpjsoftware.com";
+const ANALYSIS_COST = 98;
 
 interface PhaseState {
   num: number;

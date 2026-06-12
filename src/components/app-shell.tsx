@@ -14,6 +14,7 @@ import {
   Ticket,
   Activity,
   Monitor,
+  Headset,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";

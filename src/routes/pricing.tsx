@@ -162,10 +162,11 @@ function PricingPage() {
                 </div>
 
                 <div className="md:w-[260px] w-full flex flex-col gap-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-3">
                     <PayGroup title={t("purchase.cardPayments")} items={cardBrands} />
                     <PayGroup title={t("purchase.cryptoPayments")} items={cryptoBrands} />
                   </div>
+
 
                   <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground text-center">
                     Las compras se realizan desde el panel de control una vez iniciada sesión.
@@ -302,9 +303,9 @@ function PayGroup({ title, items }: { title: string; items: BrandItem[] }) {
   return (
     <div>
       <div className="text-[10px] italic text-muted-foreground mb-1.5 text-center">{title}</div>
-      <div className="flex flex-wrap gap-1.5 justify-center items-center">
+      <div className="flex flex-nowrap gap-1.5 justify-center items-center">
         {items.map((it) => (
-          <span key={it.key}>{it.node}</span>
+          <span key={it.key} className="shrink-0">{it.node}</span>
         ))}
       </div>
     </div>

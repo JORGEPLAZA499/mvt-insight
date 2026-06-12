@@ -1,13 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { Analysis, riskColor, riskLabel } from "@/lib/mock-store";
-import { listMyAnalyses } from "@/lib/analyses.functions";
+import { listMyAnalyses, deleteAnalysis } from "@/lib/analyses.functions";
 import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { Button } from "@/components/ui/button";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, Trash2 } from "lucide-react";
 import { generatePdfReport } from "@/lib/pdf-report";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({ meta: [{ title: "Informes — Spyware Forensic Analyzer" }] }),
@@ -16,7 +28,10 @@ export const Route = createFileRoute("/reports")({
 
 function Reports() {
   const [items, setItems] = useState<Analysis[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fetchAnalyses = useServerFn(listMyAnalyses);
+  const removeAnalysis = useServerFn(deleteAnalysis);
+
   useEffect(() => {
     let alive = true;
     fetchAnalyses()
@@ -28,6 +43,21 @@ function Reports() {
       .catch(() => { if (alive) setItems([]); });
     return () => { alive = false; };
   }, [fetchAnalyses]);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await removeAnalysis({ data: { id } });
+      setItems((prev) => prev.filter((x) => x.id !== id));
+      toast.success("Informe eliminado");
+    } catch (e) {
+      toast.error("No se pudo eliminar el informe", {
+        description: e instanceof Error ? e.message : undefined,
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <AppShell>
@@ -63,6 +93,36 @@ function Reports() {
                   <Button size="sm" className="flex-1 bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(a)}>
                     <Download className="h-4 w-4 mr-1" /> PDF
                   </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        aria-label="Eliminar informe"
+                        disabled={deletingId === a.id}
+                        className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar este informe?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Se eliminará permanentemente el análisis de <span className="font-medium">{a.fileName}</span>. Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(a.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             ))}

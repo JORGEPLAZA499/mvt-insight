@@ -23,6 +23,7 @@ import { Route as SettingsDesktopRouteImport } from './routes/settings.desktop'
 import { Route as AnalysisIdRouteImport } from './routes/analysis.$id'
 import { Route as ApiPublicScriptsFileRouteImport } from './routes/api/public/scripts/$file'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicPaymentsPlisioWebhookRouteImport } from './routes/api/public/payments/plisio-webhook'
 import { Route as ApiPublicDesktopWhoamiRouteImport } from './routes/api/public/desktop/whoami'
 import { Route as ApiPublicDesktopSubmitAnalysisRouteImport } from './routes/api/public/desktop/submit-analysis'
 import { Route as ApiPublicDesktopPairRouteImport } from './routes/api/public/desktop/pair'
@@ -99,6 +100,12 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPaymentsPlisioWebhookRoute =
+  ApiPublicPaymentsPlisioWebhookRouteImport.update({
+    id: '/api/public/payments/plisio-webhook',
+    path: '/api/public/payments/plisio-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicDesktopWhoamiRoute = ApiPublicDesktopWhoamiRouteImport.update({
   id: '/api/public/desktop/whoami',
   path: '/api/public/desktop/whoami',
@@ -139,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
   '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
   '/api/public/desktop/whoami': typeof ApiPublicDesktopWhoamiRoute
+  '/api/public/payments/plisio-webhook': typeof ApiPublicPaymentsPlisioWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
@@ -159,6 +167,7 @@ export interface FileRoutesByTo {
   '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
   '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
   '/api/public/desktop/whoami': typeof ApiPublicDesktopWhoamiRoute
+  '/api/public/payments/plisio-webhook': typeof ApiPublicPaymentsPlisioWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
@@ -180,6 +189,7 @@ export interface FileRoutesById {
   '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
   '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
   '/api/public/desktop/whoami': typeof ApiPublicDesktopWhoamiRoute
+  '/api/public/payments/plisio-webhook': typeof ApiPublicPaymentsPlisioWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/scripts/$file': typeof ApiPublicScriptsFileRoute
 }
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/api/public/desktop/pair'
     | '/api/public/desktop/submit-analysis'
     | '/api/public/desktop/whoami'
+    | '/api/public/payments/plisio-webhook'
     | '/api/public/payments/webhook'
     | '/api/public/scripts/$file'
   fileRoutesByTo: FileRoutesByTo
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/api/public/desktop/pair'
     | '/api/public/desktop/submit-analysis'
     | '/api/public/desktop/whoami'
+    | '/api/public/payments/plisio-webhook'
     | '/api/public/payments/webhook'
     | '/api/public/scripts/$file'
   id:
@@ -242,6 +254,7 @@ export interface FileRouteTypes {
     | '/api/public/desktop/pair'
     | '/api/public/desktop/submit-analysis'
     | '/api/public/desktop/whoami'
+    | '/api/public/payments/plisio-webhook'
     | '/api/public/payments/webhook'
     | '/api/public/scripts/$file'
   fileRoutesById: FileRoutesById
@@ -263,6 +276,7 @@ export interface RootRouteChildren {
   ApiPublicDesktopPairRoute: typeof ApiPublicDesktopPairRoute
   ApiPublicDesktopSubmitAnalysisRoute: typeof ApiPublicDesktopSubmitAnalysisRoute
   ApiPublicDesktopWhoamiRoute: typeof ApiPublicDesktopWhoamiRoute
+  ApiPublicPaymentsPlisioWebhookRoute: typeof ApiPublicPaymentsPlisioWebhookRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicScriptsFileRoute: typeof ApiPublicScriptsFileRoute
 }
@@ -367,6 +381,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payments/plisio-webhook': {
+      id: '/api/public/payments/plisio-webhook'
+      path: '/api/public/payments/plisio-webhook'
+      fullPath: '/api/public/payments/plisio-webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsPlisioWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/desktop/whoami': {
       id: '/api/public/desktop/whoami'
       path: '/api/public/desktop/whoami'
@@ -415,9 +436,20 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicDesktopPairRoute: ApiPublicDesktopPairRoute,
   ApiPublicDesktopSubmitAnalysisRoute: ApiPublicDesktopSubmitAnalysisRoute,
   ApiPublicDesktopWhoamiRoute: ApiPublicDesktopWhoamiRoute,
+  ApiPublicPaymentsPlisioWebhookRoute: ApiPublicPaymentsPlisioWebhookRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicScriptsFileRoute: ApiPublicScriptsFileRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

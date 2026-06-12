@@ -1,47 +1,59 @@
-# Plan: barrido preventivo de procesos `mvt-ios.exe` zombie
+# Plan: corregir `mvt-ios.exe` en Windows (`--multiprocessing-fork`)
 
-## Problema
+## Diagnóstico
 
-En Windows, el binario PyInstaller de `mvt-ios` arranca múltiples subprocesos hijos que a veces no terminan al acabar el análisis. Se acumulan como zombies (`mvt-ios.exe` "En ejecución" en el Administrador de tareas) y bloquean los siguientes análisis.
+El error:
 
-En 1.0.33/1.0.34 ya matamos el árbol cuando salta el timeout, pero no cubrimos dos momentos clave: el inicio de un nuevo análisis y el cierre de la app.
+```text
+Error: No such option: --multiprocessing-fork
+```
 
-## Cambios (solo `desktop/electron/ios-tools.cjs` y `desktop/electron/main.cjs`)
+indica un problema del binario `mvt-ios.exe` empaquetado con PyInstaller en Windows.
 
-### 1. Helper reutilizable en `ios-tools.cjs`
-Extraer un helper `killAllMvtIosProcesses()` (sin PID; barre TODO `mvt-ios.exe` del sistema en Windows con `taskkill /F /IM mvt-ios.exe /T`, no-op en macOS/Linux). Exportarlo.
+`mvt-ios` usa procesos internos. En Windows, esos procesos relanzan el mismo `.exe` con un argumento especial llamado `--multiprocessing-fork`. Como nuestro launcher no llama a `multiprocessing.freeze_support()` antes de arrancar el CLI de MVT, Click interpreta ese argumento como si fuera una opción normal de `mvt-ios` y falla. Por eso aparecen muchas instancias `mvt-ios.exe` y el análisis no avanza.
 
-### 2. Barrido al INICIO del análisis iOS (`runMvtIos` en `ios-tools.cjs`)
-Antes de lanzar `decrypt-backup`, llamar a `killAllMvtIosProcesses()` y loggear en el panel: `→ Limpiando procesos mvt-ios.exe previos…`. Así un usuario que abre la app con zombies de una sesión anterior arranca limpio sin tener que ir al Administrador de tareas.
+## Cambio principal
 
-### 3. Barrido al CIERRE de la app (`main.cjs`)
-En el handler `before-quit` de `app` (y como red de seguridad en `window-all-closed`), llamar a `killAllMvtIosProcesses()` para que cerrar MvtInsight no deje zombies aunque el análisis estuviera a medias.
+Editar:
 
-### 4. Sin tocar
-- Lógica de análisis, timeouts, heartbeat de 1.0.33.
-- `mvt_ios_launcher.py` ni el workflow de build.
-- Versión en `desktop/package.json` (sigue 1.0.34 hasta que pidas "publica").
+```text
+.github/workflows/mvt_ios_launcher.py
+```
+
+para que quede así:
+
+```python
+import multiprocessing
+
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+
+    from mvt.ios.cli import cli
+    cli()
+```
+
+Esto hace que los procesos worker de Windows se manejen antes de que el CLI procese los argumentos.
+
+## Qué no tocar
+
+- No tocar `desktop/package.json` ni subir versión todavía.
+- No revertir los timeouts ni el barrido preventivo de `mvt-ios.exe`; siguen siendo útiles como red de seguridad.
+- No cambiar el workflow salvo que sea necesario: ya copia `mvt_ios_launcher.py` y empaqueta el binario.
+
+## Pasos después del cambio
+
+1. Aplicar el fix en `mvt_ios_launcher.py`.
+2. Ejecutar el workflow de GitHub **Build iOS Tools** para regenerar los assets de `ios-tools-v1`.
+3. En el PC donde ya se descargaron herramientas antiguas, borrar la carpeta cacheada:
+
+```text
+C:\Users\TU_USUARIO\Downloads\mvt-insight\ios-tools
+```
+
+Así MvtInsight volverá a descargar el `mvt-ios.exe` corregido.
 
 ## Resultado esperado
 
-- Abrir la app con 25 `mvt-ios.exe` zombies → al pulsar "Analizar iPhone" se barren antes de empezar.
-- Cerrar MvtInsight con un análisis en curso → no quedan `mvt-ios.exe` huérfanos.
-- En macOS/Linux el helper es no-op, no cambia nada.
-
-## Detalles técnicos
-
-```js
-// ios-tools.cjs
-function killAllMvtIosProcesses() {
-  if (process.platform !== "win32") return;
-  try {
-    require("child_process").spawnSync(
-      "taskkill", ["/F", "/IM", "mvt-ios.exe", "/T"],
-      { windowsHide: true }
-    );
-  } catch {}
-}
-```
-
-- Es seguro llamarlo aunque no haya procesos (taskkill devuelve código ≠0, lo ignoramos).
-- En `before-quit` se llama de forma síncrona (`spawnSync`) para que termine antes de que Electron cierre.
+- Desaparece `Error: No such option: --multiprocessing-fork`.
+- No se acumulan decenas de `mvt-ios.exe`.
+- El análisis iOS puede avanzar a `decrypt-backup` y `check-backup` correctamente.

@@ -199,18 +199,21 @@
     "title": "Panel",
     "subtitle": "Resumen general de tus análisis forenses.",
     "ctaNew": "Nuevo análisis",
-    "gauges": {
-      "threat": "Nivel de amenaza global",
-      "threatSub": "{{count}} análisis evaluados",
+    "shortcuts": {
+      "eyebrow": "Accesos directos",
+      "title": "¿Qué quieres hacer?",
+      "newAnalysis": { "title": "Nuevo análisis", "desc": "Sube artefactos y lanza un análisis forense.", "cta": "Iniciar" },
+      "reports": { "title": "Informes", "desc": "Consulta los informes PDF de tus análisis.", "cta": "Ver informes" },
+      "history": { "title": "Historial", "desc": "Revisa todos los análisis previos.", "cta": "Abrir historial" },
+      "desktop": { "title": "App de escritorio", "desc": "Vincula la app y ejecuta análisis locales.", "cta": "Configurar" },
+      "credits": { "title": "Recargar créditos", "desc": "Compra créditos para nuevos análisis.", "cta": "Comprar" },
+      "support": { "title": "Soporte", "desc": "Contacta con nuestro equipo de ayuda.", "cta": "Contactar" }
+    },
+    "stats": {
       "total": "Análisis totales",
       "completed": "Completados",
-      "matches": "Coincidencias IOC"
-    },
-    "hud": {
-      "pending": "Pendientes",
-      "processing": "Procesando",
-      "completed": "Completados",
-      "highRisk": "Riesgo alto"
+      "highRisk": "Riesgo alto",
+      "credits": "Créditos disponibles"
     },
     "recent": {
       "title": "Análisis recientes",

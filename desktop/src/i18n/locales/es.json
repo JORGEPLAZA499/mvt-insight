@@ -31,6 +31,8 @@
       "ios": "Analizando iPhone…"
     },
     "subtitle": "No cierres esta ventana. Tarda entre 5 y 15 minutos.",
+    "subtitle.android": "No cierres esta ventana. Tarda entre 5 y 15 minutos.",
+    "subtitle.ios": "No cierres esta ventana. Puede tardar entre 15 y 40 minutos según el tamaño del backup.",
     "starting": "Iniciando…",
     "working": "Analizando",
     "cancel": "Cancelar",

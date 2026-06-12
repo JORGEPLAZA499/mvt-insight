@@ -31,6 +31,8 @@
       "ios": "Analyzing iPhone…"
     },
     "subtitle": "Don't close this window. It takes between 5 and 15 minutes.",
+    "subtitle.android": "Don't close this window. It takes between 5 and 15 minutes.",
+    "subtitle.ios": "Don't close this window. It may take 15–40 minutes depending on backup size.",
     "starting": "Starting…",
     "working": "Analyzing",
     "cancel": "Cancel",

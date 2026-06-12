@@ -95,9 +95,6 @@ function Dashboard() {
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
             {t("dashboard.title")}
           </h1>
-          <p className="mt-2 text-base text-muted-foreground max-w-xl">
-            {t("dashboard.subtitle")}
-          </p>
         </div>
 
         {/* Quick action shortcuts */}

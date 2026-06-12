@@ -198,7 +198,7 @@
   "dashboard": {
     "eyebrow": "Centro de mando forense",
     "title": "Panel",
-    "subtitle": "Resumen general de tus análisis forenses.",
+    
     "ctaNew": "Nuevo análisis",
     "shortcuts": {
       "eyebrow": "Accesos directos",

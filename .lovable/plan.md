@@ -27,7 +27,7 @@ Detalles:
 
 ## Lo que NO se toca
 
-- `desktop/package.json > version` queda en `1.0.31`. Cuando me digas "publica" bumpeo a 1.0.32 y publico.
+- `desktop/package.json > version` se bumpeó a `1.0.32` y se publicó.
 - El flujo Android no cambia.
 - La UI (`App.tsx`) no cambia; solo verá el progreso vía logs.
 

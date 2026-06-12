@@ -191,7 +191,35 @@ export function App() {
     await window.mvt?.quitAndInstall();
   };
 
+  const refreshCredits = async (): Promise<number | null> => {
+    try {
+      if (!window.mvt?.auth) return null;
+      const { token } = await window.mvt.auth.get();
+      if (!token) return null;
+      const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/whoami`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) return null;
+      const data = await r.json();
+      if (!data?.ok) return null;
+      setAccount({ email: data.email, label: data.label, credits: data.credits, userCode: data.userCode ?? null });
+      return data.credits as number;
+    } catch {
+      return null;
+    }
+  };
+
   const start = async (d: Device, options: { password?: string } = {}) => {
+    // Comprobar créditos ANTES de iniciar el análisis (si hay cuenta vinculada).
+    if (account) {
+      const fresh = await refreshCredits();
+      const available = fresh ?? account.credits;
+      if (available < ANALYSIS_COST) {
+        setCreditsWarning({ required: ANALYSIS_COST, available });
+        return;
+      }
+    }
+
     setDevice(d);
     setScreen("running");
     setLogs([]);

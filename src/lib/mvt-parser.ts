@@ -342,20 +342,50 @@ function extractAndroidGetprop(data: any): MvtDeviceInfo {
 }
 
 function extractIosInfo(data: any): MvtDeviceInfo {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
-  const d: any = data;
-  const serial = typeof d.SerialNumber === "string" ? d.SerialNumber : undefined;
+  if (!data || typeof data !== "object") return { brand: "Apple", manufacturer: "Apple" };
+
+  const map = new Map<string, string>();
+  const norm = (k: string) => k.toLowerCase().replace(/[\s_\-]+/g, "");
+  const add = (k: any, v: any) => {
+    if (typeof k !== "string") return;
+    if (v == null) return;
+    const val = typeof v === "string" ? v : (typeof v === "number" || typeof v === "boolean") ? String(v) : "";
+    if (!val.trim()) return;
+    map.set(norm(k), val.trim());
+  };
+  if (Array.isArray(data)) {
+    for (const it of data) {
+      if (!it || typeof it !== "object") continue;
+      if ("name" in it || "key" in it || "property" in it) {
+        add((it as any).name ?? (it as any).key ?? (it as any).property, (it as any).value ?? (it as any).val);
+      } else {
+        for (const [k, v] of Object.entries(it)) add(k, v as any);
+      }
+    }
+  } else {
+    for (const [k, v] of Object.entries(data)) add(k, v as any);
+  }
+
+  const pick = (...keys: string[]): string | undefined => {
+    for (const k of keys) {
+      const v = map.get(norm(k));
+      if (v) return v;
+    }
+    return undefined;
+  };
+
+  const serial = pick("SerialNumber", "Serial Number", "serial");
   return {
     brand: "Apple",
     manufacturer: "Apple",
-    model: d.ProductType || d.HardwareModel,
-    deviceName: d.DeviceName,
-    osVersion: d.ProductVersion,
-    buildId: d.BuildVersion,
-    regionInfo: d.RegionInfo,
-    locale: d.Locale,
-    timezone: d.TimeZone,
-    carrier: d.CarrierName || d.SIMOperatorName,
+    model: pick("ProductType", "Product Type", "HardwareModel", "Hardware Model", "ModelNumber"),
+    deviceName: pick("DeviceName", "Device Name"),
+    osVersion: pick("ProductVersion", "Product Version", "iOS Version", "OSVersion", "OS Version"),
+    buildId: pick("BuildVersion", "Build Version", "Build"),
+    regionInfo: pick("RegionInfo", "Region Info", "Region"),
+    locale: pick("Locale", "Language"),
+    timezone: pick("TimeZone", "Time Zone"),
+    carrier: pick("CarrierName", "Carrier Name", "SIMOperatorName", "Carrier"),
     serialLast4: serial && serial.length >= 4 ? serial.slice(-4) : undefined,
   };
 }

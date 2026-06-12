@@ -36,6 +36,66 @@ def _ensure_cache_dirs() -> None:
     os.environ.setdefault("XDG_CACHE_HOME", str(cache_root))
 
 
+def _patch_tldextract() -> None:
+    """Fuerza a tldextract a usar el snapshot embebido en el paquete.
+
+    El binario PyInstaller no puede descargar ni escribir la Public Suffix
+    List en runtime en entornos Windows con perfiles de nombre corto
+    (`GAMING~1`) o sin permisos sobre la carpeta temporal. Eso provoca:
+        Failed fetching 'https://publicsuffix.org/list/public_suffix_list.dat'
+    y, en algunas versiones, rompe el análisis.
+
+    Sustituimos el extractor por defecto por uno configurado con
+    `suffix_list_urls=()` y `fallback_to_snapshot=True` para que use
+    siempre el snapshot incluido en el paquete y nunca toque la red ni
+    el disco para la PSL.
+    """
+    try:
+        import tldextract  # type: ignore
+
+        kwargs = {
+            "suffix_list_urls": (),
+            "fallback_to_snapshot": True,
+            "cache_dir": os.environ.get("TLDEXTRACT_CACHE"),
+        }
+
+        extractor = None
+        for _ in range(2):
+            try:
+                extractor = tldextract.TLDExtract(**kwargs)
+                break
+            except TypeError as exc:
+                # Eliminar kwargs no soportados por esta versión y reintentar.
+                msg = str(exc)
+                removed = False
+                for key in list(kwargs.keys()):
+                    if key in msg:
+                        kwargs.pop(key, None)
+                        removed = True
+                if not removed:
+                    break
+
+        if extractor is None:
+            return
+
+        # Reemplaza la función a nivel de módulo y el extractor por defecto.
+        try:
+            tldextract.extract = extractor  # type: ignore[attr-defined]
+        except Exception:
+            pass
+        try:
+            tldextract.TLD_EXTRACTOR = extractor  # type: ignore[attr-defined]
+        except Exception:
+            pass
+    except Exception:
+        # Si tldextract no está disponible o falla el parche, seguimos:
+        # peor caso volvemos al comportamiento previo.
+        pass
+
+
+
+
+
 if __name__ == "__main__":
     # CRÍTICO en Windows: cuando PyInstaller empaqueta una app que usa
     # `multiprocessing`, los procesos worker se crean relanzando el propio
@@ -49,6 +109,9 @@ if __name__ == "__main__":
     # Debe ocurrir ANTES de importar mvt/tldextract para que la variable
     # TLDEXTRACT_CACHE sea respetada al construir el extractor por defecto.
     _ensure_cache_dirs()
+
+    # Parchea tldextract para no depender de descargar la PSL en runtime.
+    _patch_tldextract()
 
     from mvt.ios.cli import cli
 

@@ -386,7 +386,7 @@
       },
       "step5Ios": {
         "title": "Step 5: Connect and run analysis",
-        "body": "With the iPhone unlocked and connected via USB, click «iPhone» in the desktop app. The app creates the backup and processes it locally."
+        "body": "Before starting, set the screen to never lock (Settings → Display & Brightness → Auto-Lock → Never). Connect the iPhone via USB and click «iPhone» in the desktop app. Stay close to the phone: it will ask for the unlock passcode several times during the process, and if you don't enter it the analysis can't proceed."
       },
       "step6": {
         "title": "Step 6: Get the report here",

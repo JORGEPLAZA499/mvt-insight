@@ -93,18 +93,21 @@ export function App() {
     if (!window.mvt) return;
     const offLog = window.mvt.onLog((msg) => {
       setLogs((prev) => [...prev.slice(-200), msg]);
+      setLastLogAt(Date.now());
     });
     const offPhase = window.mvt.onPhase((payload: any) => {
       const { phase: num, label, statusKey, progress } = payload || {};
       setPhase((prev) => {
         if (prev.num !== num) {
           setPhaseStartedAt(Date.now());
+          setLastLogAt(Date.now());
         }
         return { num, label, statusKey, progress };
       });
     });
     return () => { offLog(); offPhase(); };
   }, []);
+
 
   // Cronómetro de fase: re-renderiza cada segundo mientras estamos analizando,
   // para que el usuario vea que el proceso sigue vivo aunque mvt-ios tarde.

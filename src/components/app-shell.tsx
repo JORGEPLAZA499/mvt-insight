@@ -68,6 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         { to: "/reports", label: t("shell.nav.reports"), icon: FileSearch, hint: t("shell.nav.reportsHint") },
         { to: "/history", label: t("shell.nav.history"), icon: History, hint: t("shell.nav.historyHint") },
         { to: "/settings/desktop", label: "App de escritorio", icon: Monitor, hint: "Vincular la app de escritorio" },
+        { href: "https://www.rpjsoftware.com/help#contacto", label: t("shell.nav.support"), icon: Headset, hint: t("shell.nav.supportHint") },
         ...(isAdmin
           ? [{ to: "/admin", label: t("shell.nav.admin"), icon: ShieldCheck, hint: t("shell.adminHint") }]
           : []),

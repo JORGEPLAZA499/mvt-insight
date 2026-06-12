@@ -14,6 +14,17 @@ const iosTools = require("./ios-tools.cjs");
 
 const isDev = !app.isPackaged;
 
+process.on("uncaughtException", (err) => {
+  if (err && /Object has been destroyed/i.test(err.message || "")) {
+    console.warn("[main] ignored post-destroy IPC:", err.message);
+    return;
+  }
+  console.error("[main] uncaughtException:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[main] unhandledRejection:", reason);
+});
+
 autoUpdater.logger = {
   info: (m) => console.log("[updater]", m),
   warn: (m) => console.warn("[updater]", m),

@@ -198,7 +198,7 @@
   "dashboard": {
     "eyebrow": "Forensic Command Center",
     "title": "Dashboard",
-    "subtitle": "Overview of your forensic analyses.",
+    
     "ctaNew": "New analysis",
     "shortcuts": {
       "eyebrow": "Quick actions",

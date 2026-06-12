@@ -703,6 +703,7 @@ function NetworkAppRowView({ app, index }: { app: NetworkAppRow; index: number }
 
 
 function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {
+  const { t } = useTranslation();
   const originBadge =
     app.origin === "system" ? "bg-muted text-muted-foreground border-border"
     : app.origin === "known" ? "bg-primary/10 text-primary border-primary/20"
@@ -719,7 +720,7 @@ function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {
           <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${SEV_BADGE[app.severity]}`}>
             {severityLabel(app.severity)}
           </span>
-          <span className="text-xs text-muted-foreground tabular-nums">· {app.count} indicio(s)</span>
+          <span className="text-xs text-muted-foreground tabular-nums">· {t("analysisPage.indicio", { count: app.count })}</span>
         </div>
         <div className="text-xs text-muted-foreground font-mono mt-1 break-all">{app.packageName}</div>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -728,7 +729,7 @@ function TopAppRow({ app, index }: { app: SuspiciousApp; index: number }) {
           </span>
           {app.categories.length > 0 && (
             <span className="text-xs text-muted-foreground">
-              Visto en: {app.categories.join(", ")}
+              {t("analysisPage.seenIn", { list: app.categories.join(", ") })}
             </span>
           )}
         </div>
@@ -747,6 +748,7 @@ function SectionTitle({ num, title }: { num: string; title: string }) {
 }
 
 function ModuleRow({ module: m, detections }: { module: { key: string; label: string; entries: number; detected: number }; detections: MvtDetection[] }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(m.detected > 0);
   const highlights = useMemo(
     () => (m.detected > 0 ? buildModuleHighlights(detections, m.key, 8) : []),
@@ -771,13 +773,13 @@ function ModuleRow({ module: m, detections }: { module: { key: string; label: st
         <div className={`col-span-2 text-right tabular-nums font-semibold ${m.detected > 0 ? "text-destructive" : "text-muted-foreground"}`}>{m.detected}</div>
         <div className="col-span-2 text-right">
           {m.detected > 0
-            ? <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${SEV_BADGE.high}`}>ALTO</span>
-            : <span className="text-xs text-muted-foreground">limpio</span>}
+            ? <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${SEV_BADGE.high}`}>{t("analysisPage.high")}</span>
+            : <span className="text-xs text-muted-foreground">{t("analysisPage.clean")}</span>}
         </div>
       </button>
       {open && hasHighlights && (
         <div className="px-4 pb-4 pl-10">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Detalle</div>
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">{t("analysisPage.detail")}</div>
           <ul className="space-y-1.5">
             {highlights.map((h, i) => (
               <li key={i} className="text-sm flex items-start gap-2">

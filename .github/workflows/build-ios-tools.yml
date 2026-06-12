@@ -18,6 +18,9 @@ on:
   push:
     tags:
       - "ios-tools-*"
+    paths:
+      - ".github/workflows/build-ios-tools.yml"
+      - ".github/workflows/mvt_ios_launcher.py"
 
 permissions:
   contents: write

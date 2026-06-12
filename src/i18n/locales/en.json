@@ -199,18 +199,21 @@
     "title": "Dashboard",
     "subtitle": "Overview of your forensic analyses.",
     "ctaNew": "New analysis",
-    "gauges": {
-      "threat": "Global threat level",
-      "threatSub": "{{count}} analyses evaluated",
+    "shortcuts": {
+      "eyebrow": "Quick actions",
+      "title": "What do you want to do?",
+      "newAnalysis": { "title": "New analysis", "desc": "Upload artifacts and launch a forensic scan.", "cta": "Start" },
+      "reports": { "title": "Reports", "desc": "Browse PDF reports of your analyses.", "cta": "View reports" },
+      "history": { "title": "History", "desc": "Review all previous analyses.", "cta": "Open history" },
+      "desktop": { "title": "Desktop app", "desc": "Pair the desktop app and run local scans.", "cta": "Set up" },
+      "credits": { "title": "Top up credits", "desc": "Buy credits to run new analyses.", "cta": "Buy" },
+      "support": { "title": "Support", "desc": "Reach out to our help team.", "cta": "Contact" }
+    },
+    "stats": {
       "total": "Total analyses",
       "completed": "Completed",
-      "matches": "IOC matches"
-    },
-    "hud": {
-      "pending": "Pending",
-      "processing": "Processing",
-      "completed": "Completed",
-      "highRisk": "High risk"
+      "highRisk": "High risk",
+      "credits": "Available credits"
     },
     "recent": {
       "title": "Recent analyses",

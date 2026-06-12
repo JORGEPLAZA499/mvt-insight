@@ -53,38 +53,63 @@ def _patch_tldextract() -> None:
     try:
         import tldextract  # type: ignore
 
-        kwargs = {
+        original_tld_extract = tldextract.TLDExtract
+        offline_defaults = {
             "suffix_list_urls": (),
             "fallback_to_snapshot": True,
             "cache_dir": os.environ.get("TLDEXTRACT_CACHE"),
         }
 
-        extractor = None
-        for _ in range(2):
-            try:
-                extractor = tldextract.TLDExtract(**kwargs)
-                break
-            except TypeError as exc:
-                # Eliminar kwargs no soportados por esta versión y reintentar.
-                msg = str(exc)
-                removed = False
-                for key in list(kwargs.keys()):
-                    if key in msg:
-                        kwargs.pop(key, None)
-                        removed = True
-                if not removed:
-                    break
+        def _offline_kwargs(kwargs: dict) -> dict:
+            merged = dict(kwargs)
+            # Forzamos modo offline incluso si una dependencia crea nuevas
+            # instancias de TLDExtract con los valores por defecto.
+            merged["suffix_list_urls"] = ()
+            merged["fallback_to_snapshot"] = True
+            if os.environ.get("TLDEXTRACT_CACHE"):
+                merged["cache_dir"] = os.environ["TLDEXTRACT_CACHE"]
+            return {key: value for key, value in merged.items() if value is not None}
 
-        if extractor is None:
-            return
+        def _build_extractor(*args, **kwargs):
+            patched_kwargs = _offline_kwargs(kwargs)
+            for _ in range(4):
+                try:
+                    return original_tld_extract(*args, **patched_kwargs)
+                except TypeError as exc:
+                    # Eliminar kwargs no soportados por esta versión y reintentar.
+                    msg = str(exc)
+                    removed = False
+                    for key in list(patched_kwargs.keys()):
+                        if key in msg:
+                            patched_kwargs.pop(key, None)
+                            removed = True
+                    if not removed:
+                        raise
+            return original_tld_extract(*args, **patched_kwargs)
 
-        # Reemplaza la función a nivel de módulo y el extractor por defecto.
+        extractor = _build_extractor(**offline_defaults)
+
+        # Precalienta el snapshot antes de importar MVT. Si PyInstaller no lo
+        # incluyó, el fallo aparece aquí y no en mitad del análisis.
+        try:
+            extractor("https://example.com")
+        except Exception:
+            pass
+
+        # Reemplaza la función y extractor por defecto ya existentes.
         try:
             tldextract.extract = extractor  # type: ignore[attr-defined]
         except Exception:
             pass
         try:
             tldextract.TLD_EXTRACTOR = extractor  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+        # Reemplaza también el constructor para cubrir instancias futuras
+        # creadas por MVT/iOSbackup después de importar sus módulos.
+        try:
+            tldextract.TLDExtract = _build_extractor  # type: ignore[assignment]
         except Exception:
             pass
     except Exception:

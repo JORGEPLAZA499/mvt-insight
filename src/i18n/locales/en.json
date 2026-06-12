@@ -372,17 +372,42 @@
         "title": "Step 3: Enable airplane mode on the phone",
         "body": "Turn on airplane mode to prevent new messages or notifications from arriving during the analysis."
       },
-      "step4": {
-        "title": "Step 4: Enable developer mode",
+      "step4Android": {
+        "title": "Step 4: Enable developer mode (Android)",
         "body": "On your phone, go to Settings → About phone and tap 7 times on «Build number». Then go to Settings → System → Developer options and turn on «USB Debugging»."
       },
-      "step5": {
+      "step5Android": {
         "title": "Step 5: Connect and run analysis",
-        "body": "Connect your phone via USB to the computer and in the app select Android or iOS. The app processes the entire backup locally."
+        "body": "Connect your phone via USB, accept the USB debugging prompt and in the desktop app click «Android». The backup is processed locally."
+      },
+      "step4Ios": {
+        "title": "Step 4: Prepare your iPhone",
+        "body": "Unlock your iPhone, connect it via USB and tap «Trust this computer», entering the device passcode. No developer mode required."
+      },
+      "step5Ios": {
+        "title": "Step 5: Connect and run analysis",
+        "body": "With the iPhone unlocked and connected via USB, click «iPhone» in the desktop app. The app creates the backup and processes it locally."
       },
       "step6": {
         "title": "Step 6: Get the report here",
         "body": "When it finishes, the report syncs to your web account automatically and opens in your browser."
+      },
+      "pickSystem": {
+        "title": "Which system does your phone use?",
+        "body": "Pick your operating system to see the right steps. Android requires enabling USB debugging; iPhone does not.",
+        "change": "Change system",
+        "android": {
+          "title": "Android",
+          "body": "Requires enabling developer options and USB debugging."
+        },
+        "ios": {
+          "title": "iPhone",
+          "body": "Only needs trusting the computer when connecting via USB."
+        }
+      },
+      "chip": {
+        "android": "Android",
+        "ios": "iPhone"
       },
       "security": {
         "title": "Privacy by design",

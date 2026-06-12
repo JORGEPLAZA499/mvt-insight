@@ -372,17 +372,42 @@
         "title": "Paso 3: Activa el modo avión en el teléfono",
         "body": "Pon el teléfono en modo avión para evitar que lleguen nuevos mensajes o notificaciones durante el análisis."
       },
-      "step4": {
-        "title": "Paso 4: Activa el modo desarrollador",
+      "step4Android": {
+        "title": "Paso 4: Activa el modo desarrollador (Android)",
         "body": "En el móvil, ve a Ajustes → Información del teléfono y toca 7 veces sobre «Número de compilación». Luego entra en Ajustes → Sistema → Opciones de desarrollador y activa «Depuración USB»."
       },
-      "step5": {
+      "step5Android": {
         "title": "Paso 5: Conecta y ejecuta el análisis",
-        "body": "Conecta el móvil por USB al computador y en la app selecciona Android o iOS. La app procesa todo el backup localmente."
+        "body": "Conecta el móvil por USB al computador, acepta el aviso de depuración USB y, en la app de escritorio, pulsa «Android». El backup se procesa localmente."
+      },
+      "step4Ios": {
+        "title": "Paso 4: Prepara tu iPhone",
+        "body": "Desbloquea el iPhone, conéctalo por USB al ordenador y pulsa «Confiar en este equipo» introduciendo el código del dispositivo. No hace falta activar el modo desarrollador."
+      },
+      "step5Ios": {
+        "title": "Paso 5: Conecta y ejecuta el análisis",
+        "body": "Con el iPhone desbloqueado y conectado por USB, en la app de escritorio pulsa «iPhone». La app realiza el backup y lo procesa localmente."
       },
       "step6": {
         "title": "Paso 6: Recibe el informe aquí",
         "body": "Al terminar, el informe se sincroniza con tu cuenta web automáticamente y se abre en el navegador."
+      },
+      "pickSystem": {
+        "title": "¿Qué sistema usa tu teléfono?",
+        "body": "Selecciona el sistema operativo para mostrarte los pasos correctos. Android requiere activar la depuración USB; iPhone no.",
+        "change": "Cambiar sistema",
+        "android": {
+          "title": "Android",
+          "body": "Requiere activar las opciones de desarrollador y la depuración USB."
+        },
+        "ios": {
+          "title": "iPhone",
+          "body": "Solo necesita confiar en el equipo al conectar por USB."
+        }
+      },
+      "chip": {
+        "android": "Android",
+        "ios": "iPhone"
       },
       "security": {
         "title": "Privacidad por diseño",

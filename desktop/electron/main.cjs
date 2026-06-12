@@ -380,7 +380,15 @@ ipcMain.handle("mvt:cancel", async () => {
 });
 
 ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
-  const send = (channel, payload) => event.sender.send(channel, payload);
+  const send = (channel, payload) => {
+    try {
+      if (event.sender && !event.sender.isDestroyed()) {
+        event.sender.send(channel, payload);
+      }
+    } catch {
+      // sender destruido entre el check y el send: ignorar
+    }
+  };
   cancelled = false;
 
 

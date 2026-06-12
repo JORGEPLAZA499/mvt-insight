@@ -1,7 +1,10 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
-import { CreditCard, Bitcoin, ShieldCheck, Sparkles, X, FileText, ScanSearch } from "lucide-react";
+import { CreditCard, Bitcoin, ShieldCheck, Sparkles, X, FileText, ScanSearch, Loader2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { StripeEmbeddedCheckoutInline } from "@/components/stripe-embedded-checkout";
+import { createPlisioInvoice } from "@/lib/plisio.functions";
 
 
 
@@ -47,6 +50,8 @@ export function PurchaseCard() {
   const open = usePurchaseCardOpen();
   const [credits, setCredits] = useState<number>(ANALYSIS_COST);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [cryptoLoading, setCryptoLoading] = useState(false);
+  const createPlisio = useServerFn(createPlisioInvoice);
 
 
   useEffect(() => {
@@ -181,16 +186,37 @@ export function PurchaseCard() {
               </button>
 
               <button
-                disabled
-                title={t("purchase.cryptoSoon")}
-                className="group relative w-full overflow-hidden rounded-xl px-4 py-3.5 font-semibold border border-border bg-background/60 backdrop-blur opacity-60 cursor-not-allowed"
+                onClick={async () => {
+                  if (cryptoLoading) return;
+                  setCryptoLoading(true);
+                  try {
+                    const res = await createPlisio({ data: { credits } });
+                    if (res?.invoice_url) {
+                      window.location.href = res.invoice_url;
+                    } else {
+                      throw new Error("missing invoice_url");
+                    }
+                  } catch (e) {
+                    console.error("[plisio] create invoice error", e);
+                    toast.error(t("purchase.cryptoError"));
+                    setCryptoLoading(false);
+                  }
+                }}
+                disabled={cryptoLoading}
+                className="group relative w-full overflow-hidden rounded-xl px-4 py-3.5 font-semibold border border-primary/30 bg-background/60 backdrop-blur hover:border-primary/60 hover:text-primary transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
                 <span className="relative flex items-center justify-center gap-2">
-                  <Bitcoin className="h-5 w-5 text-[color:var(--warning)]" />
-                  {t("purchase.payCrypto")}
-                  <span className="ml-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    {t("purchase.soon")}
-                  </span>
+                  {cryptoLoading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      {t("purchase.cryptoLoading")}
+                    </>
+                  ) : (
+                    <>
+                      <Bitcoin className="h-5 w-5 text-[color:var(--warning)]" />
+                      {t("purchase.payCrypto")}
+                    </>
+                  )}
                 </span>
               </button>
 

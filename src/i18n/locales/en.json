@@ -113,6 +113,8 @@
     "cryptoPayments": "Crypto Payments",
     "soon": "Coming soon",
     "cryptoSoon": "Crypto payments coming soon",
+    "cryptoLoading": "Generating invoice…",
+    "cryptoError": "Could not start crypto payment",
     "checkoutSuccess": "Payment confirmed! Your credits will be added in a few seconds.",
     "checkoutProcessing": "Processing your payment..."
   },

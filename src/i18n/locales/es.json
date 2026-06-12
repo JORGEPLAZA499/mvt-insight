@@ -113,6 +113,8 @@
     "cryptoPayments": "Crypto Payments",
     "soon": "Próximamente",
     "cryptoSoon": "Pago con criptomonedas disponible próximamente",
+    "cryptoLoading": "Generando factura…",
+    "cryptoError": "No se pudo iniciar el pago con cripto",
     "checkoutSuccess": "¡Pago confirmado! Tus créditos se añadirán en unos segundos.",
     "checkoutProcessing": "Procesando tu pago..."
   },

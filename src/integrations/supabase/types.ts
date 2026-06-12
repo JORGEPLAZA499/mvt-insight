@@ -179,6 +179,42 @@ export type Database = {
         }
         Relationships: []
       }
+      plisio_invoices: {
+        Row: {
+          account_id: string
+          amount_eur: number
+          created_at: string
+          credits: number
+          id: string
+          invoice_id: string | null
+          order_number: string
+          processed_at: string | null
+          status: string
+        }
+        Insert: {
+          account_id: string
+          amount_eur: number
+          created_at?: string
+          credits: number
+          id?: string
+          invoice_id?: string | null
+          order_number: string
+          processed_at?: string | null
+          status?: string
+        }
+        Update: {
+          account_id?: string
+          amount_eur?: number
+          created_at?: string
+          credits?: number
+          id?: string
+          invoice_id?: string | null
+          order_number?: string
+          processed_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

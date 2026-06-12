@@ -212,7 +212,12 @@ app.whenReady().then(() => {
   });
 });
 
+app.on("before-quit", () => {
+  try { iosTools.killAllMvtIosProcesses(); } catch {}
+});
+
 app.on("window-all-closed", () => {
+  try { iosTools.killAllMvtIosProcesses(); } catch {}
   if (process.platform !== "darwin") app.quit();
 });
 

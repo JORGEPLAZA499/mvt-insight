@@ -945,20 +945,58 @@ function formatBytes(n: number): string {
   return `${n} B`;
 }
 
+// Procesos internos de iOS conocidos por agregar/contabilizar tráfico de uso.
+// Un volumen elevado en estos no constituye, por sí solo, evidencia de spyware.
+const IOS_SYSTEM_ACCUMULATORS: Record<string, string> = {
+  "CumulativeUsageTracker": "Puede corresponder a un registro interno/acumulador de uso de datos en iOS. Un volumen elevado por sí solo no confirma spyware ni exfiltración; verifica el periodo de acumulación y cruza con otros indicadores antes de concluir.",
+  "usageNotificationsd": "Daemon interno de iOS para notificaciones de uso.",
+  "dataaccessd": "Daemon de sincronización de datos (correo, contactos, calendarios) de iOS.",
+  "nsurlsessiond": "Daemon de transferencias en segundo plano de iOS usado por muchas apps.",
+  "identityservicesd": "Daemon de iMessage/FaceTime e identidad de Apple.",
+  "apsd": "Apple Push Notification Service: tráfico recurrente esperado.",
+  "mDNSResponder": "Servicio de resolución de nombres y Bonjour.",
+  "rapportd": "Continuidad entre dispositivos Apple (Handoff, AirDrop).",
+  "wifid": "Gestión de Wi-Fi del sistema.",
+  "locationd": "Servicio de localización del sistema.",
+  "commcenter": "Subsistema de telefonía/celular.",
+  "assetsd": "Gestión de la fototeca y assets multimedia.",
+  "cloudd": "Cliente de CloudKit (sincronización con iCloud).",
+  "bird": "Daemon de iCloud Drive.",
+  "routined": "Aprendizaje de rutinas/ubicaciones frecuentes de iOS.",
+};
+
+export type NetworkRowOrigin = "system_accumulator" | "system" | "known" | "unattributed";
+
 export interface NetworkAppRow {
   displayName: string;
   packageName: string;
-  origin: AppOrigin;
+  origin: NetworkRowOrigin;
   originLabel: string;
   totalBytes: number;
   totalLabel: string;
+  severity: RiskLevel;
+  note?: string;
+}
+
+function classifyNetworkOrigin(id: string, name: string): { origin: NetworkRowOrigin; label: string; note?: string } {
+  const accNote = IOS_SYSTEM_ACCUMULATORS[id] || IOS_SYSTEM_ACCUMULATORS[name];
+  if (accNote) return { origin: "system_accumulator", label: "Registro interno de iOS — consumo acumulado", note: accNote };
+  if (SYSTEM_PREFIXES.some((p) => id.startsWith(p))) return { origin: "system", label: "App del sistema o del fabricante" };
+  if (KNOWN_PACKAGES[id]) return { origin: "known", label: "App popular conocida" };
+  return { origin: "unattributed", label: "Proceso no atribuido automáticamente — requiere validación manual" };
 }
 
 export function buildTopNetwork(result: MvtParsedResult): NetworkAppRow[] {
   const list = result.topNetworkProcs ?? [];
+  const interp = buildNetworkInterpretation(result);
   return list.map((p: NetworkProcUsage): NetworkAppRow => {
     const id = p.bundle || p.name;
-    const oc = classifyOrigin(id);
+    const oc = classifyNetworkOrigin(id, p.name);
+    let severity: RiskLevel = "low";
+    if (oc.origin === "unattributed") {
+      if (interp.score >= 61) severity = "high";
+      else if (p.totalBytes > 500 * 1024 * 1024) severity = "medium";
+    }
     return {
       displayName: KNOWN_PACKAGES[id] || p.name,
       packageName: id,
@@ -966,6 +1004,122 @@ export function buildTopNetwork(result: MvtParsedResult): NetworkAppRow[] {
       originLabel: oc.label,
       totalBytes: p.totalBytes,
       totalLabel: formatBytes(p.totalBytes),
+      severity,
+      note: oc.note,
     };
   });
+}
+
+// ============================================================
+// Traffic Risk Score & interpretación contextual
+// ============================================================
+
+export type NetworkBand = "info" | "low" | "medium" | "high" | "critical";
+
+export interface NetworkInterpretation {
+  score: number;
+  band: NetworkBand;
+  bandLabel: string;
+  rationale: string[];
+  summary: string;
+  hasAccumulator: boolean;
+  accumulatorNames: string[];
+}
+
+const NETWORK_BAND_LABEL: Record<NetworkBand, string> = {
+  info: "Tráfico normal o explicable",
+  low: "Tráfico elevado — revisión sugerida",
+  medium: "Tráfico elevado que requiere revisión",
+  high: "Tráfico elevado con elementos sospechosos asociados",
+  critical: "Tráfico elevado con coincidencias IOC o señales claras de compromiso",
+};
+
+export function buildNetworkInterpretation(result: MvtParsedResult): NetworkInterpretation {
+  const procs = result.topNetworkProcs ?? [];
+  const rationale: string[] = [];
+  let score = 0;
+
+  // Clasificación local para evitar recursión con buildTopNetwork.
+  const isAccumulator = (p: NetworkProcUsage) =>
+    !!(IOS_SYSTEM_ACCUMULATORS[p.bundle || p.name] || IOS_SYSTEM_ACCUMULATORS[p.name]);
+  const isSystem = (p: NetworkProcUsage) => {
+    const id = p.bundle || p.name;
+    return SYSTEM_PREFIXES.some((pre) => id.startsWith(pre));
+  };
+  const isKnown = (p: NetworkProcUsage) => !!KNOWN_PACKAGES[p.bundle || p.name];
+  const unattributed = procs.filter((p) => !isAccumulator(p) && !isSystem(p) && !isKnown(p));
+  const accumulators = procs.filter(isAccumulator);
+
+  const maxUnattributed = unattributed.reduce((m, p) => Math.max(m, p.totalBytes), 0);
+  if (maxUnattributed > 5 * 1024 ** 3) {
+    score += 35;
+    rationale.push("Algún proceso no atribuido supera los 5 GB de tráfico.");
+  } else if (maxUnattributed > 1024 ** 3) {
+    score += 20;
+    rationale.push("Algún proceso no atribuido supera 1 GB de tráfico.");
+  }
+  if (unattributed.length >= 3) {
+    score += 10;
+    rationale.push(`Hay ${unattributed.length} procesos no atribuidos en el top de tráfico.`);
+  }
+
+  // Perfiles de configuración sensibles (VPN, MDM, certificados raíz)
+  const profiles = result.iosConfigProfiles ?? [];
+  let profileScore = 0;
+  const profileFactors: string[] = [];
+  const hasType = (needle: string) => profiles.some((p) => (p.type || "").toLowerCase().includes(needle));
+  if (hasType("vpn")) { profileScore += 25; profileFactors.push("perfil VPN desconocido"); }
+  if (hasType("mdm")) { profileScore += 25; profileFactors.push("perfil MDM"); }
+  if (hasType("root") || hasType("pem")) { profileScore += 25; profileFactors.push("certificado raíz instalado"); }
+  if (profileScore > 40) profileScore = 40;
+  if (profileScore > 0) {
+    score += profileScore;
+    rationale.push(`Perfiles de configuración sensibles detectados: ${profileFactors.join(", ")}.`);
+  }
+
+  // Detecciones IOC de MVT
+  if (result.risk === "critical") {
+    score += 60;
+    rationale.push("MVT ha marcado el dispositivo con riesgo crítico (coincidencias IOC).");
+  } else if (result.totalDetections >= 1) {
+    score += 30;
+    rationale.push(`MVT ha registrado ${result.totalDetections} indicio(s) técnico(s).`);
+  }
+
+  // Servicios de accesibilidad no reconocidos (Android)
+  const acc = result.accessibilityServices ?? [];
+  const unknownAcc = acc.filter((a) => {
+    const pkg = a.package;
+    return !SYSTEM_PREFIXES.some((p) => pkg.startsWith(p)) && !KNOWN_PACKAGES[pkg];
+  });
+  if (unknownAcc.length > 0) {
+    score += 15;
+    rationale.push(`Servicios de accesibilidad no reconocidos: ${unknownAcc.length}.`);
+  }
+
+  if (score > 100) score = 100;
+
+  let band: NetworkBand = "info";
+  if (score >= 81) band = "critical";
+  else if (score >= 61) band = "high";
+  else if (score >= 46) band = "medium";
+  else if (score >= 31) band = "low";
+
+  const summaryParts: string[] = [];
+  summaryParts.push("El volumen mostrado corresponde a datos enviados o recibidos por procesos y apps detectadas. Un consumo elevado no equivale necesariamente a spyware o seguimiento. En iOS, algunos procesos actúan como registros internos o acumuladores de uso de datos, por lo que el volumen puede reflejar actividad acumulada durante un periodo largo.");
+  if (accumulators.length > 0) {
+    const names = accumulators.map((a) => a.name).slice(0, 3).join(", ");
+    summaryParts.push(`En particular, procesos como ${names} deben interpretarse con cautela: aunque el volumen sea elevado, no constituyen por sí solos prueba de exfiltración.`);
+  }
+  summaryParts.push("Para valorar riesgo real revisa el periodo de acumulación, el comportamiento del dispositivo y la existencia de otros indicadores (perfiles MDM, VPN, certificados, permisos sensibles, apps no reconocidas). Recomendado: reiniciar las estadísticas de datos móviles, usar el dispositivo 24–48 h y repetir el análisis.");
+
+  return {
+    score,
+    band,
+    bandLabel: NETWORK_BAND_LABEL[band],
+    rationale,
+    summary: summaryParts.join(" "),
+    hasAccumulator: accumulators.length > 0,
+    accumulatorNames: accumulators.map((a) => a.name),
+  };
 }

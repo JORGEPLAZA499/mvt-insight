@@ -105,6 +105,12 @@
     "signOutConfirm": "¿Desvincular esta app de tu cuenta?",
     "link": "Vincular cuenta"
   },
+  "credits": {
+    "insufficientTitle": "Créditos insuficientes",
+    "insufficientBody": "Necesitas {{required}} créditos y solo tienes {{available}}. Recarga créditos en tu panel antes de iniciar el análisis.",
+    "openDashboard": "Abrir panel",
+    "cancel": "Cancelar"
+  },
   "link": {
     "title": "Vincular cuenta",
     "subtitle": "Vincula esta app con tu cuenta web para subir los análisis automáticamente.",

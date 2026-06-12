@@ -353,6 +353,8 @@ function runMvtIos(workDir, backupDir, resultsDir, password, onData) {
     });
 
   return (async () => {
+    onData?.("→ Limpiando procesos mvt-ios.exe previos…\n");
+    killAllMvtIosProcesses();
     onData?.("→ Descifrando backup del iPhone…\n");
     const dec = await runStep(["decrypt-backup", "-d", decryptedDir, "-p", password, backupDir], DECRYPT_TIMEOUT_MS);
     if (dec.timedOut) {

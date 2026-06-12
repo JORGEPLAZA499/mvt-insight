@@ -1,43 +1,28 @@
-El problema real: `mvt-ios.exe` sigue ejecutando alguna ruta de `tldextract` con la configuración por defecto. Esa configuración intenta descargar/cachear `https://publicsuffix.org/list/public_suffix_list.dat`; en el binario PyInstaller de Windows acaba usando una ruta temporal/perfil corto tipo `C:\Users\GAMING~1\...` que no existe, y el análisis se rompe.
+## Objetivo
+Eliminar la causa más probable del error persistente: la app puede estar reutilizando un `mvt-ios.exe` antiguo porque solo comprueba que los binarios existan, no si el asset `ios-tools-v1` fue actualizado.
 
-Do I know what the issue is? Sí: el parche actual solo sustituye el extractor global ya creado, pero no garantiza que todas las instancias futuras de `tldextract.TLDExtract()` usadas por MVT/iOSbackup queden forzadas a modo offline, y además el snapshot de `tldextract` puede no estar incluido explícitamente en el bundle.
+## Plan
+1. **Versionar internamente las herramientas iOS**
+   - Añadir una constante tipo `IOS_TOOLS_BUILD_ID` en `desktop/electron/ios-tools.cjs`.
+   - Guardar ese ID en un archivo local dentro de `~/Downloads/mvt-insight/ios-tools/` cuando la descarga/extracción termina correctamente.
 
-Plan de implementación:
+2. **Forzar redescarga cuando cambie el build de herramientas**
+   - Cambiar `ensureIosTools()` para que no acepte “ya están instaladas” si el build ID local no coincide.
+   - Si no coincide, borrar la carpeta `ios-tools` y descargar de nuevo el ZIP/TAR del release `ios-tools-v1`.
+   - Esto evita tener que pedir al usuario que borre la caché manualmente.
 
-1. **Forzar `tldextract` offline en todas las rutas**
-   - Modificar `.github/workflows/mvt_ios_launcher.py` para parchear también el constructor `tldextract.TLDExtract`, no solo `tldextract.extract`/`TLD_EXTRACTOR`.
-   - Cualquier nueva instancia recibirá por defecto `suffix_list_urls=()` y `fallback_to_snapshot=True`, salvo que una versión concreta no soporte algún argumento.
-   - Mantener `cache_dir` apuntando a la carpeta escribible de MvtInsight.
+3. **Endurecer el entorno de ejecución de `mvt-ios` desde Electron**
+   - En `toolEnv()`, fijar `TLDEXTRACT_CACHE` y `XDG_CACHE_HOME` a una ruta controlada y existente bajo el directorio de trabajo de MvtInsight.
+   - Así, incluso si alguna ruta interna ignora parte del monkey-patch, no intentará usar una ruta corta/rota tipo `C:\Users\GAMING~1\A...`.
 
-2. **Precalentar el extractor antes de cargar MVT**
-   - Llamar al extractor una vez con un dominio simple antes de importar `mvt.ios.cli`.
-   - Si aún intenta red o falla por datos no incluidos, el fallo aparecerá temprano y no durante el análisis.
+4. **Añadir una prueba rápida del binario tras descargar**
+   - Después de extraer, ejecutar una comprobación liviana de `mvt-ios` (`--help` o equivalente) con ese entorno.
+   - Si falla, mostrar un error claro indicando que el asset de herramientas iOS no quedó válido.
 
-3. **Incluir explícitamente los datos de `tldextract` en PyInstaller**
-   - Actualizar `.github/workflows/build-ios-tools.yml` para empaquetar `tldextract` además de `mvt`.
-   - Añadir `--collect-all tldextract` en los comandos PyInstaller de Unix y Windows, para asegurar que el snapshot embebido de la Public Suffix List viaja dentro de `mvt-ios.exe`.
+5. **Corregir el workflow si hace falta**
+   - Revisar que `Build iOS Tools` realmente se dispare cuando cambien `mvt_ios_launcher.py` / `build-ios-tools.yml`.
+   - Si el filtro actual impide el rebuild por mezclar `tags` y `paths`, ajustar el trigger para que el workflow pueda correrse manualmente y también por cambios relevantes.
 
-4. **Hacerlo compatible con versiones distintas**
-   - Mantener la lógica defensiva que elimina kwargs no soportados (`fallback_to_snapshot`, `cache_dir`, etc.) y reintenta.
-   - Evitar que el parche defensivo o un cambio menor de API rompan el CLI.
-
-5. **Actualizar el plan/documentación local**
-   - Documentar que el segundo parche no fue suficiente porque no cubría nuevas instancias ni garantizaba datos de `tldextract` en el bundle.
-   - Registrar que el nuevo fix combina monkey-patch global del constructor + inclusión explícita de `tldextract` en PyInstaller.
-
-6. **Sin bump de versión desktop**
-   - No tocar `desktop/package.json` ni cambiar la versión de la app.
-   - El cambio se publicará en el asset `ios-tools-v1` cuando corra el workflow.
-
-7. **Prueba esperada**
-   - Rebuild del workflow `Build iOS Tools`.
-   - En Windows: cerrar MvtInsight, matar `mvt-ios.exe` si queda, borrar `C:\Users\TU_USUARIO\Downloads\mvt-insight\ios-tools`, abrir de nuevo y lanzar análisis.
-   - Resultado esperado: no aparece `Failed fetching 'https://publicsuffix.org/list/public_suffix_list.dat'` y el análisis continúa.
-
-<presentation-actions>
-  <presentation-open-history>View History</presentation-open-history>
-</presentation-actions>
-
-<presentation-actions>
-<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
-</presentation-actions>
+6. **Sin bump automático de versión desktop**
+   - No tocar `desktop/package.json` salvo que explícitamente quieras publicar una nueva versión de la app.
+   - Si quieres que la redescarga automática llegue a usuarios ya instalados, entonces sí hará falta después publicar una nueva versión desktop, porque el cambio de caché vive en Electron.

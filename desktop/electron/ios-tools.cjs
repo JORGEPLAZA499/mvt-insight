@@ -15,6 +15,8 @@ const { pipeline } = require("stream/promises");
 
 const IOS_TOOLS_REPO = "JORGEPLAZA499/mvt-insight";
 const IOS_TOOLS_TAG = "ios-tools-v1";
+const IOS_TOOLS_BUILD_ID = "2026-06-12-tldextract-offline-v2";
+const IOS_TOOLS_BUILD_MARKER = ".mvt-insight-ios-tools-build";
 const MIN_ARCHIVE_BYTES = 1 * 1024 * 1024; // 1 MB mínimo para considerar válido
 
 function exeName(name) {
@@ -24,6 +26,29 @@ function exeName(name) {
 function iosToolsDir(workDir) {
   const dir = path.join(workDir, "ios-tools");
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function iosToolsBuildMarkerPath(workDir) {
+  return path.join(iosToolsDir(workDir), IOS_TOOLS_BUILD_MARKER);
+}
+
+function readIosToolsBuildId(workDir) {
+  try {
+    return fs.readFileSync(iosToolsBuildMarkerPath(workDir), "utf8").trim();
+  } catch {
+    return "";
+  }
+}
+
+function writeIosToolsBuildId(workDir) {
+  fs.writeFileSync(iosToolsBuildMarkerPath(workDir), IOS_TOOLS_BUILD_ID, "utf8");
+}
+
+function resetIosToolsDir(workDir) {
+  const dir = path.join(workDir, "ios-tools");
+  try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
+  fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
@@ -126,12 +151,17 @@ async function extractArchive(archivePath, destDir) {
 }
 
 async function ensureIosTools(workDir, { onProgress, log } = {}) {
-  const dir = iosToolsDir(workDir);
+  let dir = iosToolsDir(workDir);
   const requiredBins = ["idevice_id", "idevicepair", "idevicebackup2", "mvt-ios"];
   const allPresent = requiredBins.every((b) => fs.existsSync(iosBinPath(workDir, b)));
-  if (allPresent) {
+  const currentBuildId = readIosToolsBuildId(workDir);
+  if (allPresent && currentBuildId === IOS_TOOLS_BUILD_ID) {
     log?.("✅ Herramientas iOS ya instaladas.");
     return;
+  }
+  if (allPresent || currentBuildId) {
+    log?.("♻️ Actualizando herramientas iOS para aplicar correcciones del analizador…");
+    dir = resetIosToolsDir(workDir);
   }
 
   log?.("🔎 Buscando última versión de las herramientas iOS…");
@@ -176,12 +206,21 @@ async function ensureIosTools(workDir, { onProgress, log } = {}) {
   if (missing.length) {
     throw new Error(`Faltan binarios tras extraer: ${missing.join(", ")}`);
   }
+
+  const verify = await runCmd(iosBinPath(workDir, "mvt-ios"), ["--help"], { env: toolEnv(workDir) });
+  if (verify.code !== 0) {
+    throw new Error(`mvt-ios no pudo arrancar tras instalar herramientas (código ${verify.code}): ${(verify.stderr || verify.stdout).trim()}`);
+  }
+  writeIosToolsBuildId(workDir);
   log?.("✅ Herramientas iOS instaladas.");
 }
 
 function toolEnv(workDir) {
   const binDir = path.join(iosToolsDir(workDir), "bin");
   const libDir = path.join(iosToolsDir(workDir), "lib");
+  const cacheRoot = path.join(workDir, "ios-tools-cache");
+  const tldCache = path.join(cacheRoot, "tldextract");
+  try { fs.mkdirSync(tldCache, { recursive: true }); } catch {}
   const env = { ...process.env };
   // En macOS/Linux ayudamos al loader dinámico a encontrar las libs bundleadas.
   if (process.platform === "darwin") {
@@ -190,6 +229,8 @@ function toolEnv(workDir) {
     env.LD_LIBRARY_PATH = libDir + (env.LD_LIBRARY_PATH ? ":" + env.LD_LIBRARY_PATH : "");
   }
   env.PATH = binDir + path.delimiter + (env.PATH || "");
+  env.XDG_CACHE_HOME = cacheRoot;
+  env.TLDEXTRACT_CACHE = tldCache;
   return env;
 }
 

@@ -235,6 +235,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
   const accessibility = useMemo(() => buildAccessibilityList(r), [r]);
   const configProfiles = useMemo(() => buildConfigProfiles(r), [r]);
   const topNetwork = useMemo(() => buildTopNetwork(r), [r]);
+  const networkInterp = useMemo(() => buildNetworkInterpretation(r), [r]);
   const verdictBorder =
     verdict.level === "mercenary" ? "border-destructive/40 bg-destructive/5"
     : verdict.level === "stalkerware" ? "border-destructive/30 bg-destructive/5"

@@ -252,6 +252,17 @@ function createBackup(workDir, udid, destDir, onData) {
   });
 }
 
+function killAllMvtIosProcesses() {
+  if (process.platform !== "win32") return;
+  try {
+    require("child_process").spawnSync(
+      "taskkill",
+      ["/F", "/IM", "mvt-ios.exe", "/T"],
+      { windowsHide: true }
+    );
+  } catch {}
+}
+
 function killMvtIosTree(pid) {
   try {
     if (process.platform === "win32") {

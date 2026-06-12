@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def _ensure_cache_dirs() -> None:
-    """Garantiza una carpeta de caché escribible para MVT/tldextract.
+    """Garantiza una carpeta de caché escribible para MVT/tldextract/tld.
 
     Sin esto, tldextract (dependencia transitiva de mvt-ios) intenta usar
     una ruta dentro del bundle de PyInstaller o un perfil con nombres
@@ -34,6 +34,7 @@ def _ensure_cache_dirs() -> None:
 
     os.environ.setdefault("TLDEXTRACT_CACHE", str(tld_cache))
     os.environ.setdefault("XDG_CACHE_HOME", str(cache_root))
+    os.environ.setdefault("MVT_INSIGHT_MVT_IOS_CACHE", str(cache_root))
 
 
 def _patch_tldextract() -> None:
@@ -118,6 +119,97 @@ def _patch_tldextract() -> None:
         pass
 
 
+def _patch_tld_package() -> None:
+    """Fuerza a la librería `tld` a usar su lista local, nunca la red.
+
+    El mensaje exacto `Failed fetching 'https://publicsuffix.org/list/public_suffix_list.dat'`
+    no viene de `tldextract`, sino del paquete Python `tld`. En builds
+    PyInstaller, si `tld/res/*.txt` no queda en una ruta local legible, `tld`
+    intenta descargar la Public Suffix List y escribirla dentro del bundle
+    temporal. En Windows eso puede fallar con rutas cortas (`GAMING~1`) y
+    ensucia el análisis con errores repetidos.
+    """
+    try:
+        import pkgutil
+        import tld.base  # type: ignore
+        import tld.conf  # type: ignore
+        import tld.defaults  # type: ignore
+
+        cache_root = Path(
+            os.environ.get("MVT_INSIGHT_MVT_IOS_CACHE")
+            or os.environ.get("XDG_CACHE_HOME")
+            or Path.cwd()
+        )
+        local_root = cache_root / "tld-offline"
+        local_res = local_root / "res"
+        local_res.mkdir(parents=True, exist_ok=True)
+
+        fallback_public = """// MvtInsight fallback PSL subset
+ac
+app
+biz
+br
+ca
+ch
+cn
+co
+co.uk
+com
+com.br
+com.au
+de
+dev
+edu
+es
+eu
+fr
+gov
+info
+io
+it
+jp
+me
+mil
+net
+nl
+org
+ru
+uk
+us
+"""
+
+        resources = {
+            "effective_tld_names.dat.txt": fallback_public,
+            "effective_tld_names_public_only.dat.txt": fallback_public,
+        }
+
+        for filename, fallback_text in resources.items():
+            target = local_res / filename
+            if target.exists() and target.stat().st_size > 0:
+                continue
+            data = None
+            try:
+                data = pkgutil.get_data("tld", f"res/{filename}")
+            except Exception:
+                data = None
+            if data:
+                target.write_bytes(data)
+            else:
+                target.write_text(fallback_text, encoding="utf8")
+
+        tld.conf.set_setting("NAMES_LOCAL_PATH_PARENT", str(local_root))
+        tld.defaults.NAMES_LOCAL_PATH_PARENT = str(local_root)
+
+        def _offline_update_tld_names(cls, fail_silently: bool = False) -> bool:
+            # No descargar nunca. Si se llega aquí, los recursos locales no
+            # estaban cargados aún; los acabamos de escribir arriba.
+            return True
+
+        tld.base.BaseTLDSourceParser.update_tld_names = classmethod(_offline_update_tld_names)
+    except Exception:
+        pass
+
+
 
 
 
@@ -137,6 +229,9 @@ if __name__ == "__main__":
 
     # Parchea tldextract para no depender de descargar la PSL en runtime.
     _patch_tldextract()
+
+    # Parchea también `tld`, que es quien emite el error "Failed fetching...".
+    _patch_tld_package()
 
     from mvt.ios.cli import cli
 

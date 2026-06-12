@@ -252,6 +252,17 @@ function createBackup(workDir, udid, destDir, onData) {
   });
 }
 
+function killAllMvtIosProcesses() {
+  if (process.platform !== "win32") return;
+  try {
+    require("child_process").spawnSync(
+      "taskkill",
+      ["/F", "/IM", "mvt-ios.exe", "/T"],
+      { windowsHide: true }
+    );
+  } catch {}
+}
+
 function killMvtIosTree(pid) {
   try {
     if (process.platform === "win32") {
@@ -342,6 +353,8 @@ function runMvtIos(workDir, backupDir, resultsDir, password, onData) {
     });
 
   return (async () => {
+    onData?.("→ Limpiando procesos mvt-ios.exe previos…\n");
+    killAllMvtIosProcesses();
     onData?.("→ Descifrando backup del iPhone…\n");
     const dec = await runStep(["decrypt-backup", "-d", decryptedDir, "-p", password, backupDir], DECRYPT_TIMEOUT_MS);
     if (dec.timedOut) {
@@ -450,5 +463,6 @@ module.exports = {
   iosBinPath,
   iosToolsDir,
   checkAppleDriversWindows,
+  killAllMvtIosProcesses,
 };
 

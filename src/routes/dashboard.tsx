@@ -104,16 +104,6 @@ function Dashboard() {
 
         {/* Quick action shortcuts */}
         <section className="animate-fade-in">
-          <div className="flex items-end justify-between mb-4">
-            <div>
-              <div className="text-[11px] uppercase tracking-[0.25em] text-primary/80 mb-1">
-                {t("dashboard.shortcuts.eyebrow")}
-              </div>
-              <h2 className="text-lg font-semibold tracking-tight">
-                {t("dashboard.shortcuts.title")}
-              </h2>
-            </div>
-          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <ActionCard

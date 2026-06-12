@@ -657,14 +657,40 @@ export function App() {
                 <div className="phase-body">
                   <div className="phase-label">{label}</div>
                   {active && (
-                    <div className="phase-sub">
-                      {phase.statusKey
-                        ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"))
-                        : (phase.label || tr("running.working", "Analizando"))}
-                      <span className="dot-pulse">
-                        <span /><span /><span />
-                      </span>
-                    </div>
+                    <>
+                      <div className="phase-sub">
+                        {phase.statusKey
+                          ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"))
+                          : (phase.label || tr("running.working", "Analizando"))}
+                        <span className="dot-pulse">
+                          <span /><span /><span />
+                        </span>
+                      </div>
+                      {phaseStartedAt && (
+                        <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>
+                          ⏱ {formatElapsed(Date.now() - phaseStartedAt)}
+                          {(() => {
+                            const recent = logs
+                              .map((l) => l.replace(/\x1b\[[0-9;]*m/g, "").trim())
+                              .filter((l) => l && !/^[\s.·•]+$/.test(l))
+                              .slice(-3);
+                            if (!recent.length) return null;
+                            return (
+                              <div style={{ marginTop: 6, padding: "6px 8px", background: "rgba(255,255,255,0.04)", borderRadius: 6, fontFamily: "SF Mono, Menlo, monospace", fontSize: 11, lineHeight: 1.5, color: "var(--muted)", maxHeight: 64, overflow: "hidden", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                                {recent.map((line, idx) => (
+                                  <div key={idx} style={{ opacity: idx === recent.length - 1 ? 1 : 0.6 }}>{line.length > 140 ? line.slice(0, 140) + "…" : line}</div>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                          {nowTick >= 0 && phaseStartedAt && (Date.now() - phaseStartedAt) > 5 * 60 * 1000 && logs.length > 0 && (() => {
+                            // Aviso de "puede estar lento" si llevamos >5 min sin que llegue ningún log nuevo.
+                            // (heurística: comparamos con el snapshot anterior de logs.length usando lastLogCountRef)
+                            return null;
+                          })()}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

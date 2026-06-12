@@ -1,90 +1,96 @@
+
 ## Objetivo
 
-En la sección "Apps con más tráfico de red" del informe forense (web + PDF), evitar etiquetar procesos iOS con alto consumo como sospechosos por sí solos. Sustituir "Origen no reconocido — revísala" por una clasificación más profesional, añadir contexto cuando el proceso es un acumulador interno conocido (p.ej. `CumulativeUsageTracker`), calcular un **Traffic Risk Score** combinando otras señales del análisis, y añadir un bloque explicativo "Interpretación del tráfico elevado" debajo de la tabla.
+Activar el botón "Pagar con cripto" en el modal `PurchaseCard` (panel autenticado) usando **Plisio** como pasarela. Hoy el botón está deshabilitado (`disabled` + "Soon"). Al pulsarlo se creará una factura en Plisio y se redirigirá al usuario al hosted invoice URL. Al confirmarse el pago, Plisio llamará a un webhook que acreditará los créditos en la cuenta exactamente igual que Stripe.
+
+## Secretos necesarios
+
+Se pedirán por `add_secret` (tú ya tienes la API key):
+
+- `PLISIO_API_KEY` — Secret API key de tu merchant Plisio.
+- `PLISIO_CALLBACK_SECRET` *(opcional)* — Si lo quieres, se omite y validamos con HMAC SHA1 usando `PLISIO_API_KEY` (el método que documenta Plisio: `hash = hmac_sha1(api_key, json_sorted_payload)` comparado con `verify_hash` del JSON recibido).
 
 ## Cambios
 
-### 1. `src/lib/mvt-translate.ts` — modelo y clasificación
+### 1. Backend — nueva server function `createPlisioInvoice`
 
-Ampliar `NetworkAppRow` y `buildTopNetwork` (líneas 948–971):
+Archivo nuevo: `src/lib/plisio.functions.ts`
 
-- Añadir lista interna de **acumuladores/registros internos iOS conocidos** (no spyware por sí solos):
-  - `CumulativeUsageTracker`, `usageNotificationsd`, `dataaccessd`, `nsurlsessiond`, `identityservicesd`, `apsd`, `mDNSResponder`, `rapportd`, `wifid`, `locationd`, `commcenter`, `assetsd`, `cloudd`, `bird` (iCloud), `routined`.
-- Nuevo tipo `NetworkOrigin = "system_accumulator" | "system" | "known" | "unattributed"` (renombrar `"unknown"` a `"unattributed"` solo para tráfico de red; el resto del archivo sigue usando `AppOrigin`).
-- Etiquetas:
-  - `system_accumulator` → "Registro interno de iOS — consumo acumulado"
-  - `unattributed` → "Proceso no atribuido automáticamente — requiere validación manual"
-  - `system` / `known` se mantienen.
-- Añadir campos a `NetworkAppRow`: `note?: string` (explicación específica del proceso, ej. el párrafo de `CumulativeUsageTracker`) y `severity: RiskLevel` (a partir del Traffic Risk Score, ver §2).
+- `createServerFn({ method: "POST" })` + `requireSupabaseAuth`.
+- Input validado con zod: `{ credits: number (98..980, múltiplo de 98) }`.
+- Calcula `amountEur = credits` (1 crédito = 1 €, igual que Stripe en este proyecto).
+- Llama a `https://api.plisio.net/api/v1/invoices/new` con:
+  - `source_currency=EUR`, `source_amount=<eur>`,
+  - `order_number=<uuid v4 generado en server>`,
+  - `order_name="Créditos análisis forense (xN)"`,
+  - `callback_url=https://spyware.rpjsoftware.com/api/public/payments/plisio-webhook?json=true`,
+  - `success_callback_url` / `cancel_url` → `/dashboard?checkout=success` / `/dashboard?checkout=cancel`,
+  - `email=<email del usuario>`,
+  - `api_key=PLISIO_API_KEY`.
+- Inserta fila `pending` en una nueva tabla `plisio_invoices` (ver migración abajo) con `order_number`, `account_id`, `credits`, `invoice_id` devuelto por Plisio.
+- Devuelve `{ invoice_url }` (campo `data.invoice_url` de la respuesta).
 
-### 2. Traffic Risk Score y nueva función `buildNetworkInterpretation(result)`
+### 2. Backend — nueva ruta pública `/api/public/payments/plisio-webhook`
 
-Nueva función exportada en `mvt-translate.ts`:
+Archivo nuevo: `src/routes/api/public/payments/plisio-webhook.ts`
 
-```ts
-export interface NetworkInterpretation {
-  score: number;           // 0–100
-  band: "info" | "low" | "medium" | "high" | "critical";
-  bandLabel: string;       // "Tráfico normal", "Requiere revisión", ...
-  rationale: string[];     // factores que aportaron al score
-  summary: string;         // párrafo final adaptado al caso
-}
+- `POST`. Lee `request.json()`.
+- Valida `verify_hash` con HMAC-SHA1 sobre el payload (estable, sin el campo `verify_hash`) usando `PLISIO_API_KEY`. Si falla → 401.
+- Solo procesa `status === "completed"` o `status === "mismatch"` (con `source_amount` recibido ≥ esperado).
+- Busca fila en `plisio_invoices` por `order_number`. Si no existe o ya `processed_at != null` → 200 OK idempotente.
+- Inserta en `credit_recharges` con `source='plisio'`, `stripe_session_id=plisio_<order_number>` (reutilizamos la columna única para idempotencia) y `amount=credits`.
+- Suma `credits` a `accounts.credits` igual que el webhook de Stripe.
+- Marca `plisio_invoices.processed_at = now()`.
+
+### 3. Migración SQL
+
+```sql
+CREATE TABLE public.plisio_invoices (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  order_number text NOT NULL UNIQUE,
+  invoice_id text,
+  credits integer NOT NULL CHECK (credits > 0),
+  amount_eur numeric(10,2) NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  processed_at timestamptz
+);
+GRANT SELECT ON public.plisio_invoices TO authenticated;
+GRANT ALL ON public.plisio_invoices TO service_role;
+ALTER TABLE public.plisio_invoices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users view own plisio invoices"
+  ON public.plisio_invoices FOR SELECT TO authenticated
+  USING (account_id = auth.uid() OR public.is_admin(auth.uid()));
 ```
 
-Fórmula (sumatorio, capado a 100):
+### 4. Frontend — habilitar botón en `PurchaseCard`
 
-| Señal | Aporte |
-|---|---|
-| Tráfico > 1 GB en algún proceso no atribuido | +20 |
-| Tráfico > 5 GB en algún proceso no atribuido | +35 (sustituye al anterior) |
-| Procesos no atribuidos ≥ 3 | +10 |
-| Perfiles MDM/VPN/cert raíz desconocidos (`iosConfigProfiles` con severidad ≥ high) | +25 por tipo, max +40 |
-| Detecciones IOC MVT (`totalDetections ≥ 1`) | +30 |
-| Detecciones IOC MVT críticas (`risk === "critical"`) | +60 (sustituye al anterior) |
-| Servicios de accesibilidad no reconocidos (solo Android) | +15 |
+`src/components/purchase-card.tsx`:
 
-Bandas:
-- 0–30 → `info` "Tráfico normal o explicable"
-- 31–60 → `low/medium` "Tráfico elevado que requiere revisión"
-- 61–80 → `high` "Tráfico elevado con elementos sospechosos asociados"
-- 81–100 → `critical` "Tráfico elevado con coincidencias IOC o señales claras de compromiso"
+- Importar `useServerFn` y `createPlisioInvoice`.
+- Quitar `disabled` y `title` del botón cripto.
+- `onClick`: llama a `createPlisioInvoice({ data: { credits } })`, recibe `invoice_url` y hace `window.location.href = invoice_url` (Plisio renderiza su propio checkout con BTC/ETH/USDT/TRX/BNB).
+- Estado local `cryptoLoading` para deshabilitar y mostrar spinner en el botón mientras se crea la factura. Errores → `toast` de error.
+- Eliminar el chip "Soon" sólo del botón cripto (las marquitas `cryptoBrands` se mantienen).
 
-`severity` de cada `NetworkAppRow` se deriva: `system`/`known`/`system_accumulator` → `low`; `unattributed` con score global ≥ 61 → `high`; resto → `medium` si tráfico > 500 MB, si no `low`.
+### 5. i18n
 
-### 3. `src/routes/analysis.$id.tsx` — UI
+Añadir cadenas:
 
-- Tras la tabla (línea ~362), añadir nuevo bloque "Interpretación del tráfico elevado" con:
-  - Chip de banda + score numérico.
-  - Párrafo introductorio fijo (texto del usuario sobre que volumen ≠ spyware, recomendación de reiniciar estadísticas 24–48 h, revisar perfiles/VPN/certificados/permisos).
-  - Mención específica si hay un `system_accumulator` en la lista (texto sobre `CumulativeUsageTracker`).
-  - Lista `rationale` como bullets.
-- En `NetworkAppRowView` (línea 640): mostrar `note` debajo del package name si existe, y reemplazar el icono warning fijo para `unknown` por color basado en `severity` de la fila.
-- Reemplazar texto introductorio (línea 356) por uno menos alarmista: "Procesos o apps con mayor volumen de datos enviados/recibidos. Un volumen elevado no equivale por sí solo a spyware; consulta la interpretación inferior."
+- `purchase.cryptoLoading` (es/en) — "Generando factura…" / "Generating invoice…".
+- `purchase.cryptoError` (es/en) — "No se pudo iniciar el pago con cripto" / "Could not start crypto payment".
+- Eliminar uso de `purchase.cryptoSoon` y `purchase.soon` en este botón (mantener las claves por si se usan en otro sitio).
 
-### 4. `src/lib/pdf-report.ts` — PDF
+## Fuera de alcance
 
-- En la sección "Apps con más tráfico de red" (líneas 495–526):
-  - Usar nuevas etiquetas (`originLabel` actualizado ya viene de `buildTopNetwork`).
-  - Pintar la barra lateral roja solo si `app.severity === "high" | "critical"` en vez de `origin === "unknown"`.
-  - Imprimir `note` debajo del package si existe.
-- Añadir bloque "Interpretación del tráfico elevado" tras la tabla usando `buildNetworkInterpretation(r)`: chip con banda+score, párrafo introductorio, párrafo específico si hay acumulador, lista de rationale.
+- No se toca el flujo Stripe.
+- No se cambia el sidebar ni el desktop app.
+- No se bumpea `desktop/package.json`.
+- No se implementan reintentos automáticos; el webhook ya es idempotente.
 
-### 5. Sin tocar
+## Notas técnicas
 
-- `src/lib/mvt-parser.ts` (la extracción ya devuelve nombres tal cual).
-- Schema BD, server functions, módulos no relacionados.
-- Etiqueta "Origen no reconocido" en otras secciones (apps populares, accesibilidad) — fuera de alcance.
-
-## Texto literal usado
-
-Párrafo de cabecera del bloque interpretativo (versión iOS):
-
-> El volumen mostrado corresponde a datos enviados o recibidos por procesos y apps detectadas. Un consumo elevado no equivale necesariamente a spyware o seguimiento. En iOS, algunos procesos actúan como registros internos o acumuladores de uso de datos, por lo que el volumen puede reflejar actividad acumulada durante un periodo largo. Para valorar riesgo real revisa el periodo de acumulación, el comportamiento del dispositivo y la existencia de otros indicadores (perfiles MDM, VPN, certificados, permisos sensibles, apps no reconocidas). Recomendado: reiniciar las estadísticas de datos móviles, usar el dispositivo 24–48 h y repetir el análisis.
-
-Nota específica para `CumulativeUsageTracker`:
-
-> Puede corresponder a un registro interno/acumulador de uso de datos en iOS. Un volumen elevado por sí solo no confirma spyware ni exfiltración; verifica el periodo de acumulación y cruza con otros indicadores antes de concluir.
-
-## Validación
-
-`bunx tsc --noEmit` tras los cambios. Verificación visual en el preview cargando un análisis iOS existente con `CumulativeUsageTracker`.
+- Plisio no expone SDK npm oficial bien mantenido; usamos `fetch` directo desde la server function (Worker-compatible).
+- El callback debe llevar `?json=true` para que Plisio envíe JSON en vez de form-urlencoded.
+- Verificación HMAC: ordenamos claves del payload alfabéticamente y serializamos con `JSON.stringify` antes del `crypto.createHmac('sha1', PLISIO_API_KEY).update(json).digest('hex')`. Es el método documentado por Plisio.

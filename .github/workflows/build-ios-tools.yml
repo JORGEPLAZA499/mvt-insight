@@ -11,11 +11,14 @@ run-name: Build iOS Tools (libimobiledevice + mvt-ios)
 #
 # Disparadores:
 #   - workflow_dispatch (manual)
+#   - push a main que cambie este workflow o el launcher
 #   - push de tag que empiece por `ios-tools-`
 
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - "ios-tools-*"
     paths:

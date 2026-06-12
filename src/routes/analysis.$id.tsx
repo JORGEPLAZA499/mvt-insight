@@ -354,15 +354,42 @@ function UserReport({ analysis }: { analysis: Analysis }) {
         <section>
           <SectionTitle num={sec()} title="Apps con más tráfico de red" />
           <p className="text-sm text-muted-foreground mb-4">
-            Procesos o apps que más datos han enviado o recibido (Wi-Fi + datos móviles). Un proceso desconocido con mucho tráfico en segundo plano puede estar enviando información del dispositivo a un servidor externo.
+            Procesos o apps con mayor volumen de datos enviados o recibidos (Wi-Fi + datos móviles). Un volumen elevado no equivale por sí solo a spyware: consulta la interpretación inferior antes de sacar conclusiones.
           </p>
           <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
             {topNetwork.map((app, i) => (
               <NetworkAppRowView key={app.packageName} app={app} index={i + 1} />
             ))}
           </div>
+
+          {/* Interpretación del tráfico elevado */}
+          <div className="mt-4 rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold">Interpretación del tráfico elevado</span>
+              <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                networkInterp.band === "critical" ? "bg-destructive/15 text-destructive border-destructive/30"
+                : networkInterp.band === "high" ? "bg-destructive/10 text-destructive border-destructive/20"
+                : networkInterp.band === "medium" ? "bg-warning/15 text-warning border-warning/30"
+                : networkInterp.band === "low" ? "bg-warning/10 text-warning border-warning/20"
+                : "bg-muted text-muted-foreground border-border"
+              }`}>
+                {networkInterp.bandLabel}
+              </span>
+              <span className="text-xs text-muted-foreground tabular-nums">Traffic Risk Score: {networkInterp.score}/100</span>
+            </div>
+            <p className="text-sm text-foreground/85">{networkInterp.summary}</p>
+            {networkInterp.rationale.length > 0 && (
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Factores considerados</div>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-foreground/85">
+                  {networkInterp.rationale.map((r, i) => <li key={i}>{r}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
         </section>
       )}
+
 
 
       {/* 04 · Cómo leer este informe */}

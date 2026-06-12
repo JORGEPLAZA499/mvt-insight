@@ -632,12 +632,78 @@ export function App() {
             <div className="title">{tr("welcome.android.title", "Android")}</div>
             <div className="sub">{tr("welcome.android.sub", "Sistema operativo Android")}</div>
           </button>
-          <button className="choice" onClick={() => { setIosPassword(""); setIosPasswordConfirm(""); setIosPasswordError(null); setScreen("iosSetup"); }}>
+          <button
+            className="choice"
+            onClick={async () => {
+              if (account) {
+                const fresh = await refreshCredits();
+                const available = fresh ?? account.credits;
+                if (available < ANALYSIS_COST) {
+                  setCreditsWarning({ required: ANALYSIS_COST, available });
+                  return;
+                }
+              }
+              setIosPassword("");
+              setIosPasswordConfirm("");
+              setIosPasswordError(null);
+              setScreen("iosSetup");
+            }}
+          >
             <div className="icon">📲</div>
             <div className="title">{tr("welcome.ios.title", "iPhone")}</div>
             <div className="sub">{tr("welcome.ios.sub", "Sistema operativo iOS")}</div>
           </button>
         </div>
+
+        {creditsWarning && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: 16,
+            }}
+            onClick={() => setCreditsWarning(null)}
+          >
+            <div
+              className="card"
+              style={{ maxWidth: 480, width: "100%", borderColor: "var(--danger)" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <strong style={{ color: "var(--danger)" }}>
+                {tr("credits.insufficientTitle", "Créditos insuficientes")}
+              </strong>
+              <div style={{ marginTop: 8, fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
+                {tr(
+                  "credits.insufficientBody",
+                  "Necesitas {{required}} créditos y solo tienes {{available}}. Recarga créditos en tu panel antes de iniciar el análisis.",
+                )
+                  .replace("{{required}}", String(creditsWarning.required))
+                  .replace("{{available}}", String(creditsWarning.available))}
+              </div>
+              <div className="row" style={{ marginTop: 16 }}>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    window.mvt?.openExternal(`${WEB_BASE_URL}/dashboard`);
+                    setCreditsWarning(null);
+                  }}
+                >
+                  {tr("credits.openDashboard", "Abrir panel")}
+                </button>
+                <button className="btn btn-secondary" onClick={() => setCreditsWarning(null)}>
+                  {tr("credits.cancel", "Cancelar")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+
 
         <div style={{ marginTop: 24, textAlign: "center", fontSize: 13, color: "var(--muted)" }}>
           {updateState.state === "idle" && (

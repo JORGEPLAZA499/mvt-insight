@@ -1,27 +1,38 @@
-## Diagnóstico
+## Problema
 
-El error 404 buscando `latest.yml` ocurrió porque el auto-updater de la app consultó la release **mientras GitHub Actions todavía estaba subiendo artefactos**. Acabo de comprobar la release v1.0.31 en GitHub y ahora contiene todos los archivos necesarios:
+`mvt-ios check-backup` **no acepta `--backup-password`** (lo confirmé en el CLI oficial de mvt en GitHub). Las opciones reales son: `-i`, `-o`, `-f`, `-l`, `-m`, `-H`, `-v` y el argumento posicional `BACKUP_PATH`.
 
-- `latest.yml` ✓ (Windows)
-- `latest-mac.yml` ✓
-- `latest-linux.yml` ✓
-- `MvtInsight-Setup-1.0.31.exe` ✓
-- DMGs y AppImage ✓
+La contraseña se gestiona en dos sitios:
+- **`decrypt-backup`** acepta `-p/--password` y descifra el backup a otra carpeta.
+- **`check-backup`** opera sobre un backup ya descifrado (o sin cifrar). Lee la variable de entorno `MVT_IOS_BACKUP_PASSWORD` solo en algunos módulos internos, pero el flujo robusto es **descifrar primero y analizar después**.
 
-Cada plataforma (win/mac/linux) corre en paralelo en el workflow y sube sus artefactos a la misma release de forma incremental. Si el usuario pulsó "Buscar actualizaciones" durante esa ventana (~5-10 min tras el bump), el `latest.yml` aún no existía → 404.
+## Solución
 
-## Acción
+Modificar `runMvtIos()` en `desktop/electron/ios-tools.cjs` para que haga dos pasos:
 
-**No hace falta cambiar código ni publicar nada nuevo.** La release ya está completa.
+1. **Descifrar el backup** a una carpeta temporal:
+   ```
+   mvt-ios decrypt-backup -d <decryptedDir> -p <password> <backupDir>
+   ```
+2. **Analizar el backup descifrado**:
+   ```
+   mvt-ios check-backup -o <resultsDir> <decryptedDir>
+   ```
 
-El usuario solo necesita:
-1. Pulsar de nuevo el botón **"Buscar actualizaciones"** en la app.
-2. Debería detectar 1.0.31, descargar el instalador y aplicar la actualización.
+Detalles:
+- `decryptedDir` = `<workDir>/ios-backup-decrypted` (limpiar antes si existe para evitar conflictos de reintentos).
+- Si el paso 1 falla por contraseña incorrecta (mensaje típico de mvt: "Failed to decrypt" / "Invalid password"), propagar un error claro: "Contraseña del backup incorrecta".
+- Mantener la misma firma `runMvtIos(workDir, backupDir, resultsDir, password, onData)` para no romper la llamada en `main.cjs`.
+- Emitir las dos fases por `onData` para que se vean en el log de la UI.
 
-## Mejora opcional (NO incluida ahora)
+## Lo que NO se toca
 
-Para evitar que esto se repita en futuras releases, podríamos:
-- Cambiar el workflow para que el job de Windows espere a los demás antes de publicar (serializar), **o**
-- Que el bump de versión se haga al final del workflow tras confirmar que los 3 builds subieron sus artefactos.
+- `desktop/package.json > version` queda en `1.0.31`. Cuando me digas "publica" bumpeo a 1.0.32 y publico.
+- El flujo Android no cambia.
+- La UI (`App.tsx`) no cambia; solo verá el progreso vía logs.
 
-Ambas opciones complican el flujo. La realidad práctica: si el usuario espera ~10 minutos tras un "publica" antes de pulsar "Buscar actualizaciones", el problema desaparece. Lo dejo como mejora futura si lo pides explícitamente.
+## Prueba tras publicar
+
+1. Conectar iPhone, introducir contraseña del backup.
+2. Tras "Conectando con el iPhone" debe aparecer el descifrado y luego "Analizando backup con MVT-iOS…".
+3. Si la contraseña está mal, error legible en español sin volcado de stack.

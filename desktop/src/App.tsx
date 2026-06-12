@@ -93,12 +93,14 @@ export function App() {
     if (!window.mvt) return;
     const offLog = window.mvt.onLog((msg) => {
       setLogs((prev) => [...prev.slice(-200), msg]);
+      setLastLogAt(Date.now());
     });
     const offPhase = window.mvt.onPhase((payload: any) => {
       const { phase: num, label, statusKey, progress } = payload || {};
       setPhase((prev) => {
         if (prev.num !== num) {
           setPhaseStartedAt(Date.now());
+          setLastLogAt(Date.now());
         }
         return { num, label, statusKey, progress };
       });
@@ -106,10 +108,13 @@ export function App() {
     return () => { offLog(); offPhase(); };
   }, []);
 
+
   // Cronómetro de fase: re-renderiza cada segundo mientras estamos analizando,
   // para que el usuario vea que el proceso sigue vivo aunque mvt-ios tarde.
   const [phaseStartedAt, setPhaseStartedAt] = useState<number | null>(null);
+  const [lastLogAt, setLastLogAt] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState(0);
+
   useEffect(() => {
     if (screen !== "running" || !phaseStartedAt) return;
     const id = setInterval(() => setNowTick((n) => n + 1), 1000);
@@ -693,9 +698,20 @@ export function App() {
                             );
                           })()}
                           <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
+                          {(() => {
+                            if (!lastLogAt) return null;
+                            const idleMin = Math.floor((Date.now() - lastLogAt) / 60000);
+                            if (idleMin < 5) return null;
+                            return (
+                              <div style={{ marginTop: 8, padding: "6px 8px", background: "rgba(255, 200, 0, 0.08)", border: "1px solid rgba(255, 200, 0, 0.35)", borderRadius: 6, fontSize: 12, color: "#e6c200" }}>
+                                ⚠ Sin actividad de mvt-ios desde hace {idleMin} min. Si pasa de 10 min, el análisis probablemente esté colgado — la app cortará automáticamente.
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                     </>
+
                   )}
                 </div>
               </div>

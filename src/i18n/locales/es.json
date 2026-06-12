@@ -163,7 +163,7 @@
     "how": {
       "title": "Tres pasos para un análisis preliminar",
       "steps": {
-        "s1": { "t": "Sube los artefactos", "d": "Carga los resultados JSON/CSV exportados por MVT o un backup preparado para análisis." },
+        "s1": { "t": "Sube tus evidencias", "d": "Arrastra los artefactos exportados por MVT (JSON/CSV), un backup iOS/Android o archivos de logs. El sistema detecta el formato automáticamente." },
         "s2": { "t": "Procesamiento seguro", "d": "El backend ejecuta MVT en un entorno aislado y correlaciona los IOC contra feeds públicos." },
         "s3": { "t": "Informe estructurado", "d": "Recibes coincidencias, nivel de riesgo estimado, línea de tiempo y un PDF descargable." }
       }

@@ -43,12 +43,12 @@ export function usePurchaseCardOpen() {
 }
 
 export const ANALYSIS_COST = 98;
-const CREDIT_OPTIONS = Array.from({ length: 10 }, (_, i) => (i + 1) * ANALYSIS_COST);
+const CREDIT_OPTIONS = [100, ...Array.from({ length: 10 }, (_, i) => (i + 1) * ANALYSIS_COST)];
 
 export function PurchaseCard() {
   const { t } = useTranslation();
   const open = usePurchaseCardOpen();
-  const [credits, setCredits] = useState<number>(ANALYSIS_COST);
+  const [credits, setCredits] = useState<number>(100);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [cryptoLoading, setCryptoLoading] = useState(false);
   const createPlisio = useServerFn(createPlisioInvoice);
@@ -142,7 +142,9 @@ export function PurchaseCard() {
                 >
                   {CREDIT_OPTIONS.map((c) => (
                     <option key={c} value={c}>
-                      {t("purchase.option", { credits: c, analyses: c / ANALYSIS_COST })}
+                      {c === 100
+                        ? t("purchase.optionStarter")
+                        : t("purchase.option", { credits: c, analyses: c / ANALYSIS_COST })}
                     </option>
                   ))}
                 </select>

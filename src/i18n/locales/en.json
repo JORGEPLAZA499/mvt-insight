@@ -99,6 +99,7 @@
     "perAnalysis": "/analysis",
     "selectPackage": "Select your package",
     "option": "{{credits}} credits — {{analyses}} analyses — {{credits}} €",
+    "optionStarter": "100 credits — €1",
     "description": "Technical verification of spyware, malware and suspicious activity indicators on mobile devices using artifacts, IOC/STIX2 indicators and MVT-compatible forensic tools.",
     "features": {
       "evidence": "Evidence review",

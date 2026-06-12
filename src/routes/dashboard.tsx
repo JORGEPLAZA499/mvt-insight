@@ -90,6 +90,16 @@ function Dashboard() {
       <PaymentSuccessModal open={successOpen} onClose={() => setSuccessOpen(false)} />
       <div className="p-6 md:p-10 max-w-7xl mx-auto">
 
+        {/* Page title */}
+        <div className="mb-8 animate-fade-in">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            {t("dashboard.title")}
+          </h1>
+          <p className="mt-2 text-base text-muted-foreground max-w-xl">
+            {t("dashboard.subtitle")}
+          </p>
+        </div>
+
         {/* Quick action shortcuts */}
         <section className="animate-fade-in">
 

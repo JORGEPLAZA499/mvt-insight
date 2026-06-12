@@ -1,25 +1,43 @@
-## Plan
+El problema real: `mvt-ios.exe` sigue ejecutando alguna ruta de `tldextract` con la configuración por defecto. Esa configuración intenta descargar/cachear `https://publicsuffix.org/list/public_suffix_list.dat`; en el binario PyInstaller de Windows acaba usando una ruta temporal/perfil corto tipo `C:\Users\GAMING~1\...` que no existe, y el análisis se rompe.
 
-1. **Cambiar la estrategia de `tldextract` en el launcher**
-   - Mantener `multiprocessing.freeze_support()`.
-   - Crear una carpeta de caché escribible como ya se hizo.
-   - Además, configurar `tldextract` para que no dependa de descargar `public_suffix_list.dat` en runtime.
-   - La idea es parchear el extractor por defecto antes de importar/ejecutar `mvt.ios.cli`, usando `suffix_list_urls=()` y/o `fallback_to_snapshot=True`, para que use el snapshot incluido en el paquete en vez de intentar escribir/descargar la lista.
+Do I know what the issue is? Sí: el parche actual solo sustituye el extractor global ya creado, pero no garantiza que todas las instancias futuras de `tldextract.TLDExtract()` usadas por MVT/iOSbackup queden forzadas a modo offline, y además el snapshot de `tldextract` puede no estar incluido explícitamente en el bundle.
 
-2. **Hacer el fix tolerante a versiones distintas de `tldextract`**
-   - Implementar el parche dentro de un `try/except` seguro.
-   - Si una versión no soporta algún argumento, caer a una configuración compatible sin romper el CLI.
-   - Evitar que el warning se convierta en fallo de análisis.
+Plan de implementación:
 
-3. **Actualizar documentación del plan local**
-   - Ajustar `.lovable/plan.md` para reflejar que el primer fix de carpeta de caché no fue suficiente.
-   - Documentar que el segundo fix desactiva la descarga runtime de Public Suffix List y fuerza el fallback embebido.
+1. **Forzar `tldextract` offline en todas las rutas**
+   - Modificar `.github/workflows/mvt_ios_launcher.py` para parchear también el constructor `tldextract.TLDExtract`, no solo `tldextract.extract`/`TLD_EXTRACTOR`.
+   - Cualquier nueva instancia recibirá por defecto `suffix_list_urls=()` y `fallback_to_snapshot=True`, salvo que una versión concreta no soporte algún argumento.
+   - Mantener `cache_dir` apuntando a la carpeta escribible de MvtInsight.
 
-4. **No cambiar la versión desktop**
-   - No tocar `desktop/package.json`.
-   - La app puede seguir en `1.0.34`; el cambio vive en el asset descargable `ios-tools-v1`.
+2. **Precalentar el extractor antes de cargar MVT**
+   - Llamar al extractor una vez con un dominio simple antes de importar `mvt.ios.cli`.
+   - Si aún intenta red o falla por datos no incluidos, el fallo aparecerá temprano y no durante el análisis.
 
-5. **Regenerar y probar**
-   - Tras aplicar el cambio, el workflow `Build iOS Tools` debería reconstruir `ios-tools-v1`.
-   - En Windows: cerrar MvtInsight, matar `mvt-ios.exe` si queda, borrar `C:\Users\TU_USUARIO\Downloads\mvt-insight\ios-tools`, abrir de nuevo y lanzar el análisis iOS.
-   - Resultado esperado: no intenta descargar `https://publicsuffix.org/list/public_suffix_list.dat` y el análisis no se rompe por ese error.
+3. **Incluir explícitamente los datos de `tldextract` en PyInstaller**
+   - Actualizar `.github/workflows/build-ios-tools.yml` para empaquetar `tldextract` además de `mvt`.
+   - Añadir `--collect-all tldextract` en los comandos PyInstaller de Unix y Windows, para asegurar que el snapshot embebido de la Public Suffix List viaja dentro de `mvt-ios.exe`.
+
+4. **Hacerlo compatible con versiones distintas**
+   - Mantener la lógica defensiva que elimina kwargs no soportados (`fallback_to_snapshot`, `cache_dir`, etc.) y reintenta.
+   - Evitar que el parche defensivo o un cambio menor de API rompan el CLI.
+
+5. **Actualizar el plan/documentación local**
+   - Documentar que el segundo parche no fue suficiente porque no cubría nuevas instancias ni garantizaba datos de `tldextract` en el bundle.
+   - Registrar que el nuevo fix combina monkey-patch global del constructor + inclusión explícita de `tldextract` en PyInstaller.
+
+6. **Sin bump de versión desktop**
+   - No tocar `desktop/package.json` ni cambiar la versión de la app.
+   - El cambio se publicará en el asset `ios-tools-v1` cuando corra el workflow.
+
+7. **Prueba esperada**
+   - Rebuild del workflow `Build iOS Tools`.
+   - En Windows: cerrar MvtInsight, matar `mvt-ios.exe` si queda, borrar `C:\Users\TU_USUARIO\Downloads\mvt-insight\ios-tools`, abrir de nuevo y lanzar análisis.
+   - Resultado esperado: no aparece `Failed fetching 'https://publicsuffix.org/list/public_suffix_list.dat'` y el análisis continúa.
+
+<presentation-actions>
+  <presentation-open-history>View History</presentation-open-history>
+</presentation-actions>
+
+<presentation-actions>
+<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
+</presentation-actions>

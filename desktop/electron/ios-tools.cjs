@@ -252,6 +252,23 @@ function createBackup(workDir, udid, destDir, onData) {
   });
 }
 
+function killMvtIosTree(pid) {
+  try {
+    if (process.platform === "win32") {
+      // Mata el árbol del proceso concreto y luego barre cualquier mvt-ios.exe
+      // huérfano que el bootstrapper de PyInstaller haya dejado vivo.
+      try {
+        require("child_process").spawnSync("taskkill", ["/F", "/T", "/PID", String(pid)], { windowsHide: true });
+      } catch {}
+      try {
+        require("child_process").spawnSync("taskkill", ["/F", "/IM", "mvt-ios.exe", "/T"], { windowsHide: true });
+      } catch {}
+    } else {
+      try { process.kill(pid, "SIGKILL"); } catch {}
+    }
+  } catch {}
+}
+
 function runMvtIos(workDir, backupDir, resultsDir, password, onData) {
   if (!fs.existsSync(resultsDir)) fs.mkdirSync(resultsDir, { recursive: true });
   const bin = iosBinPath(workDir, "mvt-ios");
@@ -267,28 +284,71 @@ function runMvtIos(workDir, backupDir, resultsDir, password, onData) {
   } catch {}
   fs.mkdirSync(decryptedDir, { recursive: true });
 
-  const runStep = (args) =>
+  // Timeouts duros (en minutos), configurables vía env por si un backup es enorme.
+  const DECRYPT_TIMEOUT_MS = Math.max(1, parseInt(process.env.MVT_DECRYPT_TIMEOUT_MIN || "30", 10)) * 60_000;
+  const CHECK_TIMEOUT_MS = Math.max(1, parseInt(process.env.MVT_CHECK_TIMEOUT_MIN || "45", 10)) * 60_000;
+  const STALL_HEARTBEAT_MS = 60_000; // comprueba cada 60s
+  const STALL_THRESHOLD_MS = 10 * 60_000; // 10 min sin salida → heartbeat visible
+
+  const runStep = (args, timeoutMs) =>
     new Promise((resolve, reject) => {
       const child = spawn(bin, args, { env: toolEnv(workDir), windowsHide: true });
       let stderr = "";
       let stdout = "";
+      let timedOut = false;
+      let lastOutputAt = Date.now();
+
+      const bumpActivity = () => { lastOutputAt = Date.now(); };
+
       child.stdout?.on("data", (d) => {
         const s = d.toString();
         stdout += s;
+        bumpActivity();
         onData?.(s);
       });
       child.stderr?.on("data", (d) => {
         const s = d.toString();
         stderr += s;
+        bumpActivity();
         onData?.(s);
       });
-      child.on("error", reject);
-      child.on("close", (code) => resolve({ code, stdout, stderr }));
+
+      const killTimer = timeoutMs
+        ? setTimeout(() => {
+            timedOut = true;
+            onData?.(`\n[timeout] mvt-ios ${args[0]} excedió ${Math.round(timeoutMs / 60000)} min. Matando procesos…\n`);
+            killMvtIosTree(child.pid);
+          }, timeoutMs)
+        : null;
+
+      const heartbeat = setInterval(() => {
+        const idle = Date.now() - lastOutputAt;
+        if (idle >= STALL_THRESHOLD_MS) {
+          onData?.(`[heartbeat] sin salida de mvt-ios desde hace ${Math.round(idle / 60000)} min\n`);
+          lastOutputAt = Date.now(); // evita spam: re-arma el contador
+        }
+      }, STALL_HEARTBEAT_MS);
+
+      child.on("error", (err) => {
+        if (killTimer) clearTimeout(killTimer);
+        clearInterval(heartbeat);
+        reject(err);
+      });
+      child.on("close", (code) => {
+        if (killTimer) clearTimeout(killTimer);
+        clearInterval(heartbeat);
+        resolve({ code: timedOut ? -1 : code, stdout, stderr, timedOut });
+      });
     });
 
   return (async () => {
     onData?.("→ Descifrando backup del iPhone…\n");
-    const dec = await runStep(["decrypt-backup", "-d", decryptedDir, "-p", password, backupDir]);
+    const dec = await runStep(["decrypt-backup", "-d", decryptedDir, "-p", password, backupDir], DECRYPT_TIMEOUT_MS);
+    if (dec.timedOut) {
+      throw new Error(
+        "mvt-ios decrypt-backup se quedó colgado (timeout). Suele ser un problema del binario de mvt-ios en Windows que deja procesos zombie. Cierra la app, comprueba que no quede ningún mvt-ios.exe en el Administrador de tareas y vuelve a intentarlo."
+      );
+    }
     if (dec.code !== 0) {
       const combined = (dec.stdout + dec.stderr).toLowerCase();
       if (
@@ -303,7 +363,12 @@ function runMvtIos(workDir, backupDir, resultsDir, password, onData) {
     }
 
     onData?.("→ Analizando backup descifrado con MVT-iOS…\n");
-    const chk = await runStep(["check-backup", "-o", resultsDir, decryptedDir]);
+    const chk = await runStep(["check-backup", "-o", resultsDir, decryptedDir], CHECK_TIMEOUT_MS);
+    if (chk.timedOut) {
+      throw new Error(
+        "mvt-ios check-backup se quedó colgado (timeout). Hay procesos mvt-ios.exe que no terminan; es un problema conocido del binario en Windows. Cierra la app, mata cualquier mvt-ios.exe restante en el Administrador de tareas y vuelve a intentarlo."
+      );
+    }
     if (chk.code !== 0) {
       throw new Error(`mvt-ios check-backup falló (código ${chk.code}): ${(chk.stderr || chk.stdout).trim()}`);
     }
@@ -312,6 +377,8 @@ function runMvtIos(workDir, backupDir, resultsDir, password, onData) {
     try {
       fs.rmSync(decryptedDir, { recursive: true, force: true });
     } catch {}
+
+
 
     return { ok: true };
   })();

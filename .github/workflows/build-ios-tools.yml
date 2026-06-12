@@ -125,6 +125,7 @@ jobs:
           pyinstaller --onefile --name mvt-ios \
             --collect-all mvt \
             --collect-all tldextract \
+            --collect-all tld \
             --hidden-import iOSbackup \
             mvt_ios_launcher.py
           cp dist/mvt-ios staging/bin/
@@ -134,7 +135,7 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item .github/workflows/mvt_ios_launcher.py .
-          pyinstaller --onefile --name mvt-ios --collect-all mvt --collect-all tldextract --hidden-import iOSbackup mvt_ios_launcher.py
+          pyinstaller --onefile --name mvt-ios --collect-all mvt --collect-all tldextract --collect-all tld --hidden-import iOSbackup mvt_ios_launcher.py
           Copy-Item dist/mvt-ios.exe staging/bin/ -Force
 
       # -------- 3. Empaquetar y publicar --------

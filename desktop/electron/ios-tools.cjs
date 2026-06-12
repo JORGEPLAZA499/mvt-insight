@@ -15,7 +15,7 @@ const { pipeline } = require("stream/promises");
 
 const IOS_TOOLS_REPO = "JORGEPLAZA499/mvt-insight";
 const IOS_TOOLS_TAG = "ios-tools-v1";
-const IOS_TOOLS_BUILD_ID = "2026-06-12-tldextract-offline-v2";
+const IOS_TOOLS_BUILD_ID = "2026-06-12-tldextract-tld-offline-v3";
 const IOS_TOOLS_BUILD_MARKER = ".mvt-insight-ios-tools-build";
 const MIN_ARCHIVE_BYTES = 1 * 1024 * 1024; // 1 MB mínimo para considerar válido
 
@@ -231,6 +231,7 @@ function toolEnv(workDir) {
   env.PATH = binDir + path.delimiter + (env.PATH || "");
   env.XDG_CACHE_HOME = cacheRoot;
   env.TLDEXTRACT_CACHE = tldCache;
+  env.MVT_INSIGHT_MVT_IOS_CACHE = cacheRoot;
   return env;
 }
 

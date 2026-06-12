@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import { Delete, Shuffle, X, ArrowUp } from "lucide-react";
 
 const DIGITS = "0123456789".split("");
@@ -22,12 +22,12 @@ interface Props {
 }
 
 export function VirtualKeyboard({ value, onChange, onClose }: Props) {
+  const { t } = useTranslation();
   const [shift, setShift] = useState(false);
   const [showSymbols, setShowSymbols] = useState(false);
   const [seed, setSeed] = useState(0);
   const [shuffled, setShuffled] = useState(true);
 
-  // Re-baraja cuando cambia seed o el conjunto activo
   const digits = useMemo(
     () => (shuffled ? shuffle(DIGITS) : DIGITS),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -64,7 +64,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
       type="button"
       onClick={onClick}
       className="h-9 w-full rounded-md border border-border bg-background hover:bg-accent text-sm font-mono transition select-none"
-      aria-label={`Tecla ${label}`}
+      aria-label={t("a11y.key", { label })}
     >
       {label}
     </button>
@@ -74,11 +74,11 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
     <div
       className="mt-2 rounded-lg border border-border bg-card p-3 shadow-lg"
       role="group"
-      aria-label="Teclado virtual"
+      aria-label={t("a11y.virtualKeyboard")}
     >
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-          Teclado virtual
+          {t("a11y.virtualKeyboard")}
         </span>
         <div className="flex gap-1">
           <button
@@ -86,21 +86,21 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
             onClick={() => setShuffled((s) => !s)}
             className="text-[11px] px-2 py-1 rounded hover:bg-accent text-muted-foreground"
           >
-            {shuffled ? "Orden normal" : "Aleatorio"}
+            {shuffled ? t("a11y.normalOrder") : t("a11y.random")}
           </button>
           <button
             type="button"
             onClick={() => setSeed((s) => s + 1)}
             className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded hover:bg-accent text-muted-foreground"
-            aria-label="Reordenar teclas"
+            aria-label={t("a11y.reorderKeys")}
           >
-            <Shuffle className="h-3 w-3" /> Reordenar
+            <Shuffle className="h-3 w-3" /> {t("a11y.reorder")}
           </button>
           <button
             type="button"
             onClick={onClose}
             className="inline-flex items-center text-[11px] px-2 py-1 rounded hover:bg-accent text-muted-foreground"
-            aria-label="Cerrar teclado"
+            aria-label={t("a11y.closeKeyboard")}
           >
             <X className="h-3 w-3" />
           </button>
@@ -132,7 +132,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
           }`}
           aria-pressed={shift}
         >
-          <ArrowUp className="h-3 w-3" /> Mayús
+          <ArrowUp className="h-3 w-3" /> {t("a11y.shift")}
         </button>
         <button
           type="button"
@@ -151,15 +151,15 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
           onClick={() => onChange(value + " ")}
           className="flex-1 h-9 rounded-md border border-border bg-background hover:bg-accent text-xs"
         >
-          Espacio
+          {t("a11y.space")}
         </button>
         <button
           type="button"
           onClick={backspace}
           className="h-9 px-3 rounded-md border border-border bg-background hover:bg-accent text-xs inline-flex items-center gap-1"
-          aria-label="Borrar último carácter"
+          aria-label={t("a11y.deleteLast")}
         >
-          <Delete className="h-3 w-3" /> Borrar
+          <Delete className="h-3 w-3" /> {t("a11y.delete")}
         </button>
       </div>
     </div>

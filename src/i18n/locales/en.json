@@ -647,12 +647,20 @@
   },
   "a11y": {
     "copyCommand": "Copy command",
+    "copied": "Copied!",
+    "copy": "Copy",
     "virtualKeyboard": "Virtual keyboard",
     "key": "Key {{label}}",
     "reorderKeys": "Shuffle keys",
+    "reorder": "Shuffle",
     "closeKeyboard": "Close keyboard",
     "deleteLast": "Delete last character",
-    "close": "Close"
+    "delete": "Delete",
+    "close": "Close",
+    "normalOrder": "Normal order",
+    "random": "Random",
+    "shift": "Shift",
+    "space": "Space"
   },
   "codeBlock": {
     "copy": "Copy",

@@ -48,7 +48,7 @@ const CREDIT_OPTIONS = [100, ...Array.from({ length: 10 }, (_, i) => (i + 1) * A
 export function PurchaseCard() {
   const { t } = useTranslation();
   const open = usePurchaseCardOpen();
-  const [credits, setCredits] = useState<number>(ANALYSIS_COST);
+  const [credits, setCredits] = useState<number>(100);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [cryptoLoading, setCryptoLoading] = useState(false);
   const createPlisio = useServerFn(createPlisioInvoice);

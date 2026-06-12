@@ -105,6 +105,12 @@
     "signOutConfirm": "Unlink this app from your account?",
     "link": "Link account"
   },
+  "credits": {
+    "insufficientTitle": "Not enough credits",
+    "insufficientBody": "You need {{required}} credits but only have {{available}}. Top up credits in your dashboard before starting the analysis.",
+    "openDashboard": "Open dashboard",
+    "cancel": "Cancel"
+  },
   "link": {
     "title": "Link account",
     "subtitle": "Link this app to your web account to upload analyses automatically.",

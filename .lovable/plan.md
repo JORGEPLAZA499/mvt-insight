@@ -1,22 +1,47 @@
-## Hero a dos columnas en desktop
+## Diagnóstico
 
-Reestructurar el `<section>` del hero en `src/routes/index.tsx` para que en pantallas grandes (`lg:`) tenga dos columnas, moviendo la tarjeta de threat intel (Radar + chips de spyware) a la columna derecha. En mobile/tablet se mantiene el stack actual (tarjeta debajo del subtítulo).
+Lo que ves en la segunda imagen es normal:
+- `androidqf.exe` está vivo y recolectando.
+- Los 5 `MvtInsight.exe` son los procesos estándar de Electron (main + GPU + utility + renderer + helper).
 
-### Cambios en `src/routes/index.tsx`
+La fase "Collecting information on installed apps" de AndroidQF puede estar 5–15 min sin emitir una sola línea al stdout. El watchdog de la UI (`lastLogAt`) cree que no hay actividad y muestra el aviso, aunque el binario sigue trabajando.
 
-1. Cambiar el contenedor interno del hero de `max-w-3xl` (single column) a un grid:
-   - Mobile/tablet: `grid grid-cols-1 gap-10`
-   - Desktop: `lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-12 lg:items-center`
+Además, el texto actual dice "la app cortará automáticamente" pero **no existe ningún auto-cancel** en `desktop/src/App.tsx` — es información incorrecta.
 
-2. **Columna izquierda** (sin cambios de contenido): badge, `<h1>`, subtítulo `<p>`, botones CTA. Se quita la tarjeta de threats de aquí.
+## Cambios
 
-3. **Columna derecha** (nueva ubicación de la tarjeta de threats):
-   - En `lg:` se posiciona a la derecha, alineada verticalmente con el contenido.
-   - En mobile aparece después de los CTAs (orden natural del DOM), manteniendo el flujo lectura actual.
-   - Se quita `max-w-2xl` de la tarjeta (ahora la limita la columna).
-   - Opcional: ligero realce visual `lg:sticky lg:top-24` para que la tarjeta acompañe al usuario al hacer scroll inicial (sin afectar otras secciones).
+### 1. Texto del aviso (correcto y dependiente del dispositivo)
 
-4. Sin tocar textos, i18n, estilos de la tarjeta (Radar, chips, scan-line), Features ni How.
+Archivo: `desktop/src/App.tsx`, línea 803.
 
-### Riesgos
-- Ninguno funcional. Es solo layout responsive con tokens Tailwind ya existentes.
+Reemplazar el `div` hardcodeado por un texto i18n y referido a la herramienta real:
+
+- iOS → "Sin actividad de mvt-ios desde hace {N} min."
+- Android → "Sin actividad de androidqf desde hace {N} min."
+- Sufijo común y veraz: "Esto suele ser normal mientras se recolectan apps o se crea el backup. Si pasa de 15 min, pulsa Cancelar y reintenta."
+
+Quitar la frase "la app cortará automáticamente" (no es cierta).
+
+### 2. Claves i18n
+
+Archivos: `desktop/src/i18n/locales/es.json` y `desktop/src/i18n/locales/en.json`.
+
+Añadir bajo `running` (o el namespace que ya use ese bloque) algo como:
+
+```
+"idleWarning": {
+  "ios":     "⚠ Sin actividad de mvt-ios desde hace {{min}} min.",
+  "android": "⚠ Sin actividad de androidqf desde hace {{min}} min.",
+  "hint":    "Esto puede ser normal mientras se recolectan apps o se crea el backup. Si supera 15 min, pulsa Cancelar y reintenta."
+}
+```
+
+### 3. Umbral del aviso
+
+Subir el umbral de 5 a 8 minutos para Android (la recolección de apps suele tardar 5–10 min sin output) y mantener 5 min para iOS. Cambio puntual en la condición `if (idleMin < 5) return null;` (línea 800) usando `device`.
+
+### Sin cambios
+
+- No se toca la lógica de `androidqf`, ni el watchdog real del proceso en `electron/main.cjs` / `ios-tools.cjs`.
+- No se introduce auto-cancelación.
+- No se bumpea la versión del desktop.

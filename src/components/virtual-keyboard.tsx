@@ -63,7 +63,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
       key={label + extra}
       type="button"
       onClick={onClick}
-      className="h-12 sm:h-9 w-full rounded-md border border-border bg-background hover:bg-accent text-base sm:text-sm font-mono transition select-none"
+      className="h-14 sm:h-9 w-full rounded-lg sm:rounded-md border border-border bg-background hover:bg-accent active:bg-accent active:scale-95 text-lg sm:text-sm font-semibold sm:font-mono shadow-sm sm:shadow-none transition select-none"
       aria-label={t("a11y.key", { label })}
     >
       {label}
@@ -127,7 +127,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
         <button
           type="button"
           onClick={() => setShift((s) => !s)}
-          className={`h-12 sm:h-9 px-3 rounded-md border border-border text-sm sm:text-xs inline-flex items-center gap-1 transition ${
+          className={`h-14 sm:h-9 px-4 sm:px-3 rounded-lg sm:rounded-md border border-border text-base sm:text-xs font-semibold inline-flex items-center gap-1 shadow-sm sm:shadow-none active:scale-95 transition ${
             shift ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent"
           }`}
           aria-pressed={shift}
@@ -137,7 +137,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
         <button
           type="button"
           onClick={() => setShowSymbols((s) => !s)}
-          className={`h-12 sm:h-9 px-3 rounded-md border border-border text-sm sm:text-xs transition ${
+          className={`h-14 sm:h-9 px-4 sm:px-3 rounded-lg sm:rounded-md border border-border text-base sm:text-xs font-semibold shadow-sm sm:shadow-none active:scale-95 transition ${
             showSymbols
               ? "bg-primary text-primary-foreground"
               : "bg-background hover:bg-accent"
@@ -149,14 +149,14 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
         <button
           type="button"
           onClick={() => onChange(value + " ")}
-          className="flex-1 h-12 sm:h-9 rounded-md border border-border bg-background hover:bg-accent text-sm sm:text-xs"
+          className="flex-1 h-14 sm:h-9 rounded-lg sm:rounded-md border border-border bg-background hover:bg-accent active:scale-95 text-base sm:text-xs font-semibold shadow-sm sm:shadow-none transition"
         >
           {t("a11y.space")}
         </button>
         <button
           type="button"
           onClick={backspace}
-          className="h-12 sm:h-9 px-3 rounded-md border border-border bg-background hover:bg-accent text-sm sm:text-xs inline-flex items-center gap-1"
+          className="h-14 sm:h-9 px-4 sm:px-3 rounded-lg sm:rounded-md border border-border bg-background hover:bg-accent active:scale-95 text-base sm:text-xs font-semibold shadow-sm sm:shadow-none inline-flex items-center gap-1 transition"
           aria-label={t("a11y.deleteLast")}
         >
           <Delete className="h-5 w-5 sm:h-3 sm:w-3" /> {t("a11y.delete")}

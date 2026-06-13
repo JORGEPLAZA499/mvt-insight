@@ -26,7 +26,6 @@
     }
   },
   "common": {
-
     "goHome": "Ir al inicio",
     "tryAgain": "Reintentar",
     "language": "Idioma",
@@ -119,7 +118,6 @@
     "checkoutSuccess": "¡Pago confirmado! Tus créditos se añadirán en unos segundos.",
     "checkoutProcessing": "Procesando tu pago..."
   },
-
   "analysis": {
     "tabs": {
       "user": "Para ti",
@@ -153,20 +151,47 @@
     },
     "features": {
       "items": {
-        "mvt": { "title": "Integración MVT", "desc": "Procesamiento de artefactos móviles mediante Mobile Verification Toolkit, con soporte para indicadores STIX2/IOC y evidencias trazables." },
-        "visual": { "title": "Dashboard forense", "desc": "Visualiza severidad, línea temporal, origen del indicador, nivel de riesgo y correlación entre eventos detectados." },
-        "report": { "title": "Reporte PDF forense", "desc": "Genera informes ejecutivos y técnicos con hallazgos, evidencias, indicadores detectados y recomendaciones de seguridad." },
-        "privacy": { "title": "Privacidad por diseño", "desc": "Cifrado en reposo, retención controlada, análisis aislado y eliminación segura de archivos bajo solicitud." },
-        "normalized": { "title": "Indicadores normalizados", "desc": "Clasificación de dominios, hashes, procesos, rutas, eventos y coincidencias contra feeds públicos de amenazas." },
-        "consent": { "title": "Análisis autorizado", "desc": "Flujo basado en consentimiento explícito del titular del dispositivo, con registro previo y trazabilidad del proceso." }
+        "mvt": {
+          "title": "Integración MVT",
+          "desc": "Procesamiento de artefactos móviles mediante Mobile Verification Toolkit, con soporte para indicadores STIX2/IOC y evidencias trazables."
+        },
+        "visual": {
+          "title": "Dashboard forense",
+          "desc": "Visualiza severidad, línea temporal, origen del indicador, nivel de riesgo y correlación entre eventos detectados."
+        },
+        "report": {
+          "title": "Reporte PDF forense",
+          "desc": "Genera informes ejecutivos y técnicos con hallazgos, evidencias, indicadores detectados y recomendaciones de seguridad."
+        },
+        "privacy": {
+          "title": "Privacidad por diseño",
+          "desc": "Cifrado en reposo, retención controlada, análisis aislado y eliminación segura de archivos bajo solicitud."
+        },
+        "normalized": {
+          "title": "Indicadores normalizados",
+          "desc": "Clasificación de dominios, hashes, procesos, rutas, eventos y coincidencias contra feeds públicos de amenazas."
+        },
+        "consent": {
+          "title": "Análisis autorizado",
+          "desc": "Flujo basado en consentimiento explícito del titular del dispositivo, con registro previo y trazabilidad del proceso."
+        }
       }
     },
     "how": {
       "title": "Tres pasos para un análisis preliminar",
       "steps": {
-        "s1": { "t": "Sube tus evidencias", "d": "Arrastra los artefactos exportados por MVT (JSON/CSV), un backup iOS/Android o archivos de logs. El sistema detecta el formato automáticamente." },
-        "s2": { "t": "Procesamiento seguro", "d": "El backend ejecuta MVT en un entorno aislado y correlaciona los IOC contra feeds públicos." },
-        "s3": { "t": "Informe estructurado", "d": "Recibes coincidencias, nivel de riesgo estimado, línea de tiempo y un PDF descargable." }
+        "s1": {
+          "t": "Sube tus evidencias",
+          "d": "Arrastra los artefactos exportados por MVT (JSON/CSV), un backup iOS/Android o archivos de logs. El sistema detecta el formato automáticamente."
+        },
+        "s2": {
+          "t": "Procesamiento seguro",
+          "d": "El backend ejecuta MVT en un entorno aislado y correlaciona los IOC contra feeds públicos."
+        },
+        "s3": {
+          "t": "Informe estructurado",
+          "d": "Recibes coincidencias, nivel de riesgo estimado, línea de tiempo y un PDF descargable."
+        }
       }
     },
     "legal": {
@@ -180,7 +205,9 @@
     }
   },
   "login": {
-    "meta": { "title": "Iniciar sesión — Spyware Forensic Analyzer" },
+    "meta": {
+      "title": "Iniciar sesión — Spyware Forensic Analyzer"
+    },
     "sideTitle": "Privacidad por diseño.",
     "sideDesc": "Tus archivos se procesan en un entorno aislado y pueden eliminarse de forma definitiva en cualquier momento.",
     "titleLogin": "Inicia sesión",
@@ -198,17 +225,40 @@
   "dashboard": {
     "eyebrow": "Centro de mando forense",
     "title": "Panel",
-    
     "ctaNew": "Nuevo análisis",
     "shortcuts": {
       "eyebrow": "Accesos directos",
       "title": "¿Qué quieres hacer?",
-      "newAnalysis": { "title": "Nuevo análisis", "desc": "La app de escritorio sube los artefactos y ejecuta el análisis forense automáticamente.", "cta": "Iniciar" },
-      "reports": { "title": "Informes", "desc": "Consulta los informes PDF de tus análisis.", "cta": "Ver informes" },
-      "history": { "title": "Historial", "desc": "Revisa todos los análisis previos.", "cta": "Abrir historial" },
-      "desktop": { "title": "App de escritorio", "desc": "Vincula la app y ejecuta análisis locales.", "cta": "Configurar" },
-      "credits": { "title": "Recargar créditos", "desc": "Compra créditos para nuevos análisis.", "cta": "Comprar" },
-      "support": { "title": "Soporte", "desc": "Contacta con nuestro equipo de ayuda.", "cta": "Contactar" }
+      "newAnalysis": {
+        "title": "Nuevo análisis",
+        "desc": "La app de escritorio sube los artefactos y ejecuta el análisis forense automáticamente.",
+        "cta": "Iniciar"
+      },
+      "reports": {
+        "title": "Informes",
+        "desc": "Consulta los informes PDF de tus análisis.",
+        "cta": "Ver informes"
+      },
+      "history": {
+        "title": "Historial",
+        "desc": "Revisa todos los análisis previos.",
+        "cta": "Abrir historial"
+      },
+      "desktop": {
+        "title": "App de escritorio",
+        "desc": "Vincula la app y ejecuta análisis locales.",
+        "cta": "Configurar"
+      },
+      "credits": {
+        "title": "Recargar créditos",
+        "desc": "Compra créditos para nuevos análisis.",
+        "cta": "Comprar"
+      },
+      "support": {
+        "title": "Soporte",
+        "desc": "Contacta con nuestro equipo de ayuda.",
+        "cta": "Contactar"
+      }
     },
     "stats": {
       "total": "Análisis totales",
@@ -246,8 +296,14 @@
     "step1": {
       "title": "¿Qué dispositivo quieres analizar?",
       "subtitle": "Elige el sistema operativo del móvil.",
-      "android": { "title": "Android", "sub": "" },
-      "ios": { "title": "iPhone", "sub": "" },
+      "android": {
+        "title": "Android",
+        "sub": ""
+      },
+      "ios": {
+        "title": "iPhone",
+        "sub": ""
+      },
       "noCredits": {
         "title": "No tienes créditos suficientes",
         "body": "Cada informe cuesta 98 créditos. Recarga créditos desde tu panel para iniciar un análisis.",
@@ -465,7 +521,8 @@
       "lastRecharge": "Última recarga",
       "lastLogin": "Último acceso",
       "created": "Creado",
-      "noResults": "Sin resultados."
+      "noResults": "Sin resultados.",
+      "legal": "Legal"
     },
     "tokens": {
       "generate": "Generar token",
@@ -493,6 +550,23 @@
       "lastRecharge": "Última recarga",
       "lastCheck": "Última comprobación: {{when}}",
       "refresh": "Actualizar"
+    },
+    "legal": {
+      "statusOk": "Aceptación vigente",
+      "statusOutdated": "Aceptó versión anterior ({{v}})",
+      "statusMissing": "Sin aceptación registrada",
+      "viewerTitle": "Comprobantes legales — {{code}}",
+      "viewerSubtitle": "Registro inmutable de aceptación de términos con firma criptográfica.",
+      "empty": "Este usuario no tiene comprobantes registrados.",
+      "colDate": "Fecha",
+      "colVersion": "Versión",
+      "colLocale": "Idioma",
+      "colIp": "IP",
+      "view": "Ver",
+      "verifiedOk": "Firma verificada",
+      "verifiedBad": "Firma inválida",
+      "signedAs": "Documento v{{v}}",
+      "downloadPdf": "Descargar comprobante PDF"
     }
   },
   "settingsDesktop": {
@@ -665,5 +739,13 @@
   "codeBlock": {
     "copy": "Copiar",
     "copied": "Copiado"
+  },
+  "legalModal": {
+    "subtitle": "Versión {{version}}. Lee el documento completo y marca las dos casillas para continuar.",
+    "scrollHint": "Desplázate hasta el final del documento para habilitar la aceptación.",
+    "acceptUse": "He leído y acepto los Términos de uso del servicio.",
+    "acceptPay": "He leído y acepto las Condiciones de pago y la renuncia expresa al derecho de desistimiento.",
+    "acceptCta": "Aceptar y continuar",
+    "error": "No se ha podido registrar la aceptación. Inténtalo de nuevo."
   }
 }

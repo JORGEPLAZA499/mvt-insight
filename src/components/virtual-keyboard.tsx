@@ -84,25 +84,25 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
           <button
             type="button"
             onClick={() => setShuffled((s) => !s)}
-            className="text-[11px] px-2 py-1 rounded hover:bg-accent text-muted-foreground"
+            className="text-xs sm:text-[11px] px-2 py-1 rounded hover:bg-accent text-muted-foreground"
           >
             {shuffled ? t("a11y.normalOrder") : t("a11y.random")}
           </button>
           <button
             type="button"
             onClick={() => setSeed((s) => s + 1)}
-            className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded hover:bg-accent text-muted-foreground"
+            className="inline-flex items-center gap-1 text-xs sm:text-[11px] px-2 py-1 rounded hover:bg-accent text-muted-foreground"
             aria-label={t("a11y.reorderKeys")}
           >
-            <Shuffle className="h-3 w-3" /> {t("a11y.reorder")}
+            <Shuffle className="h-4 w-4 sm:h-3 sm:w-3" /> {t("a11y.reorder")}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center text-[11px] px-2 py-1 rounded hover:bg-accent text-muted-foreground"
+            className="inline-flex items-center text-xs sm:text-[11px] px-2 py-1 rounded hover:bg-accent text-muted-foreground"
             aria-label={t("a11y.closeKeyboard")}
           >
-            <X className="h-3 w-3" />
+            <X className="h-4 w-4 sm:h-3 sm:w-3" />
           </button>
         </div>
       </div>

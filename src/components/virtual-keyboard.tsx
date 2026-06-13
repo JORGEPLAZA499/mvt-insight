@@ -72,7 +72,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
 
   return (
     <div
-      className="mt-2 rounded-lg border border-border bg-card p-3 shadow-lg"
+      className="mt-2 rounded-lg border border-border bg-card p-4 sm:p-3 shadow-lg"
       role="group"
       aria-label={t("a11y.virtualKeyboard")}
     >

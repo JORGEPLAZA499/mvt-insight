@@ -126,10 +126,10 @@
   },
   "landing": {
     "meta": {
-      "title": "Spyware Forensic Analyzer — Análisis forense de indicios de spyware",
+      "title": "Spyware Forensic Analyzer — Análisis forense de indicios de spyware mercenario",
       "description": "Plataforma de análisis forense preliminar de dispositivos móviles basada en MVT (Mobile Verification Toolkit). Detecta posibles indicios de compromiso.",
       "ogTitle": "Spyware Forensic Analyzer",
-      "ogDescription": "Análisis forense de indicios de spyware en dispositivos móviles con MVT."
+      "ogDescription": "Análisis forense de indicios de spyware mercenario en dispositivos móviles con MVT."
     },
     "nav": {
       "features": "Características",
@@ -142,7 +142,7 @@
     "hero": {
       "badge": "Motor basado en MVT · Mobile Verification Toolkit",
       "titleStart": "Análisis forense de ",
-      "titleHighlight": "indicios de spyware",
+      "titleHighlight": "indicios de spyware mercenario",
       "titleEnd": " en dispositivos móviles.",
       "subtitle": "Sube los archivos generados por MVT o un backup preparado y obtén un informe estructurado con los posibles indicadores de compromiso, fechas, dominios y artefactos sospechosos.",
       "ctaPrimary": "Iniciar análisis",

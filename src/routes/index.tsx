@@ -60,7 +60,33 @@ function Landing() {
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
               {t("landing.hero.subtitle")}
             </p>
+
+            {/* Threat intel callout */}
+            <div className="mt-8 relative overflow-hidden rounded-xl border border-primary/20 bg-card/40 backdrop-blur-sm p-5 shadow-card max-w-2xl group">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px overflow-hidden">
+                <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-line" />
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="shrink-0 h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 grid place-items-center shadow-glow">
+                  <Radar className="h-5 w-5 text-primary animate-pulse" />
+                </div>
+                <p className="text-sm md:text-[0.95rem] leading-relaxed text-foreground/90">
+                  {t("landing.hero.threatsPrefix")}{" "}
+                  {["Pegasus", "Predator", "Reign", "Hermit", "Triangulation"].map((name, i, arr) => (
+                    <span key={name}>
+                      <span className="inline-block px-2 py-0.5 mx-0.5 rounded-md border border-primary/30 bg-primary/5 font-mono text-xs text-primary transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/10 hover:shadow-glow">
+                        {name}
+                      </span>
+                      {i < arr.length - 1 ? (i === arr.length - 2 ? " " : ", ") : " "}
+                    </span>
+                  ))}
+                  {t("landing.hero.threatsSuffix")}
+                </p>
+              </div>
+            </div>
+
             <div className="mt-8 flex flex-wrap gap-3">
+
               <Button asChild size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
                 <Link to="/login">{t("landing.hero.ctaPrimary")} <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>

@@ -9,7 +9,7 @@ import { listMyAnalyses, deleteAnalysis } from "@/lib/analyses.functions";
 import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, Trash2 } from "lucide-react";
-import { generatePdfReport } from "@/lib/pdf-report";
+
 import i18n from "@/i18n";
 import {
   AlertDialog,
@@ -96,8 +96,10 @@ function Reports() {
                   <Button asChild size="sm" variant="outline" className="flex-1">
                     <Link to="/analysis/$id" params={{ id: a.id }}>{t("reports.view")}</Link>
                   </Button>
-                  <Button size="sm" className="flex-1 bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(a)}>
-                    <Download className="h-4 w-4 mr-1" /> PDF
+                  <Button asChild size="sm" className="flex-1 bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
+                    <Link to="/analysis/$id" params={{ id: a.id }} search={{ export: 1 }}>
+                      <Download className="h-4 w-4 mr-1" /> PDF
+                    </Link>
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>

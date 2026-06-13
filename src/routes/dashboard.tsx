@@ -23,6 +23,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { openPurchaseCard, PurchaseCard } from "@/components/purchase-card";
 import { PaymentSuccessModal } from "@/components/payment-success-modal";
+import { LegalAcceptanceModal } from "@/components/legal-acceptance-modal";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Spyware Forensic Analyzer" }] }),

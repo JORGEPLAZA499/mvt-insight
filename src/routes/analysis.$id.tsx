@@ -255,7 +255,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
   const sec = () => String(++__n).padStart(2, "0");
 
   return (
-    <div className="space-y-10">
+    <div id="pdf-report-root" className="space-y-10">
       {/* Veredicto */}
       <section>
         <SectionTitle num={sec()} title={t("analysisPage.verdict")} />

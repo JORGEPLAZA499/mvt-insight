@@ -9,7 +9,7 @@ import { listMyAnalyses, deleteAnalysis } from "@/lib/analyses.functions";
 import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, Trash2 } from "lucide-react";
-import { generatePdfReport } from "@/lib/pdf-report";
+
 import i18n from "@/i18n";
 import {
   AlertDialog,

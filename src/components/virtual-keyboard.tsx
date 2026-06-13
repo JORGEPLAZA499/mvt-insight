@@ -63,7 +63,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
       key={label + extra}
       type="button"
       onClick={onClick}
-      className="h-12 sm:h-9 w-full rounded-md border border-border bg-background hover:bg-accent text-base sm:text-sm font-mono transition select-none"
+      className="h-14 sm:h-9 w-full rounded-lg sm:rounded-md border border-border bg-background hover:bg-accent active:bg-accent active:scale-95 text-lg sm:text-sm font-semibold sm:font-mono shadow-sm sm:shadow-none transition select-none"
       aria-label={t("a11y.key", { label })}
     >
       {label}

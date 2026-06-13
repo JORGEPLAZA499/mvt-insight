@@ -41,8 +41,8 @@ function formatElapsed(ms: number): string {
 
 export function App() {
   const { t } = useTranslation();
-  const tr = (key: string, fallback: string) => {
-    const value = t(key, { defaultValue: fallback });
+  const tr = (key: string, fallback: string, options?: Record<string, unknown>) => {
+    const value = t(key, { defaultValue: fallback, ...(options || {}) });
     return value === key ? fallback : value;
   };
   const [screen, setScreen] = useState<Screen>("welcome");
@@ -797,10 +797,18 @@ export function App() {
                           {(() => {
                             if (!lastLogAt) return null;
                             const idleMin = Math.floor((Date.now() - lastLogAt) / 60000);
-                            if (idleMin < 5) return null;
+                            const threshold = device === "ios" ? 5 : 8;
+                            if (idleMin < threshold) return null;
+                            const msgKey = device === "ios" ? "running.idleWarning.ios" : "running.idleWarning.android";
+                            const fallback = device === "ios"
+                              ? `⚠ Sin actividad de mvt-ios desde hace ${idleMin} min.`
+                              : `⚠ Sin actividad de androidqf desde hace ${idleMin} min.`;
                             return (
                               <div style={{ marginTop: 8, padding: "6px 8px", background: "rgba(255, 200, 0, 0.08)", border: "1px solid rgba(255, 200, 0, 0.35)", borderRadius: 6, fontSize: 12, color: "#e6c200" }}>
-                                ⚠ Sin actividad de mvt-ios desde hace {idleMin} min. Si pasa de 10 min, el análisis probablemente esté colgado — la app cortará automáticamente.
+                                <div>{tr(msgKey, fallback, { min: idleMin })}</div>
+                                <div style={{ marginTop: 4, opacity: 0.85 }}>
+                                  {tr("running.idleWarning.hint", "Esto suele ser normal mientras se recolectan apps o se crea el backup. Si supera 15 min, pulsa Cancelar y reintenta.")}
+                                </div>
                               </div>
                             );
                           })()}

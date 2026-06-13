@@ -38,7 +38,12 @@
     "starting": "Starting…",
     "working": "Analyzing",
     "cancel": "Cancel",
-    "cancelConfirm": "Cancel the running analysis?"
+    "cancelConfirm": "Cancel the running analysis?",
+    "idleWarning": {
+      "ios": "⚠ No activity from mvt-ios for {{min}} min.",
+      "android": "⚠ No activity from androidqf for {{min}} min.",
+      "hint": "This is usually normal while apps are being collected or the backup is being created. If it goes over 15 min, click Cancel and retry."
+    }
   },
   "phases": {
     "download": "Downloading AndroidQF",

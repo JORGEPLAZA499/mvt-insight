@@ -123,21 +123,21 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-1 mt-2">
+      <div className="flex flex-wrap gap-1.5 sm:gap-1 mt-2">
         <button
           type="button"
           onClick={() => setShift((s) => !s)}
-          className={`h-9 px-3 rounded-md border border-border text-xs inline-flex items-center gap-1 transition ${
+          className={`h-12 sm:h-9 px-3 rounded-md border border-border text-sm sm:text-xs inline-flex items-center gap-1 transition ${
             shift ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent"
           }`}
           aria-pressed={shift}
         >
-          <ArrowUp className="h-3 w-3" /> {t("a11y.shift")}
+          <ArrowUp className="h-5 w-5 sm:h-3 sm:w-3" /> {t("a11y.shift")}
         </button>
         <button
           type="button"
           onClick={() => setShowSymbols((s) => !s)}
-          className={`h-9 px-3 rounded-md border border-border text-xs transition ${
+          className={`h-12 sm:h-9 px-3 rounded-md border border-border text-sm sm:text-xs transition ${
             showSymbols
               ? "bg-primary text-primary-foreground"
               : "bg-background hover:bg-accent"
@@ -149,17 +149,17 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
         <button
           type="button"
           onClick={() => onChange(value + " ")}
-          className="flex-1 h-9 rounded-md border border-border bg-background hover:bg-accent text-xs"
+          className="flex-1 h-12 sm:h-9 rounded-md border border-border bg-background hover:bg-accent text-sm sm:text-xs"
         >
           {t("a11y.space")}
         </button>
         <button
           type="button"
           onClick={backspace}
-          className="h-9 px-3 rounded-md border border-border bg-background hover:bg-accent text-xs inline-flex items-center gap-1"
+          className="h-12 sm:h-9 px-3 rounded-md border border-border bg-background hover:bg-accent text-sm sm:text-xs inline-flex items-center gap-1"
           aria-label={t("a11y.deleteLast")}
         >
-          <Delete className="h-3 w-3" /> {t("a11y.delete")}
+          <Delete className="h-5 w-5 sm:h-3 sm:w-3" /> {t("a11y.delete")}
         </button>
       </div>
     </div>

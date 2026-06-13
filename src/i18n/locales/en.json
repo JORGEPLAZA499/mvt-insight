@@ -26,7 +26,6 @@
     }
   },
   "common": {
-
     "goHome": "Go home",
     "tryAgain": "Try again",
     "language": "Language",
@@ -119,7 +118,6 @@
     "checkoutSuccess": "Payment confirmed! Your credits will be added in a few seconds.",
     "checkoutProcessing": "Processing your payment..."
   },
-
   "analysis": {
     "tabs": {
       "user": "For you",
@@ -153,20 +151,47 @@
     },
     "features": {
       "items": {
-        "mvt": { "title": "MVT Integration", "desc": "Processing of mobile artifacts via Mobile Verification Toolkit, with support for STIX2/IOC indicators and traceable evidence." },
-        "visual": { "title": "Forensic Dashboard", "desc": "View severity, timeline, indicator origin, risk level, and correlation between detected events." },
-        "report": { "title": "Forensic PDF Report", "desc": "Generate executive and technical reports with findings, evidence, detected indicators, and security recommendations." },
-        "privacy": { "title": "Privacy by Design", "desc": "Encryption at rest, controlled retention, isolated analysis, and secure file deletion upon request." },
-        "normalized": { "title": "Normalized Indicators", "desc": "Classification of domains, hashes, processes, paths, events, and matches against public threat feeds." },
-        "consent": { "title": "Authorized Analysis", "desc": "Workflow based on explicit consent from the device owner, with prior registration and process traceability." }
+        "mvt": {
+          "title": "MVT Integration",
+          "desc": "Processing of mobile artifacts via Mobile Verification Toolkit, with support for STIX2/IOC indicators and traceable evidence."
+        },
+        "visual": {
+          "title": "Forensic Dashboard",
+          "desc": "View severity, timeline, indicator origin, risk level, and correlation between detected events."
+        },
+        "report": {
+          "title": "Forensic PDF Report",
+          "desc": "Generate executive and technical reports with findings, evidence, detected indicators, and security recommendations."
+        },
+        "privacy": {
+          "title": "Privacy by Design",
+          "desc": "Encryption at rest, controlled retention, isolated analysis, and secure file deletion upon request."
+        },
+        "normalized": {
+          "title": "Normalized Indicators",
+          "desc": "Classification of domains, hashes, processes, paths, events, and matches against public threat feeds."
+        },
+        "consent": {
+          "title": "Authorized Analysis",
+          "desc": "Workflow based on explicit consent from the device owner, with prior registration and process traceability."
+        }
       }
     },
     "how": {
       "title": "Three steps for a preliminary analysis",
       "steps": {
-        "s1": { "t": "Upload your evidence", "d": "Drop MVT artifacts (JSON/CSV), an iOS/Android backup, or log files. The system detects the format automatically." },
-        "s2": { "t": "Secure processing", "d": "The backend runs MVT in an isolated environment and correlates IOCs against public feeds." },
-        "s3": { "t": "Structured report", "d": "Receive matches, estimated risk level, timeline, and a downloadable PDF." }
+        "s1": {
+          "t": "Upload your evidence",
+          "d": "Drop MVT artifacts (JSON/CSV), an iOS/Android backup, or log files. The system detects the format automatically."
+        },
+        "s2": {
+          "t": "Secure processing",
+          "d": "The backend runs MVT in an isolated environment and correlates IOCs against public feeds."
+        },
+        "s3": {
+          "t": "Structured report",
+          "d": "Receive matches, estimated risk level, timeline, and a downloadable PDF."
+        }
       }
     },
     "legal": {
@@ -180,7 +205,9 @@
     }
   },
   "login": {
-    "meta": { "title": "Log in — Spyware Forensic Analyzer" },
+    "meta": {
+      "title": "Log in — Spyware Forensic Analyzer"
+    },
     "sideTitle": "Privacy by design.",
     "sideDesc": "Your files are processed in an isolated environment and can be permanently deleted at any time.",
     "titleLogin": "Log in",
@@ -198,17 +225,40 @@
   "dashboard": {
     "eyebrow": "Forensic Command Center",
     "title": "Dashboard",
-    
     "ctaNew": "New analysis",
     "shortcuts": {
       "eyebrow": "Quick actions",
       "title": "What do you want to do?",
-      "newAnalysis": { "title": "New analysis", "desc": "The desktop app uploads artifacts and runs the forensic scan automatically.", "cta": "Start" },
-      "reports": { "title": "Reports", "desc": "Browse PDF reports of your analyses.", "cta": "View reports" },
-      "history": { "title": "History", "desc": "Review all previous analyses.", "cta": "Open history" },
-      "desktop": { "title": "Desktop app", "desc": "Pair the desktop app and run local scans.", "cta": "Set up" },
-      "credits": { "title": "Top up credits", "desc": "Buy credits to run new analyses.", "cta": "Buy" },
-      "support": { "title": "Support", "desc": "Reach out to our help team.", "cta": "Contact" }
+      "newAnalysis": {
+        "title": "New analysis",
+        "desc": "The desktop app uploads artifacts and runs the forensic scan automatically.",
+        "cta": "Start"
+      },
+      "reports": {
+        "title": "Reports",
+        "desc": "Browse PDF reports of your analyses.",
+        "cta": "View reports"
+      },
+      "history": {
+        "title": "History",
+        "desc": "Review all previous analyses.",
+        "cta": "Open history"
+      },
+      "desktop": {
+        "title": "Desktop app",
+        "desc": "Pair the desktop app and run local scans.",
+        "cta": "Set up"
+      },
+      "credits": {
+        "title": "Top up credits",
+        "desc": "Buy credits to run new analyses.",
+        "cta": "Buy"
+      },
+      "support": {
+        "title": "Support",
+        "desc": "Reach out to our help team.",
+        "cta": "Contact"
+      }
     },
     "stats": {
       "total": "Total analyses",
@@ -246,8 +296,14 @@
     "step1": {
       "title": "Which device do you want to analyze?",
       "subtitle": "Pick the mobile operating system.",
-      "android": { "title": "Android", "sub": "" },
-      "ios": { "title": "iPhone", "sub": "" },
+      "android": {
+        "title": "Android",
+        "sub": ""
+      },
+      "ios": {
+        "title": "iPhone",
+        "sub": ""
+      },
       "noCredits": {
         "title": "Not enough credits",
         "body": "Each report costs 98 credits. Top up credits from your dashboard to start an analysis.",
@@ -465,7 +521,8 @@
       "lastRecharge": "Last recharge",
       "lastLogin": "Last login",
       "created": "Created",
-      "noResults": "No results."
+      "noResults": "No results.",
+      "legal": "Legal"
     },
     "tokens": {
       "generate": "Generate token",
@@ -493,6 +550,23 @@
       "lastRecharge": "Last recharge",
       "lastCheck": "Last check: {{when}}",
       "refresh": "Refresh"
+    },
+    "legal": {
+      "statusOk": "Current acceptance on file",
+      "statusOutdated": "Accepted previous version ({{v}})",
+      "statusMissing": "No acceptance on file",
+      "viewerTitle": "Legal receipts — {{code}}",
+      "viewerSubtitle": "Immutable record of terms acceptance with cryptographic signature.",
+      "empty": "No receipts for this user.",
+      "colDate": "Date",
+      "colVersion": "Version",
+      "colLocale": "Locale",
+      "colIp": "IP",
+      "view": "View",
+      "verifiedOk": "Signature verified",
+      "verifiedBad": "Invalid signature",
+      "signedAs": "Document v{{v}}",
+      "downloadPdf": "Download PDF receipt"
     }
   },
   "settingsDesktop": {
@@ -665,5 +739,13 @@
   "codeBlock": {
     "copy": "Copy",
     "copied": "Copied"
+  },
+  "legalModal": {
+    "subtitle": "Version {{version}}. Read the full document and tick both boxes to continue.",
+    "scrollHint": "Scroll to the end of the document to enable acceptance.",
+    "acceptUse": "I have read and accept the Terms of Service.",
+    "acceptPay": "I have read and accept the Payment Conditions and the express waiver of the right of withdrawal.",
+    "acceptCta": "Accept and continue",
+    "error": "Could not register the acceptance. Please try again."
   }
 }

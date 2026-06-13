@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Copy, RefreshCw } from "lucide-react";
+import { Loader2, Copy, RefreshCw, Scale } from "lucide-react";
 import i18n from "@/i18n";
 import {
   listAccounts,
@@ -16,6 +16,8 @@ import {
   listCreditTokens,
   getSystemHealth,
 } from "@/lib/admin.functions";
+import { adminGetUserLegalSummary } from "@/lib/legal.functions";
+import { LegalAcceptanceViewer } from "@/components/legal-acceptance-viewer";
 
 type AdminTab = "clients" | "tokens" | "health";
 
@@ -102,15 +104,21 @@ function AdminSectionContent() {
 function ClientsTab() {
   const { t } = useTranslation();
   const fetchAccounts = useServerFn(listAccounts);
+  const fetchLegal = useServerFn(adminGetUserLegalSummary);
   const [rows, setRows] = useState<any[]>([]);
+  const [legalMap, setLegalMap] = useState<Map<string, string | null>>(new Map());
+  const [legalVersion, setLegalVersion] = useState<string>("");
+  const [viewer, setViewer] = useState<{ userId: string; userCode: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
 
   const load = async () => {
     setLoading(true);
     try {
-      const r = await fetchAccounts();
+      const [r, l] = await Promise.all([fetchAccounts(), fetchLegal()]);
       setRows(r);
+      setLegalVersion(l.currentVersion);
+      setLegalMap(new Map(l.accounts.map((a) => [a.id, a.accepted_version])));
     } finally {
       setLoading(false);
     }
@@ -149,6 +157,7 @@ function ClientsTab() {
             <thead className="text-xs uppercase tracking-wider text-muted-foreground bg-muted/40">
               <tr>
                 <th className="text-left px-3 py-2 font-medium">{t("admin.clients.userNum")}</th>
+                <th className="text-center px-3 py-2 font-medium">{t("admin.clients.legal")}</th>
                 <th className="text-right px-3 py-2 font-medium">{t("admin.clients.credits")}</th>
                 <th className="text-right px-3 py-2 font-medium">{t("admin.clients.recharges")}</th>
                 <th className="text-right px-3 py-2 font-medium">{t("admin.clients.totalRecharged")}</th>
@@ -158,20 +167,52 @@ function ClientsTab() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
-                <tr key={r.id} className="border-t border-border">
-                  <td className="px-3 py-2 font-mono">{r.user_code}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{r.credits}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{r.recharges_count}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{r.total_recharged}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{fmt(r.last_recharge_at)}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{fmt(r.last_login_at)}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{fmt(r.created_at)}</td>
-                </tr>
-              ))}
+              {filtered.map((r) => {
+                const accepted = legalMap.get(r.id) ?? null;
+                const status: "ok" | "outdated" | "missing" =
+                  accepted === legalVersion
+                    ? "ok"
+                    : accepted
+                      ? "outdated"
+                      : "missing";
+                const tone =
+                  status === "ok"
+                    ? "text-success"
+                    : status === "outdated"
+                      ? "text-warning"
+                      : "text-destructive";
+                const title =
+                  status === "ok"
+                    ? t("admin.legal.statusOk")
+                    : status === "outdated"
+                      ? t("admin.legal.statusOutdated", { v: accepted })
+                      : t("admin.legal.statusMissing");
+                return (
+                  <tr key={r.id} className="border-t border-border">
+                    <td className="px-3 py-2 font-mono">{r.user_code}</td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setViewer({ userId: r.id, userCode: r.user_code })}
+                        className={`inline-flex items-center justify-center rounded-md hover:bg-muted p-1 ${tone}`}
+                        title={title}
+                        aria-label={title}
+                      >
+                        <Scale className="h-4 w-4" />
+                      </button>
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">{r.credits}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{r.recharges_count}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{r.total_recharged}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{fmt(r.last_recharge_at)}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{fmt(r.last_login_at)}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{fmt(r.created_at)}</td>
+                  </tr>
+                );
+              })}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
                     {t("admin.clients.noResults")}
                   </td>
                 </tr>
@@ -180,6 +221,14 @@ function ClientsTab() {
           </table>
         </div>
       </CardContent>
+      {viewer && (
+        <LegalAcceptanceViewer
+          open={!!viewer}
+          onOpenChange={(v) => !v && setViewer(null)}
+          userId={viewer.userId}
+          userCode={viewer.userCode}
+        />
+      )}
     </Card>
   );
 }

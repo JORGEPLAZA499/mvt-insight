@@ -47,55 +47,60 @@ function Landing() {
       <section className="relative bg-hero">
         <div className="absolute inset-0 grid-bg opacity-40" aria-hidden />
         <div className="relative max-w-7xl mx-auto px-6 py-24 md:py-32">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs text-muted-foreground mb-6">
-              <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              {t("landing.hero.badge")}
-            </div>
-            <h1 className="text-5xl md:text-6xl font-semibold tracking-tight leading-[1.05]">
-              {t("landing.hero.titleStart")}
-              <span className="text-gradient-primary">{t("landing.hero.titleHighlight")}</span>
-              {t("landing.hero.titleEnd")}
-            </h1>
-            <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
-              {t("landing.hero.subtitle")}
-            </p>
-
-            {/* Threat intel callout */}
-            <div className="mt-8 relative overflow-hidden rounded-xl border border-primary/20 bg-card/40 backdrop-blur-sm p-5 shadow-card max-w-2xl group">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px overflow-hidden">
-                <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-line" />
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] lg:gap-14 lg:items-center">
+            {/* Left column: copy + CTAs */}
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs text-muted-foreground mb-6">
+                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                {t("landing.hero.badge")}
               </div>
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 grid place-items-center shadow-glow">
-                  <Radar className="h-5 w-5 text-primary animate-pulse" />
+              <h1 className="text-5xl md:text-6xl font-semibold tracking-tight leading-[1.05]">
+                {t("landing.hero.titleStart")}
+                <span className="text-gradient-primary">{t("landing.hero.titleHighlight")}</span>
+                {t("landing.hero.titleEnd")}
+              </h1>
+              <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
+                {t("landing.hero.subtitle")}
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button asChild size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
+                  <Link to="/login">{t("landing.hero.ctaPrimary")} <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <a href="#how">{t("landing.hero.ctaSecondary")}</a>
+                </Button>
+              </div>
+            </div>
+
+            {/* Right column: threat intel callout */}
+            <div className="lg:justify-self-end w-full">
+              <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-card/40 backdrop-blur-sm p-5 shadow-card group">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px overflow-hidden">
+                  <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-line" />
                 </div>
-                <p className="text-sm md:text-[0.95rem] leading-relaxed text-foreground/90">
-                  {t("landing.hero.threatsPrefix")}{" "}
-                  {["Pegasus", "Predator", "Reign", "Hermit", "Triangulation"].map((name, i, arr) => (
-                    <span key={name}>
-                      <span className="inline-block px-2 py-0.5 mx-0.5 rounded-md border border-primary/30 bg-primary/5 font-mono text-xs text-primary transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/10 hover:shadow-glow">
-                        {name}
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0 h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 grid place-items-center shadow-glow">
+                    <Radar className="h-5 w-5 text-primary animate-pulse" />
+                  </div>
+                  <p className="text-sm md:text-[0.95rem] leading-relaxed text-foreground/90">
+                    {t("landing.hero.threatsPrefix")}{" "}
+                    {["Pegasus", "Predator", "Reign", "Hermit", "Triangulation"].map((name, i, arr) => (
+                      <span key={name}>
+                        <span className="inline-block px-2 py-0.5 mx-0.5 rounded-md border border-primary/30 bg-primary/5 font-mono text-xs text-primary transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/10 hover:shadow-glow">
+                          {name}
+                        </span>
+                        {i < arr.length - 1 ? (i === arr.length - 2 ? " " : ", ") : " "}
                       </span>
-                      {i < arr.length - 1 ? (i === arr.length - 2 ? " " : ", ") : " "}
-                    </span>
-                  ))}
-                  {t("landing.hero.threatsSuffix")}
-                </p>
+                    ))}
+                    {t("landing.hero.threatsSuffix")}
+                  </p>
+                </div>
               </div>
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-
-              <Button asChild size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
-                <Link to="/login">{t("landing.hero.ctaPrimary")} <ArrowRight className="ml-2 h-4 w-4" /></Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <a href="#how">{t("landing.hero.ctaSecondary")}</a>
-              </Button>
             </div>
           </div>
         </div>
+
       </section>
 
       {/* Features */}

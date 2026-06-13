@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Copy, RefreshCw } from "lucide-react";
+import { Loader2, Copy, RefreshCw, Scale } from "lucide-react";
 import i18n from "@/i18n";
 import {
   listAccounts,
@@ -16,6 +16,8 @@ import {
   listCreditTokens,
   getSystemHealth,
 } from "@/lib/admin.functions";
+import { adminGetUserLegalSummary } from "@/lib/legal.functions";
+import { LegalAcceptanceViewer } from "@/components/legal-acceptance-viewer";
 
 type AdminTab = "clients" | "tokens" | "health";
 

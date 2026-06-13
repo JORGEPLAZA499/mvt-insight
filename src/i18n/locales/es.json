@@ -147,6 +147,8 @@
       "subtitle": "Sube los archivos generados por MVT o un backup preparado y obtén un informe estructurado con los posibles indicadores de compromiso, fechas, dominios y artefactos sospechosos.",
       "ctaPrimary": "Iniciar análisis",
       "ctaSecondary": "Cómo funciona",
+      "threatsPrefix": "Detecta indicios técnicos vinculados a spyware avanzado como",
+      "threatsSuffix": "y otras amenazas comerciales conocidas.",
       "disclaimer": "Esta plataforma <0>no instala spyware</0>, no accede a dispositivos sin permiso y no realiza vigilancia. Ofrece indicios técnicos, no una certificación absoluta de infección."
     },
     "features": {

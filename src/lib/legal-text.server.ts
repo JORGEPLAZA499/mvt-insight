@@ -12,31 +12,33 @@ export interface LegalDocument {
 }
 
 const PROVIDER = {
-  name: "[RAZÓN SOCIAL]",
-  taxId: "[NIF]",
-  address: "[DIRECCIÓN]",
-  email: "[EMAIL_LEGAL]",
-  city: "[CIUDAD]",
+  name: "RPJ SOFTWARE INNOVATION LIMITED",
+  address: "54 Parnell Square West, Dublin, Ireland, D01 H0X9",
+  email: "info@rpjsoftware.com",
+  city: "Dublin",
+  country: "Ireland",
+  // Companies Registration Office (Ireland) number — add when available.
+  // croNumber: "",
 } as const;
 
-const VERSION = "2026-06-13";
+const VERSION = "2026-06-13-ie";
 
 const ES_TEXT = `TÉRMINOS LEGALES Y CONDICIONES DE PAGO
 Versión ${VERSION}
 
 PRESTADOR DEL SERVICIO
 Razón social: ${PROVIDER.name}
-NIF / CIF: ${PROVIDER.taxId}
-Domicilio: ${PROVIDER.address}
+Domicilio social: ${PROVIDER.address}
+País de constitución: ${PROVIDER.country}
 Contacto legal: ${PROVIDER.email}
 
 1. OBJETO Y ACEPTACIÓN
-1.1. El presente documento regula el acceso y uso del servicio "Spyware Forensic Analyzer" (en adelante, el "Servicio") prestado por ${PROVIDER.name}. El uso del Servicio, incluido el simple acceso al panel de control, implica la aceptación plena, expresa y sin reservas de todas y cada una de las cláusulas aquí recogidas.
+1.1. El presente documento regula el acceso y uso del servicio "Spyware Forensic Analyzer" (en adelante, el "Servicio") prestado por ${PROVIDER.name}, sociedad constituida conforme a la legislación de ${PROVIDER.country} y con domicilio social en ${PROVIDER.address}. El uso del Servicio, incluido el simple acceso al panel de control, implica la aceptación plena, expresa y sin reservas de todas y cada una de las cláusulas aquí recogidas.
 1.2. El Usuario declara ser mayor de edad y disponer de plena capacidad jurídica para obligarse en los términos de este documento.
 
 2. USO LÍCITO Y PROHIBICIONES
 2.1. El Usuario se compromete a utilizar el Servicio exclusivamente para fines lícitos. El Servicio está diseñado como herramienta de análisis forense de dispositivos propios del Usuario o sobre los que disponga de autorización expresa, válida y verificable del titular legítimo.
-2.2. El Usuario garantiza, bajo su exclusiva responsabilidad, que cualquier archivo, copia de seguridad o material que aporte al Servicio ha sido obtenido de forma lícita y que cuenta con la legitimación necesaria para someterlo a análisis conforme a la legislación aplicable (incluyendo, sin limitación, el Reglamento (UE) 2016/679 — RGPD, la Ley Orgánica 3/2018 — LOPDGDD y la legislación penal sobre intimidad y secreto de las comunicaciones).
+2.2. El Usuario garantiza, bajo su exclusiva responsabilidad, que cualquier archivo, copia de seguridad o material que aporte al Servicio ha sido obtenido de forma lícita y que cuenta con la legitimación necesaria para someterlo a análisis conforme a la legislación aplicable (incluyendo, sin limitación, el Reglamento (UE) 2016/679 — RGPD, la Irish Data Protection Act 2018 y la legislación penal aplicable sobre intimidad y secreto de las comunicaciones en la jurisdicción del Usuario).
 2.3. Queda terminantemente prohibido el uso del Servicio con fines de espionaje, acoso, vigilancia ilegítima, control no consentido de personas, descubrimiento o revelación de secretos, o cualquier otra finalidad ilícita. El incumplimiento de esta cláusula constituye causa de resolución inmediata sin derecho a reembolso y faculta al Prestador para colaborar con las autoridades competentes.
 
 3. LIMITACIÓN DE RESPONSABILIDAD
@@ -46,18 +48,18 @@ Contacto legal: ${PROVIDER.email}
 3.4. INDEMNIDAD. El Usuario mantendrá indemne al Prestador frente a cualquier reclamación, sanción, multa, costas judiciales u honorarios profesionales derivados de un uso del Servicio contrario a la ley, a estos Términos o a derechos de terceros.
 
 4. PROTECCIÓN DE DATOS PERSONALES
-4.1. Responsable del tratamiento: ${PROVIDER.name} (${PROVIDER.taxId}). Contacto: ${PROVIDER.email}.
+4.1. Responsable del tratamiento: ${PROVIDER.name}, con domicilio en ${PROVIDER.address}. Contacto: ${PROVIDER.email}.
 4.2. Finalidad: prestación del Servicio, gestión de la cuenta, facturación, atención al usuario y cumplimiento de obligaciones legales.
 4.3. Base legal: ejecución del contrato de prestación de servicios (art. 6.1.b RGPD), cumplimiento de obligaciones legales (art. 6.1.c) y consentimiento expreso del interesado para el tratamiento de los archivos aportados (art. 6.1.a).
 4.4. Encargados de tratamiento: proveedores de infraestructura cloud (incluida la plataforma Lovable Cloud y sus proveedores subyacentes) con los que el Prestador mantiene los correspondientes contratos de encargo conforme al art. 28 RGPD.
-4.5. Conservación: los datos se conservarán durante la vigencia de la relación contractual y, posteriormente, durante los plazos legales aplicables (especialmente los previstos en materia fiscal y mercantil).
-4.6. Derechos: acceso, rectificación, supresión, oposición, limitación y portabilidad ante ${PROVIDER.email}. Reclamación ante la Agencia Española de Protección de Datos (www.aepd.es).
+4.5. Conservación: los datos se conservarán durante la vigencia de la relación contractual y, posteriormente, durante los plazos legales aplicables (especialmente los previstos en materia fiscal y mercantil de Irlanda y, en su caso, del país del Usuario).
+4.6. Derechos: acceso, rectificación, supresión, oposición, limitación y portabilidad ante ${PROVIDER.email}. Autoridad de control competente: Data Protection Commission de Irlanda (www.dataprotection.ie). El Usuario podrá igualmente reclamar ante la autoridad de control de su país de residencia dentro de la UE.
 
 5. CONDICIONES ECONÓMICAS Y DE PAGO
-5.1. El Servicio se presta mediante un sistema de créditos prepago. Los precios aplicables son los publicados en la página de tarifas en el momento de la compra. Los precios incluyen los impuestos indirectos cuando proceda (IVA o equivalente).
+5.1. El Servicio se presta mediante un sistema de créditos prepago. Los precios aplicables son los publicados en la página de tarifas en el momento de la compra. Los precios incluyen los impuestos indirectos cuando proceda (IVA / VAT o equivalente).
 5.2. Métodos de pago aceptados: tarjeta bancaria y otros métodos electrónicos procesados a través de pasarelas de pago seguras (incluido Stripe), así como criptomonedas a través de procesadores autorizados (incluido Plisio). El Prestador no almacena datos completos de tarjeta.
 5.3. NO REEMBOLSO. Los créditos adquiridos NO SON REEMBOLSABLES salvo defecto técnico imputable de forma directa y exclusiva al Prestador y debidamente acreditado. En particular, no procederá reembolso por: (i) cambio de opinión del Usuario; (ii) resultados de análisis que no se ajusten a las expectativas del Usuario; (iii) uso parcial o nulo de los créditos; (iv) incumplimiento por parte del Usuario de los presentes Términos.
-5.4. RENUNCIA EXPRESA AL DERECHO DE DESISTIMIENTO. De conformidad con el artículo 103.m) del Real Decreto Legislativo 1/2007 (TRLGDCU), tratándose del suministro de contenido digital no prestado en soporte material cuya ejecución comienza con el consentimiento previo y expreso del Usuario y con el conocimiento por su parte de que pierde el derecho de desistimiento, el Usuario MANIFIESTA EXPRESAMENTE que solicita el inicio inmediato de la prestación del Servicio y RECONOCE QUE, EN CONSECUENCIA, PIERDE EL DERECHO DE DESISTIMIENTO una vez consumidos o iniciados los créditos adquiridos.
+5.4. RENUNCIA EXPRESA AL DERECHO DE DESISTIMIENTO. De conformidad con el artículo 16(m) de la Directiva 2011/83/UE sobre los derechos de los consumidores, traspuesta en Irlanda mediante las European Union (Consumer Information, Cancellation and Other Rights) Regulations 2013 (S.I. No. 484/2013), tratándose del suministro de contenido digital no prestado en soporte material cuya ejecución comienza con el consentimiento previo y expreso del Usuario y con el conocimiento por su parte de que pierde el derecho de desistimiento, el Usuario MANIFIESTA EXPRESAMENTE que solicita el inicio inmediato de la prestación del Servicio y RECONOCE QUE, EN CONSECUENCIA, PIERDE EL DERECHO DE DESISTIMIENTO una vez consumidos o iniciados los créditos adquiridos.
 5.5. Facturación electrónica: el Prestador podrá emitir factura electrónica que se entregará por medios telemáticos al correo asociado a la cuenta del Usuario.
 5.6. Impagos: la falta de pago o el contracargo improcedente faculta al Prestador para suspender o cancelar el Servicio y reclamar los daños y perjuicios causados.
 
@@ -69,12 +71,12 @@ Contacto legal: ${PROVIDER.email}
 7.1. El Prestador podrá modificar el Servicio, sus funcionalidades y los precios, así como los presentes Términos, comunicándolo al Usuario con una antelación mínima de quince (15) días por medios electrónicos. El uso continuado del Servicio tras dicha notificación implicará la aceptación de las modificaciones; en caso contrario, el Usuario podrá cancelar su cuenta.
 
 8. LEY APLICABLE Y FUERO
-8.1. Los presentes Términos se rigen por la legislación española.
-8.2. Para la resolución de cualquier controversia, las partes se someten expresamente a los Juzgados y Tribunales de ${PROVIDER.city}, con renuncia a cualquier otro fuero que pudiera corresponderles, sin perjuicio del fuero imperativo aplicable cuando el Usuario tenga la condición legal de consumidor.
+8.1. Los presentes Términos se rigen por la legislación de ${PROVIDER.country} (Irlanda), incluyendo en particular la Electronic Commerce Act 2000, las European Communities (Directive 2000/31/EC) Regulations 2003 (S.I. No. 68/2003) y la normativa de la Unión Europea directamente aplicable.
+8.2. Para la resolución de cualquier controversia, las partes se someten expresamente a los Juzgados y Tribunales de ${PROVIDER.city} (Irlanda), con renuncia a cualquier otro fuero que pudiera corresponderles, sin perjuicio de los derechos imperativos del consumidor en su país de residencia dentro de la Unión Europea conforme al Reglamento (CE) 593/2008 (Roma I), art. 6.
 
 9. VALOR JURÍDICO DEL COMPROBANTE ELECTRÓNICO DE ACEPTACIÓN
 9.1. El Usuario reconoce expresamente y otorga PLENO VALOR PROBATORIO al registro electrónico que el Prestador conserve sobre la aceptación de estos Términos, que incluirá como mínimo: identificador único del usuario, versión y huella criptográfica SHA-256 del texto aceptado, fecha y hora UTC, dirección IP, agente de usuario, método de aceptación y firma criptográfica HMAC-SHA256 generada en el servidor del Prestador con una clave secreta no accesible al Usuario.
-9.2. Dicho registro tendrá la consideración de prueba electrónica conforme al Reglamento (UE) 910/2014 (eIDAS), a la Ley 6/2020 reguladora de determinados aspectos de los servicios electrónicos de confianza y al artículo 326.3 de la Ley de Enjuiciamiento Civil, sirviendo como acreditación suficiente de la prestación del consentimiento del Usuario a estos Términos.
+9.2. Dicho registro tendrá la consideración de prueba electrónica conforme al Reglamento (UE) 910/2014 (eIDAS), directamente aplicable en Irlanda, y a la Electronic Commerce Act 2000 (Irlanda), sirviendo como acreditación suficiente de la prestación del consentimiento del Usuario a estos Términos.
 9.3. El Usuario reconoce que el carácter inmutable del registro (almacenamiento append-only) refuerza su valor probatorio y su no repudio.
 
 10. ACEPTACIÓN
@@ -86,17 +88,17 @@ Version ${VERSION}
 
 SERVICE PROVIDER
 Legal name: ${PROVIDER.name}
-Tax ID: ${PROVIDER.taxId}
-Address: ${PROVIDER.address}
+Registered office: ${PROVIDER.address}
+Country of incorporation: ${PROVIDER.country}
 Legal contact: ${PROVIDER.email}
 
 1. PURPOSE AND ACCEPTANCE
-1.1. This document governs access to and use of the "Spyware Forensic Analyzer" service (the "Service") provided by ${PROVIDER.name}. Use of the Service, including merely accessing the dashboard, constitutes full, express and unreserved acceptance of every clause set out herein.
+1.1. This document governs access to and use of the "Spyware Forensic Analyzer" service (the "Service") provided by ${PROVIDER.name}, a company incorporated under the laws of ${PROVIDER.country}, with registered office at ${PROVIDER.address}. Use of the Service, including merely accessing the dashboard, constitutes full, express and unreserved acceptance of every clause set out herein.
 1.2. The User declares to be of legal age and to have full legal capacity to enter into this agreement.
 
 2. LAWFUL USE AND PROHIBITIONS
 2.1. The User undertakes to use the Service exclusively for lawful purposes. The Service is designed as a forensic analysis tool for devices owned by the User or over which the User holds the express, valid and verifiable authorisation of the legitimate owner.
-2.2. The User warrants, under their sole responsibility, that any file, backup or material submitted to the Service has been lawfully obtained and that they hold the legal standing required to subject it to analysis, in particular under Regulation (EU) 2016/679 (GDPR) and Spanish Organic Law 3/2018 (LOPDGDD), as well as criminal legislation concerning privacy and secrecy of communications.
+2.2. The User warrants, under their sole responsibility, that any file, backup or material submitted to the Service has been lawfully obtained and that they hold the legal standing required to subject it to analysis, in particular under Regulation (EU) 2016/679 (GDPR), the Irish Data Protection Act 2018, and any applicable criminal legislation concerning privacy and secrecy of communications in the User's jurisdiction.
 2.3. Any use of the Service for spying, harassment, illegitimate surveillance, non-consensual monitoring, disclosure of secrets or any other unlawful purpose is strictly forbidden. Breach of this clause shall entail immediate termination with no right to refund and entitles the Provider to cooperate with the competent authorities.
 
 3. LIMITATION OF LIABILITY
@@ -106,18 +108,18 @@ Legal contact: ${PROVIDER.email}
 3.4. INDEMNITY. The User shall hold the Provider harmless from any claim, penalty, fine, court costs or professional fees arising from use of the Service contrary to the law, these Terms or third-party rights.
 
 4. PERSONAL DATA PROTECTION
-4.1. Controller: ${PROVIDER.name} (${PROVIDER.taxId}). Contact: ${PROVIDER.email}.
+4.1. Controller: ${PROVIDER.name}, with registered office at ${PROVIDER.address}. Contact: ${PROVIDER.email}.
 4.2. Purpose: provision of the Service, account management, billing, support and compliance with legal obligations.
 4.3. Legal basis: performance of the service contract (art. 6.1.b GDPR), compliance with legal obligations (art. 6.1.c) and the User's express consent to processing of submitted files (art. 6.1.a).
 4.4. Processors: cloud infrastructure providers (including the Lovable Cloud platform and its underlying providers) under data-processing agreements pursuant to art. 28 GDPR.
-4.5. Retention: data shall be kept during the contractual relationship and, thereafter, for the legally applicable periods (notably tax and commercial law).
-4.6. Rights: access, rectification, erasure, objection, restriction and portability at ${PROVIDER.email}. Complaint to the Spanish Data Protection Agency (www.aepd.es).
+4.5. Retention: data shall be kept during the contractual relationship and, thereafter, for the legally applicable periods (notably Irish tax and commercial law and, where applicable, the User's country of residence).
+4.6. Rights: access, rectification, erasure, objection, restriction and portability at ${PROVIDER.email}. Supervisory authority: Data Protection Commission, Ireland (www.dataprotection.ie). Users may also lodge a complaint with the supervisory authority of their EU country of residence.
 
 5. ECONOMIC AND PAYMENT TERMS
 5.1. The Service is delivered through a prepaid credit system. Applicable prices are those published on the pricing page at the time of purchase. Prices include indirect taxes where applicable (VAT or equivalent).
 5.2. Accepted payment methods: payment card and other electronic methods processed through secure payment gateways (including Stripe), as well as cryptocurrencies through authorised processors (including Plisio). The Provider does not store full card data.
 5.3. NO REFUND. Purchased credits are NON-REFUNDABLE except in the event of a technical defect directly and exclusively attributable to the Provider and duly evidenced. In particular, no refund shall be granted for: (i) the User's change of mind; (ii) analysis results that do not meet the User's expectations; (iii) partial or null use of the credits; (iv) breach by the User of these Terms.
-5.4. EXPRESS WAIVER OF THE RIGHT OF WITHDRAWAL. Pursuant to article 103(m) of Spanish Royal Legislative Decree 1/2007 (TRLGDCU), as the Service consists of the supply of digital content not delivered on a tangible medium whose performance begins with the User's prior and express consent and with their acknowledgement that the right of withdrawal is thereby lost, the User EXPRESSLY DECLARES that they request immediate commencement of the Service and ACKNOWLEDGE THAT, CONSEQUENTLY, THEY LOSE THE RIGHT OF WITHDRAWAL once the purchased credits are consumed or used.
+5.4. EXPRESS WAIVER OF THE RIGHT OF WITHDRAWAL. Pursuant to article 16(m) of Directive 2011/83/EU on consumer rights, transposed in Ireland by the European Union (Consumer Information, Cancellation and Other Rights) Regulations 2013 (S.I. No. 484/2013), as the Service consists of the supply of digital content not delivered on a tangible medium whose performance begins with the User's prior and express consent and with their acknowledgement that the right of withdrawal is thereby lost, the User EXPRESSLY DECLARES that they request immediate commencement of the Service and ACKNOWLEDGE THAT, CONSEQUENTLY, THEY LOSE THE RIGHT OF WITHDRAWAL once the purchased credits are consumed or used.
 5.5. Electronic invoicing: the Provider may issue electronic invoices delivered by electronic means to the email associated with the User's account.
 5.6. Non-payment: failure to pay or improper chargeback entitles the Provider to suspend or cancel the Service and to claim damages.
 
@@ -129,12 +131,12 @@ Legal contact: ${PROVIDER.email}
 7.1. The Provider may modify the Service, its features and prices, as well as these Terms, with at least fifteen (15) days' prior electronic notice to the User. Continued use of the Service after such notice shall constitute acceptance of the modifications; otherwise the User may cancel their account.
 
 8. GOVERNING LAW AND JURISDICTION
-8.1. These Terms are governed by Spanish law.
-8.2. The parties expressly submit to the Courts of ${PROVIDER.city} for the resolution of any dispute, waiving any other jurisdiction that may correspond, without prejudice to the mandatory forum applicable when the User qualifies as a consumer.
+8.1. These Terms are governed by the laws of ${PROVIDER.country} (Ireland), including in particular the Electronic Commerce Act 2000, the European Communities (Directive 2000/31/EC) Regulations 2003 (S.I. No. 68/2003) and directly applicable European Union law.
+8.2. The parties expressly submit to the Courts of ${PROVIDER.city} (Ireland) for the resolution of any dispute, waiving any other jurisdiction that may correspond, without prejudice to the mandatory consumer rights of the User in their country of residence within the European Union pursuant to Regulation (EC) 593/2008 (Rome I), art. 6.
 
 9. LEGAL VALUE OF THE ELECTRONIC ACCEPTANCE RECEIPT
 9.1. The User expressly recognises and grants FULL EVIDENTIARY VALUE to the electronic record kept by the Provider of the acceptance of these Terms, which shall include at least: unique user identifier, version and SHA-256 cryptographic hash of the accepted text, UTC timestamp, IP address, user agent, acceptance method and HMAC-SHA256 cryptographic signature generated on the Provider's server using a secret key not accessible to the User.
-9.2. Such record shall qualify as electronic evidence under Regulation (EU) 910/2014 (eIDAS), Spanish Law 6/2020 on certain aspects of electronic trust services, and article 326.3 of the Spanish Civil Procedure Act, serving as sufficient evidence of the User's consent to these Terms.
+9.2. Such record shall qualify as electronic evidence under Regulation (EU) 910/2014 (eIDAS), directly applicable in Ireland, and the Electronic Commerce Act 2000 (Ireland), serving as sufficient evidence of the User's consent to these Terms.
 9.3. The User acknowledges that the immutable nature of the record (append-only storage) reinforces its evidentiary value and non-repudiation.
 
 10. ACCEPTANCE

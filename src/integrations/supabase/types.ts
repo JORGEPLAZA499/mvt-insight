@@ -20,6 +20,7 @@ export type Database = {
           credits: number
           id: string
           last_login_at: string
+          legal_accepted_version: string | null
           user_code: string
         }
         Insert: {
@@ -27,6 +28,7 @@ export type Database = {
           credits?: number
           id: string
           last_login_at?: string
+          legal_accepted_version?: string | null
           user_code: string
         }
         Update: {
@@ -34,6 +36,7 @@ export type Database = {
           credits?: number
           id?: string
           last_login_at?: string
+          legal_accepted_version?: string | null
           user_code?: string
         }
         Relationships: []
@@ -179,6 +182,51 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_acceptances: {
+        Row: {
+          acceptance_method: string
+          accepted_at: string
+          document_hash: string
+          document_text: string
+          document_version: string
+          id: string
+          ip_address: string | null
+          locale: string
+          signature: string
+          user_agent: string | null
+          user_code: string
+          user_id: string
+        }
+        Insert: {
+          acceptance_method?: string
+          accepted_at?: string
+          document_hash: string
+          document_text: string
+          document_version: string
+          id?: string
+          ip_address?: string | null
+          locale: string
+          signature: string
+          user_agent?: string | null
+          user_code: string
+          user_id: string
+        }
+        Update: {
+          acceptance_method?: string
+          accepted_at?: string
+          document_hash?: string
+          document_text?: string
+          document_version?: string
+          id?: string
+          ip_address?: string | null
+          locale?: string
+          signature?: string
+          user_agent?: string | null
+          user_code?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       plisio_invoices: {
         Row: {
           account_id: string
@@ -234,6 +282,19 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      record_legal_acceptance: {
+        Args: {
+          p_document_hash: string
+          p_document_text: string
+          p_document_version: string
+          p_ip: string
+          p_locale: string
+          p_signature: string
+          p_user_agent: string
+          p_user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

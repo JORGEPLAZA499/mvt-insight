@@ -104,15 +104,21 @@ function AdminSectionContent() {
 function ClientsTab() {
   const { t } = useTranslation();
   const fetchAccounts = useServerFn(listAccounts);
+  const fetchLegal = useServerFn(adminGetUserLegalSummary);
   const [rows, setRows] = useState<any[]>([]);
+  const [legalMap, setLegalMap] = useState<Map<string, string | null>>(new Map());
+  const [legalVersion, setLegalVersion] = useState<string>("");
+  const [viewer, setViewer] = useState<{ userId: string; userCode: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
 
   const load = async () => {
     setLoading(true);
     try {
-      const r = await fetchAccounts();
+      const [r, l] = await Promise.all([fetchAccounts(), fetchLegal()]);
       setRows(r);
+      setLegalVersion(l.currentVersion);
+      setLegalMap(new Map(l.accounts.map((a) => [a.id, a.accepted_version])));
     } finally {
       setLoading(false);
     }

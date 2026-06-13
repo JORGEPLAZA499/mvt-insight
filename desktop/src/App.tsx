@@ -41,8 +41,8 @@ function formatElapsed(ms: number): string {
 
 export function App() {
   const { t } = useTranslation();
-  const tr = (key: string, fallback: string) => {
-    const value = t(key, { defaultValue: fallback });
+  const tr = (key: string, fallback: string, options?: Record<string, unknown>) => {
+    const value = t(key, { defaultValue: fallback, ...(options || {}) });
     return value === key ? fallback : value;
   };
   const [screen, setScreen] = useState<Screen>("welcome");

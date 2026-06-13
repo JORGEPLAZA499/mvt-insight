@@ -257,7 +257,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
   return (
     <div id="pdf-report-root" className="space-y-10">
       {/* Veredicto */}
-      <section>
+      <section data-pdf-section>
         <SectionTitle num={sec()} title={t("analysisPage.verdict")} />
         <div className={`rounded-xl border p-6 ${verdictBorder}`}>
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("analysisPage.verdict")}</div>
@@ -267,7 +267,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       </section>
 
       {/* Resumen ejecutivo */}
-      <section>
+      <section data-pdf-section>
         <SectionTitle num={sec()} title={t("analysisPage.execSummary")} />
         <p className="text-sm text-foreground/90">
           {t("analysisPage.execSummary")}: <strong>"{analysis.fileName}"</strong> · <strong>{platformLabel(r.platform)}</strong> · <strong>{r.modules.length}</strong> {t("analysisPage.modulesWithIndicia").toLowerCase()} · <strong>{r.totalEntries.toLocaleString()}</strong> {t("analysisPage.entries").toLowerCase()} · <strong>{r.totalDetections}</strong> {t("analysisPage.indicia").toLowerCase()} · <strong className={riskColor(r.risk)}>{riskLabel(r.risk)}</strong>
@@ -282,7 +282,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* Ficha del dispositivo */}
       {deviceCard.length > 0 && (
-        <section>
+        <section data-pdf-section>
           <SectionTitle num={sec()} title={t("analysisPage.deviceCard")} />
           <p className="text-sm text-muted-foreground mb-4">
             {t("analysisPage.deviceCardDesc")}
@@ -310,7 +310,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* Estado de seguridad del sistema (Android) */}
       {systemIntegrity.hasAny && (
-        <section>
+        <section data-pdf-section>
           <SectionTitle num={sec()} title={t("analysisPage.systemSecurity")} />
           <p className="text-sm text-muted-foreground mb-4">
             {t("analysisPage.systemSecurityDesc")}
@@ -321,7 +321,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* Servicios de accesibilidad activos (Android) */}
       {accessibility.length > 0 && (
-        <section>
+        <section data-pdf-section>
           <SectionTitle num={sec()} title={t("analysisPage.accessibility")} />
           <p className="text-sm text-muted-foreground mb-4">
             {t("analysisPage.accessibilityDesc")}
@@ -336,7 +336,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* Perfiles de configuración instalados (iOS) */}
       {configProfiles.length > 0 && (
-        <section>
+        <section data-pdf-section>
           <SectionTitle num={sec()} title={t("analysisPage.configProfiles")} />
           <p className="text-sm text-muted-foreground mb-4">
             {t("analysisPage.configProfilesDesc")}
@@ -351,7 +351,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* Apps con más tráfico de red (iOS) */}
       {topNetwork.length > 0 && (
-        <section>
+        <section data-pdf-section>
           <SectionTitle num={sec()} title={t("analysisPage.topNetwork")} />
           <p className="text-sm text-muted-foreground mb-4">
             {t("analysisPage.topNetworkDesc")}
@@ -393,7 +393,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
 
       {/* 04 · Cómo leer este informe */}
-      <section>
+      <section data-pdf-section>
         <SectionTitle num={sec()} title={t("analysisPage.howToRead")} />
         <p className="text-sm text-foreground/80">
           {t("analysisPage.howToReadIntro")}
@@ -413,7 +413,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       </section>
 
       {/* 05 · Áreas del dispositivo analizadas */}
-      <section>
+      <section data-pdf-section>
         <SectionTitle num={sec()} title={t("analysisPage.deviceAreas")} />
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="grid grid-cols-12 px-4 py-2 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
@@ -432,7 +432,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       </section>
 
       {/* 06 · Indicios detectados */}
-      <section>
+      <section data-pdf-section>
         <SectionTitle num={sec()} title={t("analysisPage.indiciaDetected")} />
         {r.detections.length === 0 ? (
           <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-sm">
@@ -446,7 +446,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 07 · Apps con más actividad sospechosa */}
       {topApps.length > 0 && (
-        <section>
+        <section data-pdf-section>
           <SectionTitle num={sec()} title={t("analysisPage.topApps")} />
           <p className="text-sm text-muted-foreground mb-4">
             {t("analysisPage.topAppsDesc")}
@@ -461,7 +461,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
 
       {/* 08 · Cronología de eventos clave */}
       {humanTimeline.length > 0 && (
-        <section>
+        <section data-pdf-section>
           <SectionTitle num={sec()} title={t("analysisPage.chronology")} />
           <p className="text-sm text-muted-foreground mb-4">
             {t("analysisPage.chronologyDesc")}
@@ -484,7 +484,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       )}
 
       {/* 09 · Próximos pasos recomendados */}
-      <section>
+      <section data-pdf-section>
         <SectionTitle num={sec()} title={t("analysisPage.nextSteps")} />
         <ol className="space-y-3">
           {recs.map((rec, i) => (
@@ -497,7 +497,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       </section>
 
       {/* 10 · Cómo verificar este resultado */}
-      <section>
+      <section data-pdf-section>
         <SectionTitle num={sec()} title={t("analysisPage.howVerify")} />
         <div className="space-y-3">
           {CROSS_CHECK_STEPS.map((step) => (
@@ -510,7 +510,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       </section>
 
       {/* 11 · Glosario */}
-      <section>
+      <section data-pdf-section>
         <SectionTitle num={sec()} title={t("analysisPage.glossary")} />
         <p className="text-sm text-muted-foreground mb-4">
           {t("analysisPage.glossaryDesc")}
@@ -529,7 +529,7 @@ function UserReport({ analysis }: { analysis: Analysis }) {
       </section>
 
       {/* 12 · Aviso legal */}
-      <section>
+      <section data-pdf-section>
         <SectionTitle num={sec()} title={t("analysisPage.legal")} />
         <div className="space-y-3 text-xs text-muted-foreground">
           <p>{t("analysisPage.legalP1")}</p>

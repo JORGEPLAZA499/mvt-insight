@@ -36,10 +36,12 @@ export const Route = createFileRoute("/analysis/$id")({
 function AnalysisPage() {
   const { t } = useTranslation();
   const { id } = useParams({ from: "/analysis/$id" });
+  const search = Route.useSearch();
   const [analysis, setAnalysis] = useState<Analysis | undefined>();
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const fetchOne = useServerFn(getAnalysisById);
+  const [autoExported, setAutoExported] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -54,6 +56,20 @@ function AnalysisPage() {
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [id, fetchOne]);
+
+  // Auto-exportar a PDF cuando se llega con ?export=1 desde /reports
+  useEffect(() => {
+    if (!analysis || analysis.status !== "completed" || autoExported) return;
+    if (search.export !== 1) return;
+    setAutoExported(true);
+    // Esperar a que el DOM del informe esté pintado
+    const tid = window.setTimeout(() => {
+      generatePdfReport(analysis).finally(() => {
+        navigate({ to: "/analysis/$id", params: { id }, search: {}, replace: true });
+      });
+    }, 600);
+    return () => window.clearTimeout(tid);
+  }, [analysis, search.export, autoExported, navigate, id]);
 
   if (loading) {
     return (

@@ -1,47 +1,74 @@
-## Diagnóstico
+# Por qué el PDF actual sale "horrible"
 
-Lo que ves en la segunda imagen es normal:
-- `androidqf.exe` está vivo y recolectando.
-- Los 5 `MvtInsight.exe` son los procesos estándar de Electron (main + GPU + utility + renderer + helper).
+`src/lib/pdf-report.ts` solo dibuja la portada con jsPDF. El resto del informe (páginas 2-6) se genera con **html2canvas-pro**, que **fotografía el DOM vivo** de `#pdf-report-root` en `/analysis/$id` y mete esa imagen rasterizada en el PDF. Esto arrastra todos los defectos visibles:
 
-La fase "Collecting information on installed apps" de AndroidQF puede estar 5–15 min sin emitir una sola línea al stdout. El watchdog de la UI (`lastLogAt`) cree que no hay actividad y muestra el aviso, aunque el binario sigue trabajando.
+- **Todo es una imagen**: no se puede seleccionar texto, no se puede buscar, pesa mucho, se ve borroso al hacer zoom.
+- **Truncados feos de la UI**: la tabla "Áreas analizadas" muestra `dumps…`, `Files / fil…`, `Paquetes instalad…`, `settings_syste…` porque las clases CSS de la web (`truncate`) recortan etiquetas pensadas para una tarjeta estrecha, no para una página A4.
+- **Datos mal formateados**:
+  - `TAMAÑO DEL ORIGEN: 1339099.3 KB` en vez de `1,3 GB`.
+  - `OPERADOR (SIM): ,Carrier` (coma inicial por un join vacío).
+  - `PLATAFORMA DETECTADA: Android (mvt-android)` — jerga en portada.
+  - `15 módulos con indicios` en el resumen ejecutivo cuando en realidad son 15 módulos **analizados** con 0 indicios.
+- **Redundancias**: "02 Resumen ejecutivo" repite la misma frase y números que las 4 tarjetas justo debajo.
+- **Portada con hueco enorme** entre el subtítulo y la tarjeta de metadatos.
 
-Además, el texto actual dice "la app cortará automáticamente" pero **no existe ningún auto-cancel** en `desktop/src/App.tsx` — es información incorrecta.
+## ¿html2pdf.js arregla esto?
+
+**No.** `html2pdf.js` usa internamente `html2canvas` + `jsPDF`, es exactamente el mismo enfoque (rasterizar el DOM) con sus mismos problemas. Cambiar a esa librería no mejora calidad, solo añade dependencia.
+
+Las alternativas reales son:
+
+| Opción | Calidad | Texto seleccionable | Esfuerzo | Viable aquí |
+|---|---|---|---|---|
+| html2canvas / html2pdf | mala (raster) | ❌ | bajo | actual |
+| **jsPDF vectorial** (layout propio) | alta | ✅ | medio | **sí** |
+| @react-pdf/renderer | alta | ✅ | alto (reescribir vista) | sí |
+| Puppeteer en backend | máxima | ✅ | alto | ❌ (Cloudflare Workers no soporta) |
+
+Recomendación: **jsPDF vectorial**. La portada ya está hecha así; sólo hay que extender el mismo patrón al resto de secciones y dejar de capturar el DOM.
+
+# Plan
+
+Reescribir `src/lib/pdf-report.ts` para que **todo** el informe sea vectorial con jsPDF, eliminando `html2canvas-pro`. La estética se mantiene (paleta navy/accent, secciones numeradas), pero el texto es real y los datos van formateados.
 
 ## Cambios
 
-### 1. Texto del aviso (correcto y dependiente del dispositivo)
+1. **Quitar dependencia de captura del DOM**
+   - Eliminar `import html2canvas from "html2canvas-pro"` y todo `await html2canvas(...)`.
+   - `generatePdfReport(analysis)` deja de depender de que `#pdf-report-root` esté montado. Funcionará también desde `/reports` sin abrir el análisis.
+   - Quitar `id="pdf-report-root"` ya no es necesario, pero lo dejamos por si se reutiliza para vista previa.
 
-Archivo: `desktop/src/App.tsx`, línea 803.
+2. **Layout vectorial por secciones** (mismo orden que ahora)
+   - Helpers internos: `drawHeader(page)`, `drawFooter(page, total)`, `sectionTitle(n, label)`, `kvRow(label, value)`, `card(x,y,w,h)`, `table(rows, cols)`, `chip(text, color)`, `ensureSpace(h)` con salto de página automático.
+   - Secciones: Portada → Veredicto → Resumen ejecutivo (4 KPIs en grid) → Ficha del dispositivo (grid 2 col) → Cómo leer → Áreas analizadas (tabla real, sin truncar) → Indicios detectados (lista o "sin coincidencias") → Próximos pasos → Verificación externa → Glosario → Aviso legal.
 
-Reemplazar el `div` hardcodeado por un texto i18n y referido a la herramienta real:
+3. **Arreglar los datos**
+   - Tamaño: nuevo `formatBytes(n)` → `1,3 GB` / `512 MB` / `48 KB`.
+   - Operador SIM: limpiar `","` y comas/espacios sobrantes; si queda vacío mostrar `—`.
+   - Plataforma en portada: `Android` / `iOS` sin el `(mvt-android)`; el tag técnico va en pie de tarjeta en gris.
+   - Resumen ejecutivo: redactar "15 módulos **analizados**, 0 con indicios"; eliminar la línea duplicada y dejar sólo las 4 KPIs + una frase corta de veredicto.
+   - Tabla "Áreas analizadas": una sola columna `ÁREA` con el nombre humano + (código técnico) en gris al lado, **sin** truncado; columnas `Entradas`, `Indicios`, `Estado` alineadas a la derecha.
 
-- iOS → "Sin actividad de mvt-ios desde hace {N} min."
-- Android → "Sin actividad de androidqf desde hace {N} min."
-- Sufijo común y veraz: "Esto suele ser normal mientras se recolectan apps o se crea el backup. Si pasa de 15 min, pulsa Cancelar y reintenta."
+4. **Portada**
+   - Reducir el espacio vacío subiendo la tarjeta de metadatos.
+   - Etiqueta "NIVEL DE RIESGO" con color según severidad (verde/amarillo/naranja/rojo) en lugar del bloque gris plano actual.
 
-Quitar la frase "la app cortará automáticamente" (no es cierta).
+5. **Pie de página con paginación real**
+   - Tras dibujar todo, recorrer páginas y poner `Página X de N` (jsPDF lo permite con `getNumberOfPages()`).
 
-### 2. Claves i18n
+6. **Limpieza**
+   - `bun remove html2canvas-pro` si no lo usa nadie más (verificar antes con `rg`).
+   - El botón "PDF" sigue llamando a `generatePdfReport(a)` sin cambios.
 
-Archivos: `desktop/src/i18n/locales/es.json` y `desktop/src/i18n/locales/en.json`.
+## Detalles técnicos
 
-Añadir bajo `running` (o el namespace que ya use ese bloque) algo como:
+- Sin nuevas dependencias: sólo `jspdf` (ya instalado).
+- Fuente `helvetica` integrada de jsPDF cubre acentos y `·`; nada de Unicode raro (sin `••••` en serie — usar `····` o `xxxx`).
+- Ancho útil A4: `W - 80pt`. Tabla con anchos fijos `[60% nombre, 15% entradas, 10% indicios, 15% estado]`.
+- Salto de página: cada sección comprueba `ensureSpace(altoEstimado)` antes de dibujar; si no cabe, `doc.addPage()` y redibuja header.
 
-```
-"idleWarning": {
-  "ios":     "⚠ Sin actividad de mvt-ios desde hace {{min}} min.",
-  "android": "⚠ Sin actividad de androidqf desde hace {{min}} min.",
-  "hint":    "Esto puede ser normal mientras se recolectan apps o se crea el backup. Si supera 15 min, pulsa Cancelar y reintenta."
-}
-```
+## Fuera de alcance
 
-### 3. Umbral del aviso
-
-Subir el umbral de 5 a 8 minutos para Android (la recolección de apps suele tardar 5–10 min sin output) y mantener 5 min para iOS. Cambio puntual en la condición `if (idleMin < 5) return null;` (línea 800) usando `device`.
-
-### Sin cambios
-
-- No se toca la lógica de `androidqf`, ni el watchdog real del proceso en `electron/main.cjs` / `ios-tools.cjs`.
-- No se introduce auto-cancelación.
-- No se bumpea la versión del desktop.
+- No se toca la vista web `/analysis/$id` (sigue como está).
+- No se cambia la lógica de análisis ni los datos guardados.
+- No se introduce backend ni Puppeteer.

@@ -135,8 +135,8 @@ export const acceptLegalTerms = createServerFn({ method: "POST" })
       p_document_hash: expectedHash,
       p_document_text: doc.text,
       p_locale: doc.locale,
-      p_ip: ip,
-      p_user_agent: ua,
+      p_ip: ip ?? "",
+      p_user_agent: ua ?? "",
       p_signature: signature,
     });
     if (error) throw new Error(error.message);

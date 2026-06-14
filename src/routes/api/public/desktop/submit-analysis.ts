@@ -11,7 +11,11 @@ function readBearer(request: Request): string | null {
 const Body = z.object({
   device: z.string().trim().min(1).max(32),
   fileName: z.string().trim().min(1).max(512),
-  fileSize: z.number().int().min(0).max(2_000_000_000),
+  // fileSize es metadato informativo del ZIP local; el cuerpo del POST solo
+  // contiene el JSON `result`, así que no necesitamos un tope estricto aquí.
+  // Permitimos hasta ~9 TB (sigue cabiendo en int) para soportar teléfonos
+  // con miles de fotos/vídeos cuyo ZIP local puede superar los 2 GB.
+  fileSize: z.number().int().min(0).max(9_000_000_000_000),
   result: z.unknown(),
 });
 

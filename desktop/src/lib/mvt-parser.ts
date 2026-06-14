@@ -371,6 +371,12 @@ function cleanDeviceInfo(info: MvtDeviceInfo): MvtDeviceInfo | undefined {
 
 export async function parseMvtFiles(files: File[], sourceName: string): Promise<MvtParsedResult> {
   const entries = await readFileEntries(files);
+  return parseMvtEntries(entries, sourceName);
+}
+
+// Variante para cuando el llamador ya tiene las entradas leídas (p. ej. desde
+// el main process de Electron en streaming). Evita reabrir el ZIP en RAM.
+export function parseMvtEntries(entries: { name: string; text: string }[], sourceName: string): MvtParsedResult {
   const moduleMap = new Map<string, MvtModuleResult>();
   const detections: MvtDetection[] = [];
   const timeline: MvtParsedResult["timeline"] = [];

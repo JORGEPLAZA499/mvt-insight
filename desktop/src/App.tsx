@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./components/LanguageSelector";
 import logoUrl from "./assets/logo.png";
-import { parseMvtFiles } from "./lib/mvt-parser";
+import { parseMvtEntries, parseMvtFiles } from "./lib/mvt-parser";
 
 type Device = "android" | "ios";
 type Screen = "welcome" | "running" | "done" | "link" | "iosSetup";
@@ -284,13 +284,27 @@ export function App() {
       const { token } = (await window.mvt!.auth.get()) ?? { token: null };
       if (!token) throw new Error("NO_TOKEN");
 
-      const zip = await window.mvt!.readZip(path);
-      if (!zip.ok || !zip.data) throw new Error(zip.error || "READ_FAILED");
-
-      const bytes = zip.data instanceof Uint8Array ? zip.data : new Uint8Array(zip.data);
       const fileName = path.split(/[\\/]/).pop() || "android-qf.zip";
-      const file = new File([bytes], fileName, { type: "application/zip" });
-      const result = await parseMvtFiles([file], fileName);
+      let fileSize = 0;
+      let result: unknown;
+
+      // Preferimos el parseo en streaming (main process) para no cargar el ZIP
+      // entero en RAM. Permite analizar móviles con miles de fotos/vídeos sin
+      // colgar el renderer. Si el IPC no existe (build antigua), caemos al
+      // método clásico.
+      if (typeof window.mvt!.parseZipEntries === "function") {
+        const r = await window.mvt!.parseZipEntries(path);
+        if (!r.ok || !r.entries) throw new Error(r.error || "PARSE_FAILED");
+        fileSize = r.fileSize ?? 0;
+        result = parseMvtEntries(r.entries, fileName);
+      } else {
+        const zip = await window.mvt!.readZip(path);
+        if (!zip.ok || !zip.data) throw new Error(zip.error || "READ_FAILED");
+        const bytes = zip.data instanceof Uint8Array ? zip.data : new Uint8Array(zip.data);
+        fileSize = bytes.length;
+        const file = new File([bytes], fileName, { type: "application/zip" });
+        result = await parseMvtFiles([file], fileName);
+      }
 
       const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/submit-analysis`, {
         method: "POST",
@@ -301,7 +315,7 @@ export function App() {
         body: JSON.stringify({
           device: dev,
           fileName,
-          fileSize: bytes.length,
+          fileSize,
           result,
         }),
       });
@@ -906,8 +920,49 @@ export function App() {
     <div className="app">
       {TopBarWithLogo}
       <div className="header">
-        <h1>{tr("done.title", "✓ Análisis completado")}</h1>
-        <p>{tr("done.subtitle", "Los datos se han guardado en tu carpeta de Descargas.")}</p>
+        {(() => {
+          // Cabecera coherente con el estado real de la subida.
+          if (!account) {
+            return (
+              <>
+                <h1>{tr("done.titleLocal", "✓ Análisis completado")}</h1>
+                <p>{tr("done.subtitleLocal", "Copia local guardada en Descargas. Vincula tu cuenta para subir el informe al panel.")}</p>
+              </>
+            );
+          }
+          if (upload.state === "uploading") {
+            return (
+              <>
+                <h1>{tr("done.titleUploading", "✓ Análisis completado")}</h1>
+                <p>{tr("done.subtitleUploading", "Subiendo informe a tu panel…")}</p>
+              </>
+            );
+          }
+          if (upload.state === "done") {
+            return (
+              <>
+                <h1>{tr("done.titleUploaded", "✓ Análisis completado")}</h1>
+                <p>{tr("done.subtitleUploaded", "Informe subido al panel. También se guardó una copia local en Descargas.")}</p>
+              </>
+            );
+          }
+          if (upload.state === "error") {
+            return (
+              <>
+                <h1 style={{ color: "var(--warning, #f1b14b)" }}>
+                  {tr("done.titleFailed", "⚠ Análisis completado, pero no se pudo subir el informe")}
+                </h1>
+                <p>{tr("done.subtitleFailed", "El archivo se ha guardado en Descargas. Puedes reintentar la subida más abajo.")}</p>
+              </>
+            );
+          }
+          return (
+            <>
+              <h1>{tr("done.title", "✓ Análisis completado")}</h1>
+              <p>{tr("done.subtitle", "Los datos se han guardado en tu carpeta de Descargas.")}</p>
+            </>
+          );
+        })()}
       </div>
       <div className="card">
         <div style={{ fontSize: 13, color: "var(--muted)" }}>{tr("done.filename", "Archivo generado:")}</div>

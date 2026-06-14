@@ -31,6 +31,7 @@ declare global {
         clear: () => Promise<{ ok: boolean; error?: string }>;
       };
       readZip: (zipPath: string) => Promise<{ ok: boolean; data?: Uint8Array; size?: number; error?: string }>;
+      parseZipEntries: (zipPath: string) => Promise<{ ok: boolean; entries?: { name: string; text: string }[]; fileSize?: number; error?: string }>;
     };
   }
 }

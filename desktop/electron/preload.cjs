@@ -31,4 +31,5 @@ contextBridge.exposeInMainWorld("mvt", {
     clear: () => ipcRenderer.invoke("auth:clear"),
   },
   readZip: (zipPath) => ipcRenderer.invoke("mvt:readZip", zipPath),
+  parseZipEntries: (zipPath) => ipcRenderer.invoke("mvt:parseZipEntries", zipPath),
 });

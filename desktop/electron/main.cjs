@@ -943,3 +943,73 @@ ipcMain.handle("mvt:readZip", async (_e, zipPath) => {
     return { ok: false, error: err?.message || String(err) };
   }
 });
+
+// Streaming parser para ZIPs grandes.
+//
+// `mvt:readZip` carga el ZIP entero en RAM y eso se rompe con ZIPs de varios GB
+// (V8 corta el buffer en torno a 2 GiB y el renderer parece colgado). Aquí
+// abrimos el ZIP con yauzl en modo lazy desde disco y solo extraemos a memoria
+// las entradas que el parser MVT necesita (.json y .txt). Fotos, vídeos y
+// backups grandes ni se descomprimen.
+ipcMain.handle("mvt:parseZipEntries", async (_e, zipPath) => {
+  try {
+    if (typeof zipPath !== "string" || !zipPath) {
+      return { ok: false, error: "invalid-path" };
+    }
+    if (!fs.existsSync(zipPath)) {
+      return { ok: false, error: "not-found" };
+    }
+    const stat = fs.statSync(zipPath);
+    const yauzl = require("yauzl");
+    // Tope blando por entrada para no agotar memoria si un .json es enorme.
+    const MAX_ENTRY_BYTES = 64 * 1024 * 1024; // 64 MB
+    const entries = await new Promise((resolve, reject) => {
+      yauzl.open(zipPath, { lazyEntries: true, autoClose: true }, (err, zip) => {
+        if (err) return reject(err);
+        const out = [];
+        zip.on("error", reject);
+        zip.on("end", () => resolve(out));
+        zip.on("entry", (entry) => {
+          const name = entry.fileName;
+          const lower = name.toLowerCase();
+          // Saltamos directorios y todo lo que no sea texto/JSON.
+          if (/\/$/.test(name) || (!lower.endsWith(".json") && !lower.endsWith(".txt"))) {
+            return zip.readEntry();
+          }
+          // Saltamos entradas patológicamente grandes (probablemente no son artefactos MVT).
+          if (entry.uncompressedSize > MAX_ENTRY_BYTES) {
+            return zip.readEntry();
+          }
+          zip.openReadStream(entry, (rsErr, rs) => {
+            if (rsErr) return zip.readEntry();
+            const chunks = [];
+            let total = 0;
+            let aborted = false;
+            rs.on("data", (c) => {
+              total += c.length;
+              if (total > MAX_ENTRY_BYTES) {
+                aborted = true;
+                rs.destroy();
+                return;
+              }
+              chunks.push(c);
+            });
+            rs.on("error", () => zip.readEntry());
+            rs.on("end", () => {
+              if (!aborted) {
+                try {
+                  out.push({ name, text: Buffer.concat(chunks).toString("utf8") });
+                } catch {}
+              }
+              zip.readEntry();
+            });
+          });
+        });
+        zip.readEntry();
+      });
+    });
+    return { ok: true, entries, fileSize: stat.size };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+});

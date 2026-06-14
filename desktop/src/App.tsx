@@ -284,13 +284,27 @@ export function App() {
       const { token } = (await window.mvt!.auth.get()) ?? { token: null };
       if (!token) throw new Error("NO_TOKEN");
 
-      const zip = await window.mvt!.readZip(path);
-      if (!zip.ok || !zip.data) throw new Error(zip.error || "READ_FAILED");
-
-      const bytes = zip.data instanceof Uint8Array ? zip.data : new Uint8Array(zip.data);
       const fileName = path.split(/[\\/]/).pop() || "android-qf.zip";
-      const file = new File([bytes], fileName, { type: "application/zip" });
-      const result = await parseMvtFiles([file], fileName);
+      let fileSize = 0;
+      let result: unknown;
+
+      // Preferimos el parseo en streaming (main process) para no cargar el ZIP
+      // entero en RAM. Permite analizar móviles con miles de fotos/vídeos sin
+      // colgar el renderer. Si el IPC no existe (build antigua), caemos al
+      // método clásico.
+      if (typeof window.mvt!.parseZipEntries === "function") {
+        const r = await window.mvt!.parseZipEntries(path);
+        if (!r.ok || !r.entries) throw new Error(r.error || "PARSE_FAILED");
+        fileSize = r.fileSize ?? 0;
+        result = parseMvtEntries(r.entries, fileName);
+      } else {
+        const zip = await window.mvt!.readZip(path);
+        if (!zip.ok || !zip.data) throw new Error(zip.error || "READ_FAILED");
+        const bytes = zip.data instanceof Uint8Array ? zip.data : new Uint8Array(zip.data);
+        fileSize = bytes.length;
+        const file = new File([bytes], fileName, { type: "application/zip" });
+        result = await parseMvtFiles([file], fileName);
+      }
 
       const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/submit-analysis`, {
         method: "POST",
@@ -301,7 +315,7 @@ export function App() {
         body: JSON.stringify({
           device: dev,
           fileName,
-          fileSize: bytes.length,
+          fileSize,
           result,
         }),
       });

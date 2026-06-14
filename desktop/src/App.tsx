@@ -920,8 +920,49 @@ export function App() {
     <div className="app">
       {TopBarWithLogo}
       <div className="header">
-        <h1>{tr("done.title", "✓ Análisis completado")}</h1>
-        <p>{tr("done.subtitle", "Los datos se han guardado en tu carpeta de Descargas.")}</p>
+        {(() => {
+          // Cabecera coherente con el estado real de la subida.
+          if (!account) {
+            return (
+              <>
+                <h1>{tr("done.titleLocal", "✓ Análisis completado")}</h1>
+                <p>{tr("done.subtitleLocal", "Copia local guardada en Descargas. Vincula tu cuenta para subir el informe al panel.")}</p>
+              </>
+            );
+          }
+          if (upload.state === "uploading") {
+            return (
+              <>
+                <h1>{tr("done.titleUploading", "✓ Análisis completado")}</h1>
+                <p>{tr("done.subtitleUploading", "Subiendo informe a tu panel…")}</p>
+              </>
+            );
+          }
+          if (upload.state === "done") {
+            return (
+              <>
+                <h1>{tr("done.titleUploaded", "✓ Análisis completado")}</h1>
+                <p>{tr("done.subtitleUploaded", "Informe subido al panel. También se guardó una copia local en Descargas.")}</p>
+              </>
+            );
+          }
+          if (upload.state === "error") {
+            return (
+              <>
+                <h1 style={{ color: "var(--warning, #f1b14b)" }}>
+                  {tr("done.titleFailed", "⚠ Análisis completado, pero no se pudo subir el informe")}
+                </h1>
+                <p>{tr("done.subtitleFailed", "El archivo se ha guardado en Descargas. Puedes reintentar la subida más abajo.")}</p>
+              </>
+            );
+          }
+          return (
+            <>
+              <h1>{tr("done.title", "✓ Análisis completado")}</h1>
+              <p>{tr("done.subtitle", "Los datos se han guardado en tu carpeta de Descargas.")}</p>
+            </>
+          );
+        })()}
       </div>
       <div className="card">
         <div style={{ fontSize: 13, color: "var(--muted)" }}>{tr("done.filename", "Archivo generado:")}</div>

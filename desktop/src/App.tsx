@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./components/LanguageSelector";
 import logoUrl from "./assets/logo.png";
-import { parseMvtFiles } from "./lib/mvt-parser";
+import { parseMvtEntries, parseMvtFiles } from "./lib/mvt-parser";
 
 type Device = "android" | "ios";
 type Screen = "welcome" | "running" | "done" | "link" | "iosSetup";

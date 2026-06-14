@@ -1,74 +1,82 @@
-# Por qué el PDF actual sale "horrible"
+# Plan: soporte de teléfonos con ZIP grandes (muchas fotos/vídeos/apps)
 
-`src/lib/pdf-report.ts` solo dibuja la portada con jsPDF. El resto del informe (páginas 2-6) se genera con **html2canvas-pro**, que **fotografía el DOM vivo** de `#pdf-report-root` en `/analysis/$id` y mete esa imagen rasterizada en el PDF. Esto arrastra todos los defectos visibles:
+## Qué está pasando hoy
 
-- **Todo es una imagen**: no se puede seleccionar texto, no se puede buscar, pesa mucho, se ve borroso al hacer zoom.
-- **Truncados feos de la UI**: la tabla "Áreas analizadas" muestra `dumps…`, `Files / fil…`, `Paquetes instalad…`, `settings_syste…` porque las clases CSS de la web (`truncate`) recortan etiquetas pensadas para una tarjeta estrecha, no para una página A4.
-- **Datos mal formateados**:
-  - `TAMAÑO DEL ORIGEN: 1339099.3 KB` en vez de `1,3 GB`.
-  - `OPERADOR (SIM): ,Carrier` (coma inicial por un join vacío).
-  - `PLATAFORMA DETECTADA: Android (mvt-android)` — jerga en portada.
-  - `15 módulos con indicios` en el resumen ejecutivo cuando en realidad son 15 módulos **analizados** con 0 indicios.
-- **Redundancias**: "02 Resumen ejecutivo" repite la misma frase y números que las 4 tarjetas justo debajo.
-- **Portada con hueco enorme** entre el subtítulo y la tarjeta de metadatos.
+La captura muestra a la vez "✓ Análisis completado" y "No se pudo subir: File size (9129748452) is greater than 2 GiB". Eso resume tres problemas distintos que conviene arreglar juntos:
 
-## ¿html2pdf.js arregla esto?
+1. **El renderer de Electron carga el ZIP entero en memoria** antes de subir nada:
+   `desktop/src/App.tsx:287` → `window.mvt!.readZip(path)` devuelve un `Uint8Array` con los 9,1 GB.
+   Después se reenvuelve en un `File` y se pasa a `parseMvtFiles`. Con un ZIP de 9 GB el proceso se queda sin RAM (V8 corta sobre ~2 GiB por buffer) y la UI parece "colgada".
+2. **El servidor rechaza por tamaño** aunque nunca se sube el ZIP:
+   `src/routes/api/public/desktop/submit-analysis.ts:14` valida `fileSize ≤ 2_000_000_000`. Lo único que viaja al backend es el JSON `result` (parseo de MVT); `fileSize` es solo metadato. El límite no protege de nada y bloquea casos reales.
+3. **El "Análisis completado" se queda fijo aunque la subida falle.**
+   En `App.tsx` el `screen === "done"` se pone en cuanto AndroidQF termina de generar el ZIP, y la cabecera "✓ Análisis completado / Informe subido al dashboard" se renderiza sin mirar `upload.state`. Resultado: cabecera verde con error rojo justo debajo.
 
-**No.** `html2pdf.js` usa internamente `html2canvas` + `jsPDF`, es exactamente el mismo enfoque (rasterizar el DOM) con sus mismos problemas. Cambiar a esa librería no mejora calidad, solo añade dependencia.
+Además: el parseo MVT (módulos `dumpsys_*`, `packages.json`, paquetes instalados, etc.) corre íntegro en el renderer. Con miles de apps y backups esto también puede hacer crecer el `result` JSON a varios cientos de MB, y entonces el `INSERT` en la columna `jsonb` también peta — pero más adelante.
 
-Las alternativas reales son:
+## Objetivo
 
-| Opción | Calidad | Texto seleccionable | Esfuerzo | Viable aquí |
-|---|---|---|---|---|
-| html2canvas / html2pdf | mala (raster) | ❌ | bajo | actual |
-| **jsPDF vectorial** (layout propio) | alta | ✅ | medio | **sí** |
-| @react-pdf/renderer | alta | ✅ | alto (reescribir vista) | sí |
-| Puppeteer en backend | máxima | ✅ | alto | ❌ (Cloudflare Workers no soporta) |
+Que un teléfono con miles de fotos/vídeos/apps termine el análisis, suba un informe útil al panel y muestre estados coherentes, sin cargar el ZIP entero en memoria ni inventar un límite arbitrario en el servidor.
 
-Recomendación: **jsPDF vectorial**. La portada ya está hecha así; sólo hay que extender el mismo patrón al resto de secciones y dejar de capturar el DOM.
+## Cambios propuestos
 
-# Plan
+### 1. Quitar el límite artificial del backend
+`src/routes/api/public/desktop/submit-analysis.ts`
+- Subir `fileSize.max()` a `9_000_000_000_000` (9 TB — efectivamente sin tope; sigue siendo un `int`).
+- `fileSize` solo es metadato informativo; el peso real del POST es `result` JSON. Ese sí lo seguimos limitando indirectamente vía tamaño máximo del request.
 
-Reescribir `src/lib/pdf-report.ts` para que **todo** el informe sea vectorial con jsPDF, eliminando `html2canvas-pro`. La estética se mantiene (paleta navy/accent, secciones numeradas), pero el texto es real y los datos van formateados.
+### 2. No leer el ZIP en RAM en el renderer
+`desktop/electron/ios-tools.cjs` + `desktop/electron/preload.cjs` + `desktop/src/App.tsx`
+- Añadir en main process un nuevo IPC `mvt.parseZip(path)` que:
+  - abre el ZIP por *streaming* desde disco (Node `fs.createReadStream` + `yauzl` o `adm-zip` solo para el índice de entradas, **sin** descomprimir vídeos/fotos).
+  - itera por entradas y solo extrae a Buffer las que el parser MVT necesita (los `.json` / `.txt` / `dumpsys*` que ya conoce `desktop/src/lib/mvt-parser.ts`); el resto se ignora.
+  - llama al parser sobre cada entrada relevante en Node y devuelve el `result` JSON terminado al renderer.
+- En `App.tsx::autoUpload` reemplazar el bloque `readZip → File → parseMvtFiles` por:
+  ```ts
+  const { ok, result, fileSize, error } = await window.mvt!.parseZip(path);
+  if (!ok) throw new Error(error || "PARSE_FAILED");
+  ```
+- Ventaja: el renderer nunca aloja más de unos MB (la entrada actual + el JSON parcial), independientemente de si el ZIP pesa 200 MB o 30 GB.
 
-## Cambios
+### 3. Hacer que la UI refleje el estado real
+`desktop/src/App.tsx` (~lin. 950-1015) + `desktop/src/i18n/locales/{es,en}.json`
+- En la pantalla `done`:
+  - Cabecera condicional:
+    - `upload.state === "done"` → "✓ Análisis completado · Informe subido al panel".
+    - `upload.state === "uploading"` → "✓ Análisis completado · Subiendo al panel…" (con spinner).
+    - `upload.state === "error"` → "⚠ Análisis completado, pero no se pudo subir el informe" (icono ámbar, no verde).
+    - sin cuenta vinculada → "✓ Análisis completado · Copia local en Descargas".
+  - Subtítulo y color del icono derivados del mismo estado.
+- Añadir claves i18n: `done.uploaded`, `done.uploading`, `done.uploadFailed`, `done.localOnly`.
 
-1. **Quitar dependencia de captura del DOM**
-   - Eliminar `import html2canvas from "html2canvas-pro"` y todo `await html2canvas(...)`.
-   - `generatePdfReport(analysis)` deja de depender de que `#pdf-report-root` esté montado. Funcionará también desde `/reports` sin abrir el análisis.
-   - Quitar `id="pdf-report-root"` ya no es necesario, pero lo dejamos por si se reutiliza para vista previa.
+### 4. Limitar el riesgo del `result` JSON gigante (defensa en profundidad)
+`desktop/src/lib/mvt-parser.ts` (revisar tras el cambio 2)
+- Para listas potencialmente enormes (paquetes instalados, archivos escaneados, logs), guardar solo:
+  - conteo total,
+  - top-N por relevancia (paquetes con permisos peligrosos, con detecciones, etc.),
+  - hash de la lista completa por trazabilidad.
+- No es bloqueante para esta tarea; lo añadimos como segunda pasada si el ejemplo real (9 GB → ~? MB de JSON) sigue siendo grande. Mejor medirlo antes de truncar.
 
-2. **Layout vectorial por secciones** (mismo orden que ahora)
-   - Helpers internos: `drawHeader(page)`, `drawFooter(page, total)`, `sectionTitle(n, label)`, `kvRow(label, value)`, `card(x,y,w,h)`, `table(rows, cols)`, `chip(text, color)`, `ensureSpace(h)` con salto de página automático.
-   - Secciones: Portada → Veredicto → Resumen ejecutivo (4 KPIs en grid) → Ficha del dispositivo (grid 2 col) → Cómo leer → Áreas analizadas (tabla real, sin truncar) → Indicios detectados (lista o "sin coincidencias") → Próximos pasos → Verificación externa → Glosario → Aviso legal.
+### 5. Pequeñas mejoras de UX (mismo turno)
+- Botón **Reintentar** en estado `upload.state === "error"` ya existe; añadir botón **Copiar diagnóstico** que copie al portapapeles `{ device, fileName, fileSize, errorCode, errorMessage }` para soporte.
+- Mensaje de error legible cuando `parseZip` falla por ZIP corrupto vs. por falta de memoria (`code: "OUT_OF_MEMORY"` → texto guía: "El equipo no tiene memoria suficiente para procesar este ZIP. Cierra otras aplicaciones e intenta de nuevo.").
 
-3. **Arreglar los datos**
-   - Tamaño: nuevo `formatBytes(n)` → `1,3 GB` / `512 MB` / `48 KB`.
-   - Operador SIM: limpiar `","` y comas/espacios sobrantes; si queda vacío mostrar `—`.
-   - Plataforma en portada: `Android` / `iOS` sin el `(mvt-android)`; el tag técnico va en pie de tarjeta en gris.
-   - Resumen ejecutivo: redactar "15 módulos **analizados**, 0 con indicios"; eliminar la línea duplicada y dejar sólo las 4 KPIs + una frase corta de veredicto.
-   - Tabla "Áreas analizadas": una sola columna `ÁREA` con el nombre humano + (código técnico) en gris al lado, **sin** truncado; columnas `Entradas`, `Indicios`, `Estado` alineadas a la derecha.
+## Lo que NO toco
 
-4. **Portada**
-   - Reducir el espacio vacío subiendo la tarjeta de metadatos.
-   - Etiqueta "NIVEL DE RIESGO" con color según severidad (verde/amarillo/naranja/rojo) en lugar del bloque gris plano actual.
+- El crédito (`consume_credit_and_insert_analysis`) sigue cobrándose **solo** al insertar la fila — la subida fallida del ejemplo NO ha consumido el crédito del usuario, está bien así.
+- El generador de PDF vectorial (`src/lib/pdf-report.ts`) no se modifica aquí.
+- El esquema de la BD no cambia. Si más adelante el `result` JSON resulta ser de cientos de MB en estos casos extremos, abriremos otro plan para mover `result` a Storage en lugar de columna `jsonb`.
 
-5. **Pie de página con paginación real**
-   - Tras dibujar todo, recorrer páginas y poner `Página X de N` (jsPDF lo permite con `getNumberOfPages()`).
+## Validación
 
-6. **Limpieza**
-   - `bun remove html2canvas-pro` si no lo usa nadie más (verificar antes con `rg`).
-   - El botón "PDF" sigue llamando a `generatePdfReport(a)` sin cambios.
+1. Caso pequeño (ZIP < 200 MB): comportamiento idéntico al actual; cabecera verde "subido al panel".
+2. Caso del usuario (ZIP ~9 GB): la app no se cuelga, termina el parseo en streaming, sube el `result` JSON, muestra cabecera verde + créditos descontados.
+3. Sin cuenta vinculada: cabecera neutra "copia local en Descargas", sin intento de subida.
+4. Sin créditos: cabecera ámbar "no se pudo subir" + mensaje claro de recarga; sin contradicción con el ✓.
 
-## Detalles técnicos
+## Orden de implementación sugerido
 
-- Sin nuevas dependencias: sólo `jspdf` (ya instalado).
-- Fuente `helvetica` integrada de jsPDF cubre acentos y `·`; nada de Unicode raro (sin `••••` en serie — usar `····` o `xxxx`).
-- Ancho útil A4: `W - 80pt`. Tabla con anchos fijos `[60% nombre, 15% entradas, 10% indicios, 15% estado]`.
-- Salto de página: cada sección comprueba `ensureSpace(altoEstimado)` antes de dibujar; si no cabe, `doc.addPage()` y redibuja header.
-
-## Fuera de alcance
-
-- No se toca la vista web `/analysis/$id` (sigue como está).
-- No se cambia la lógica de análisis ni los datos guardados.
-- No se introduce backend ni Puppeteer.
+1. Backend: subir el límite (cambio mínimo y desbloquea pruebas).
+2. UI: estado coherente en pantalla `done`.
+3. Electron main: `mvt.parseZip` por streaming + reemplazo en `App.tsx`.
+4. Probar con el ZIP real del usuario y ajustar parser si el JSON resultante es demasiado grande.

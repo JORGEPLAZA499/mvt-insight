@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/app-shell";
@@ -7,6 +7,7 @@ import { Analysis, riskColor, riskLabel } from "@/lib/mock-store";
 import { listMyAnalyses } from "@/lib/analyses.functions";
 import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import i18n from "@/i18n";
 
 export const Route = createFileRoute("/history")({
@@ -21,16 +22,33 @@ function HistoryPage() {
   const { t } = useTranslation();
   const [items, setItems] = useState<Analysis[]>([]);
   const fetchAnalyses = useServerFn(listMyAnalyses);
-  useEffect(() => {
-    let alive = true;
-    fetchAnalyses()
+  const reload = useCallback(() => {
+    return fetchAnalyses()
       .then((r) => {
-        if (!alive) return;
         setItems(((r?.analyses ?? []) as ServerAnalysisRow[]).map(mapServerAnalysis));
       })
-      .catch(() => { if (alive) setItems([]); });
-    return () => { alive = false; };
+      .catch(() => setItems([]));
   }, [fetchAnalyses]);
+  useEffect(() => {
+    let alive = true;
+    reload();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!alive || !data.user) return;
+      channel = supabase
+        .channel(`analyses-history-${data.user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "analyses", filter: `user_id=eq.${data.user.id}` },
+          () => { reload(); },
+        )
+        .subscribe();
+    });
+    return () => {
+      alive = false;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [reload]);
 
   return (
     <AppShell>

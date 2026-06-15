@@ -784,14 +784,17 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         .filter((e) => e.isDir)
         .sort((a, b) => b.mtime - a.mtime)[0];
 
-      if (freshZip) {
-        zipPath = freshZip.full;
-        send("mvt:log", `📦 ZIP detectado: ${freshZip.name}`);
-      } else if (freshDir) {
+      // Preferimos re-comprimir desde la carpeta cuando existe: así garantizamos
+      // un ZIP estándar y evitamos ZIPs truncados o con formatos que el backend
+      // (yauzl) no consigue leer ("End of central directory record signature not found").
+      if (freshDir) {
         zipPath = path.join(dir, `${freshDir.name}.zip`);
         send("mvt:log", `📦 Comprimiendo carpeta de resultados "${freshDir.name}" → ${path.basename(zipPath)}`);
         send("mvt:phase", { phase: 3, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.95 });
         await zipFolder(freshDir.full, zipPath);
+      } else if (freshZip) {
+        zipPath = freshZip.full;
+        send("mvt:log", `📦 ZIP detectado: ${freshZip.name}`);
       } else {
         const listing = entries.map((e) => (e.isDir ? `${e.name}/` : e.name)).join(", ") || "(vacío)";
         throw new Error(

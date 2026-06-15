@@ -1,53 +1,75 @@
-## El problema
+# Manejo del fallo "module bugreport: exit status 0xffffffff"
 
-Hoy el aviso "⚠ Sin actividad de androidqf desde hace N min" se calcula con `lastLogAt`, que solo se actualiza cuando androidqf escribe una línea por su pseudo-TTY (`child.onData` en `desktop/electron/main.cjs`). Durante la recolección real (pull de APKs, dumpsys, backup) androidqf puede estar **minutos sin imprimir nada** mientras `adb pull` transfiere gigas de fotos/vídeos. El usuario ve "sin actividad" cuando en realidad el disco está ardiendo.
+## Contexto
 
-En el caso de la captura, el móvil tiene miles de archivos y la barra amarilla apareció siendo perfectamente normal — no había forma de saberlo desde la UI.
+androidqf ejecuta varios módulos en secuencia (bugreport, settings, packages, processes, files, sms…). El módulo `bugreport` falla en muchos dispositivos (MIUI/EMUI/One UI con permisos de desarrollador restringidos) con `exit status 0xffffffff`. **No es un fallo del análisis**: androidqf continúa con el resto de módulos automáticamente. Pero hoy mostramos el `ERROR:` crudo en el log, lo que asusta al usuario y parece que todo se ha roto.
 
-## Idea
+Queremos un aviso visible pero no bloqueante: una tarjeta amarilla en la UI explicando que el bugreport no se pudo generar por restricciones del dispositivo, sin detener nada.
 
-Añadir un **heartbeat real** basado en el sistema, no en el stdout:
+## Cambios
 
-1. **Crecimiento del directorio de trabajo de androidqf** (cwd = `workDir()`): cada N segundos sumamos el tamaño de los archivos creados/modificados *después* del arranque del proceso. Si los bytes suben → está trabajando.
-2. **Proceso vivo**: `child.pid` sigue presente y `process.kill(pid, 0)` no lanza. Confirma que el binario no ha muerto en silencio.
-3. **Subprocesos adb (opcional, best-effort)**: en macOS/Linux `ps --ppid <pid>`; en Windows `wmic` o `tasklist /FI "PARENTID..."`. Solo informativo, no bloqueante.
+### 1. `desktop/electron/main.cjs` — detectar el patrón en stdout
 
-Con eso, el main envía un nuevo evento IPC `mvt:activity` con `{ bytesWritten, deltaBytes, lastChangeAt, alive }` cada ~5 s. El renderer guarda `lastActivityAt = max(lastLogAt, lastChangeAt)` y muestra un mensaje útil.
+En el handler de `pty.spawn` de androidqf (alrededor de la línea 705 donde se hace `send("mvt:log", stripAnsi(text))`), añadir detección por regex sobre cada chunk de stdout:
 
-## Cambios concretos
+```js
+// dentro del onData del pty, después de stripAnsi
+if (/failed to run module (\w+):/i.test(cleanText)) {
+  const m = cleanText.match(/failed to run module (\w+):\s*(.+)/i);
+  send("mvt:module-failed", { module: m[1], detail: m[2]?.trim() ?? "" });
+}
+```
 
-### `desktop/electron/main.cjs`
-- Tras arrancar el `pty.spawn` de androidqf (línea ~550), registrar `startMs` y arrancar un `setInterval(5000)` que:
-  - Recorre `dir` recursivamente (saltando el propio binario `androidqf[.exe]` y carpetas conocidas como `node_modules`), suma bytes de archivos con `mtimeMs >= startMs`.
-  - Compara con la medición anterior y emite `send("mvt:activity", { bytesWritten, deltaBytes, lastChangeAt, alive: true })`.
-  - Limita el recorrido (máx ~5.000 entradas o profundidad 6) para que no se vuelva caro con miles de fotos: paramos en cuanto detectamos crecimiento.
-- Limpiar el interval en `child.onExit` y en `mvt:cancel`.
-- Misma lógica reutilizable para iOS (durante `idevicebackup2` y `mvt-ios`): el directorio `backupDir`/`resultsDir` también crece.
+Mantener un `Set` por sesión para no emitir el mismo módulo dos veces.
 
-### `desktop/electron/preload.cjs`
-- Exponer `onActivity(cb)` con `ipcRenderer.on("mvt:activity", (_e, p) => cb(p))` devolviendo un unsub.
+### 2. `desktop/electron/preload.cjs`
 
-### `desktop/src/App.tsx`
-- Estado nuevo: `const [activity, setActivity] = useState<{ bytes: number; lastChangeAt: number } | null>(null)`.
-- Suscribirse en el `useEffect` que ya engancha `onLog`/`onPhase`.
-- Calcular `lastActivityAt = Math.max(lastLogAt ?? 0, activity?.lastChangeAt ?? 0)`.
-- Reescribir el bloque de la línea 812:
-  - Si `Date.now() - lastActivityAt < threshold` → no mostrar warning.
-  - Si hay logs antiguos pero el disco crece → mostrar **caja azul informativa**: "Recolectando archivos del dispositivo… {{mb}} MB transferidos (hace {{s}} s)".
-  - Solo si **ni logs ni disco** se movieron en >5 min → la caja ámbar actual.
-  - A partir de 15 min sin nada → caja roja "Probablemente colgado, pulsa Cancelar".
+Exponer `onModuleFailed(cb)`:
 
-### `desktop/src/i18n/locales/{es,en}.json`
-- Añadir `running.activity.collecting` ("Recolectando archivos del dispositivo… {{mb}} MB transferidos"), `running.activity.stalled` (warning ámbar actual), `running.activity.frozen` (rojo a partir de 15 min).
+```js
+onModuleFailed: (cb) => {
+  const listener = (_e, payload) => cb(payload);
+  ipcRenderer.on("mvt:module-failed", listener);
+  return () => ipcRenderer.removeListener("mvt:module-failed", listener);
+}
+```
 
-## Por qué esto
+### 3. `desktop/src/App.tsx`
 
-- Hace la app **honesta**: el aviso aparece cuando *de verdad* no pasa nada, no cuando androidqf simplemente está callado.
-- No depende de parsear más stdout de androidqf (que cambia entre versiones).
-- Es barato: 1 lectura de directorio cada 5 s, con cortocircuito si ya detectamos crecimiento.
-- Reutilizable para el flujo iOS sin tocar `iosTools.createBackup` ni `runMvtIos`.
+- Nuevo estado: `const [failedModules, setFailedModules] = useState<Array<{module: string; detail: string}>>([])`
+- Subscribirse a `window.mvt.onModuleFailed(...)` junto a `onLog` y `onActivity`, haciendo dedup por nombre de módulo.
+- Limpiarlo al iniciar un nuevo análisis y al terminar.
+- En la zona donde se muestran los avisos de actividad/inactividad (cerca de línea 818), añadir **encima** una tarjeta amarilla (warning) cuando `failedModules.length > 0`:
 
-## Fuera del alcance
+  > **Algunos módulos no estaban disponibles en este dispositivo**
+  > El módulo `{nombres}` no se pudo ejecutar (suele pasar en dispositivos con MIUI, EMUI o One UI por restricciones del fabricante). **El análisis continúa con normalidad** y el resto de información (apps, ajustes, procesos, SMS, archivos) se está recopilando.
 
-- No tocamos el parser MVT, ni el `submit-analysis`, ni el PDF.
-- No subimos la versión del desktop (lo haces tú cuando quieras publicar).
+  Usar el mismo estilo de tarjeta que las tarjetas ámbar/azul de actividad existentes, con borde y fondo amber claro, icono de advertencia y sin botón de acción (es informativa).
+
+### 4. `desktop/src/i18n/locales/{es,en}.json`
+
+Añadir claves nuevas:
+
+```
+running.moduleFailed.title
+running.moduleFailed.description  // con {{modules}}
+running.moduleFailed.bugreportHint // texto extra cuando incluye bugreport
+```
+
+ES ejemplo:
+- title: "Algunos módulos no están disponibles en este dispositivo"
+- description: "El módulo {{modules}} no se pudo ejecutar. Suele ocurrir en MIUI, EMUI o One UI por restricciones del fabricante. El análisis continúa con normalidad."
+
+EN equivalente.
+
+## Qué NO toca
+
+- Lógica del parser MVT, generación de ZIP, subida a backend, PDF, detección de actividad por filesystem.
+- Versión de la app (no se bumpea — se agrupará con el próximo "saca versión").
+
+## Resultado esperado
+
+Cuando el dispositivo sea un Xiaomi/Samsung/etc. que rechace bugreport, el usuario verá:
+1. El log seguirá pasando como hasta ahora (no se oculta), pero
+2. Aparecerá una tarjeta amarilla en la cabecera explicando en lenguaje claro que es normal y que el análisis sigue, y
+3. El análisis terminará correctamente con los demás módulos.

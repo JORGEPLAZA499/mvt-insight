@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import { Analysis, riskLabel } from "./mock-store";
 import type { MvtDeviceInfo, MvtParsedResult, RiskLevel } from "./mvt-parser";
+import { KIND_LABEL, CATEGORY_LABEL_HEUR, type HeuristicFinding, type FindingCategory } from "./heuristics";
 
 /**
  * Generador de PDF 100 % vectorial con jsPDF. No depende del DOM ni de
@@ -506,6 +507,29 @@ export async function generatePdfReport(a: Analysis): Promise<void> {
       sev,
     );
   }
+
+  // 02 Análisis por motor
+  if (r) {
+    eng.sectionTitle(sec(), "Análisis por motor");
+    eng.paragraph(
+      "El informe combina dos motores. El motor MVT busca indicadores conocidos (IOCs) de spyware mercenario. El motor heurístico detecta stalkerware comercial, apps espía simples, permisos peligrosos y configuraciones de riesgo basándose en patrones, no en firmas.",
+      SOFT, 9,
+    );
+    const h = r.heuristics;
+    eng.drawKpis([
+      { label: "MVT (IOCs)", value: String(r.totalDetections), color: r.totalDetections > 0 ? SEV_COLOR.high : TEXT },
+      { label: "Riesgo MVT", value: riskLabel(r.risk), color: SEV_COLOR[r.risk] ?? TEXT },
+      { label: "Heurístico", value: String(h?.findings.length ?? 0), color: (h?.findings.length ?? 0) > 0 ? SEV_COLOR.medium : TEXT },
+      { label: "Riesgo heurístico", value: riskLabel(h?.overallRisk ?? "low"), color: SEV_COLOR[h?.overallRisk ?? "low"] ?? TEXT },
+    ]);
+    if (h && h.findings.length > 0) {
+      eng.paragraph(
+        `Desglose heurístico: ${h.countsByKind.confirmed_indicator} indicador(es) confirmado(s), ${h.countsByKind.suspicious_pattern} patrón(es) sospechoso(s), ${h.countsByKind.informational} informativo(s).`,
+        MUTED, 9,
+      );
+    }
+  }
+
 
   // 02 Resumen ejecutivo
   if (r) {

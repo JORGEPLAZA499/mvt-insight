@@ -120,6 +120,7 @@ export function App() {
   // para que el usuario vea que el proceso sigue vivo aunque mvt-ios tarde.
   const [phaseStartedAt, setPhaseStartedAt] = useState<number | null>(null);
   const [lastLogAt, setLastLogAt] = useState<number | null>(null);
+  const [activity, setActivity] = useState<{ bytes: number; lastChangeAt: number } | null>(null);
   const [nowTick, setNowTick] = useState(0);
 
   useEffect(() => {

@@ -48,8 +48,13 @@
       "collecting": "Collecting files from the device… {{size}} transferred (last change {{ago}} ago).",
       "frozen": "⛔ No real activity for {{min}} min. The process is likely stuck.",
       "frozenHint": "Click Cancel, unplug and replug the device, and try again."
+    },
+    "moduleFailed": {
+      "title": "Some modules are not available on this device",
+      "description": "The {{modules}} module could not run. This often happens on MIUI, EMUI or One UI devices due to manufacturer restrictions. The analysis is continuing normally."
     }
   },
+
   "phases": {
     "download": "Downloading AndroidQF",
     "connect": "Connecting to the device",

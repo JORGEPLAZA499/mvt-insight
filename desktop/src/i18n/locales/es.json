@@ -48,8 +48,13 @@
       "collecting": "Recolectando archivos del dispositivo… {{size}} transferidos (último cambio hace {{ago}}).",
       "frozen": "⛔ Sin actividad real desde hace {{min}} min. Probablemente el proceso está bloqueado.",
       "frozenHint": "Pulsa Cancelar, desconecta y vuelve a conectar el dispositivo y reintenta."
+    },
+    "moduleFailed": {
+      "title": "Algunos módulos no están disponibles en este dispositivo",
+      "description": "El módulo {{modules}} no se pudo ejecutar. Suele ocurrir en MIUI, EMUI o One UI por restricciones del fabricante. El análisis continúa con normalidad."
     }
   },
+
   "phases": {
     "download": "Descargando AndroidQF",
     "connect": "Conectando con el dispositivo",

@@ -10,6 +10,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag a (re)publicar, p.ej. v1.0.43. Si se omite, se usa la versión de desktop/package.json."
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -55,15 +60,34 @@ jobs:
       always() &&
       (needs.tag.result == 'skipped' || needs.tag.result == 'success')
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve tag
+        id: resolve
+        run: |
+          TAG="${{ needs.tag.outputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          fi
+          if [ -z "$TAG" ]; then
+            TAG="v$(node -p "require('./desktop/package.json').version")"
+          fi
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "ERROR: tag '$TAG' no es válido (debe ser vX.Y.Z)." >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Checkout tag
+        uses: actions/checkout@v4
         with:
-          ref: ${{ needs.tag.outputs.tag || github.ref }}
+          ref: ${{ steps.resolve.outputs.tag }}
       - name: Ensure GitHub Release exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ needs.tag.outputs.tag || github.ref_name }}"
+          TAG="${{ steps.resolve.outputs.tag }}"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists."
           else
@@ -96,7 +120,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.tag.outputs.tag || github.ref }}
+          ref: ${{ needs.create_release.outputs.tag }}
 
       - uses: actions/setup-node@v4
         with:

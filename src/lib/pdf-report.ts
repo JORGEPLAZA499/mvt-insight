@@ -624,6 +624,17 @@ export async function generatePdfReport(a: Analysis): Promise<void> {
     );
   }
 
+  // 06b Hallazgos heurísticos
+  if (r?.heuristics && r.heuristics.findings.length > 0) {
+    eng.sectionTitle(sec(), "Análisis general de spyware y stalkerware");
+    eng.paragraph(
+      "Hallazgos heurísticos agrupados por categoría. No son IOCs forenses: indican patrones compatibles con vigilancia que conviene verificar.",
+      SOFT, 9,
+    );
+    drawHeuristicFindings(eng, r.heuristics.findings);
+  }
+
+
   // 07 Próximos pasos recomendados
   eng.sectionTitle(sec(), "Próximos pasos recomendados");
   const recs = buildRecommendations(r);

@@ -96,15 +96,60 @@ jobs:
       - name: Install libimobiledevice (Windows via imobiledevice-net)
         if: matrix.os == 'windows-latest'
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Las builds oficiales de Windows vienen de github.com/libimobiledevice-win32
           $ProgressPreference = "SilentlyContinue"
-          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/libimobiledevice-win32/imobiledevice-net/releases/latest" -Headers @{ "User-Agent" = "GitHubActions" }
+          $ErrorActionPreference = "Stop"
+
+          $headers = @{
+            "User-Agent"    = "GitHubActions-mvt-insight"
+            "Authorization" = "Bearer $env:GH_TOKEN"
+            "Accept"        = "application/vnd.github+json"
+          }
+
+          $uri = "https://api.github.com/repos/libimobiledevice-win32/imobiledevice-net/releases/latest"
+          $release = $null
+          $delays = @(5, 10, 20, 40, 60)
+          for ($i = 0; $i -lt $delays.Length; $i++) {
+            try {
+              $release = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 30
+              if ($release -and $release.assets) { break }
+              Write-Host "Respuesta sin assets, reintentando..."
+            } catch {
+              Write-Host "Intento $($i + 1) falló: $($_.Exception.Message)"
+            }
+            if ($i -lt $delays.Length - 1) {
+              Write-Host "Esperando $($delays[$i])s antes del siguiente intento..."
+              Start-Sleep -Seconds $delays[$i]
+            }
+          }
+          if (-not $release -or -not $release.assets) {
+            throw "No se pudo obtener la última release de imobiledevice-net tras varios intentos (rate limit o caída de GitHub API)."
+          }
+
           $asset = $release.assets | Where-Object { $_.name -like "libimobiledevice.*-win-x64.zip" } | Select-Object -First 1
-          if (-not $asset) { throw "No se encontró un asset libimobiledevice win-x64 en la última release" }
+          if (-not $asset) { throw "No se encontró un asset libimobiledevice win-x64 en la última release ($($release.tag_name))." }
+
           New-Item -ItemType Directory -Force -Path staging | Out-Null
           New-Item -ItemType Directory -Force -Path staging/bin | Out-Null
-          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile imd.zip -ErrorAction Stop
+
+          $downloaded = $false
+          for ($i = 0; $i -lt $delays.Length; $i++) {
+            try {
+              Invoke-WebRequest -Uri $asset.browser_download_url -OutFile imd.zip -Headers $headers -TimeoutSec 120
+              $downloaded = $true
+              break
+            } catch {
+              Write-Host "Descarga intento $($i + 1) falló: $($_.Exception.Message)"
+              if ($i -lt $delays.Length - 1) {
+                Start-Sleep -Seconds $delays[$i]
+              }
+            }
+          }
+          if (-not $downloaded) { throw "No se pudo descargar $($asset.browser_download_url) tras varios intentos." }
+
           Expand-Archive -Path imd.zip -DestinationPath imd -Force
           # Copia .exe y .dll a staging/bin (Windows busca DLLs en la misma carpeta del .exe)
           Get-ChildItem -Path imd -Recurse -Include *.exe,*.dll | ForEach-Object {

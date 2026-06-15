@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import { detectPlatform, lookupModule, Platform } from "./mvt-modules";
+import { runHeuristics, combineRisk, type HeuristicReport } from "./heuristics";
 
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 
@@ -75,6 +76,7 @@ export interface MvtParsedResult {
   accessibilityServices?: AccessibilityServiceEntry[];
   iosConfigProfiles?: IosConfigProfile[];
   topNetworkProcs?: NetworkProcUsage[];
+  heuristics?: HeuristicReport;
 }
 
 // Strip path & extension, return { key, isDetected, ext }
@@ -501,7 +503,7 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
 
   timeline.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
-  return {
+  const partial: MvtParsedResult = {
     platform,
     totalEntries,
     totalDetections,
@@ -518,4 +520,9 @@ export async function parseMvtFiles(files: File[], sourceName: string): Promise<
     iosConfigProfiles,
     topNetworkProcs,
   };
+
+  const heuristics = runHeuristics(partial);
+  partial.heuristics = heuristics;
+  partial.risk = combineRisk(risk, heuristics.overallRisk);
+  return partial;
 }

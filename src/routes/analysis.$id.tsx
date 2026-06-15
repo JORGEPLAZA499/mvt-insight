@@ -13,6 +13,7 @@ import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Tra
 import { generatePdfReport } from "@/lib/pdf-report";
 import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, explainSeverity, buildVerdict, nextSteps, buildModuleHighlights, CROSS_CHECK_STEPS, CATEGORY_LABEL, CATEGORY_DESC, type Category, buildDeviceCard, buildTopApps, buildHumanTimeline, GLOSSARY, type SuspiciousApp, buildSystemIntegrity, buildAccessibilityList, buildConfigProfiles, buildTopNetwork, buildNetworkInterpretation, type AccessibilityRow, type ConfigProfileRow, type NetworkAppRow, type NetworkRowOrigin, type SystemIntegrityCard } from "@/lib/mvt-translate";
 import type { MvtDetection, MvtDeviceInfo, RiskLevel } from "@/lib/mvt-parser";
+import { KIND_LABEL, CATEGORY_LABEL_HEUR, ENGINE_LABEL, type HeuristicFinding, type FindingCategory } from "@/lib/heuristics";
 
 function formatDeviceLine(d?: MvtDeviceInfo): string {
   if (!d) return "";
@@ -284,6 +285,30 @@ function UserReport({ analysis }: { analysis: Analysis }) {
           <p className="text-sm text-foreground/80 mt-2">{verdict.detail}</p>
         </div>
       </section>
+
+      {/* Análisis por motor: MVT vs heurístico */}
+      <section data-pdf-section>
+        <SectionTitle num={sec()} title="Análisis por motor" />
+        <p className="text-sm text-muted-foreground mb-4">
+          El informe combina dos motores de análisis. El motor MVT busca indicadores conocidos
+          (IOCs) de spyware mercenario. El motor heurístico detecta stalkerware comercial, apps
+          espía simples, permisos peligrosos y configuraciones de riesgo basándose en patrones,
+          no en firmas.
+        </p>
+        <EngineSummary mvtRisk={r.risk} mvtDetections={r.totalDetections} heuristics={r.heuristics} />
+      </section>
+
+      {/* Análisis general de spyware y stalkerware */}
+      {r.heuristics && r.heuristics.findings.length > 0 && (
+        <section data-pdf-section>
+          <SectionTitle num={sec()} title="Análisis general de spyware y stalkerware" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Hallazgos heurísticos agrupados por categoría. No son IOCs forenses: indican
+            patrones compatibles con vigilancia que conviene verificar.
+          </p>
+          <HeuristicFindingsView findings={r.heuristics.findings} />
+        </section>
+      )}
 
       {/* Resumen ejecutivo */}
       <section data-pdf-section>
@@ -978,4 +1003,109 @@ function DevDetections({ detections }: { detections: MvtDetection[] }) {
     </div>
   );
 }
+
+// ============================================================
+// Capa heurística: resumen por motor y lista de hallazgos
+// ============================================================
+
+function riskBadgeClass(level: RiskLevel): string {
+  return level === "critical" ? "bg-destructive/15 text-destructive border-destructive/30"
+    : level === "high" ? "bg-destructive/10 text-destructive border-destructive/20"
+    : level === "medium" ? "bg-warning/15 text-warning border-warning/30"
+    : "bg-muted text-muted-foreground border-border";
+}
+
+function EngineSummary({
+  mvtRisk, mvtDetections, heuristics,
+}: {
+  mvtRisk: RiskLevel;
+  mvtDetections: number;
+  heuristics?: import("@/lib/heuristics").HeuristicReport;
+}) {
+  const h = heuristics;
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">MVT Advanced Threat Engine</div>
+        <div className="text-lg font-semibold mt-1">Indicadores forenses (IOCs)</div>
+        <div className="flex items-center gap-3 mt-3">
+          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border ${riskBadgeClass(mvtRisk)}`}>
+            {riskLabel(mvtRisk)}
+          </span>
+          <span className="text-sm text-muted-foreground">{mvtDetections} indicio{mvtDetections === 1 ? "" : "s"} MVT</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          Coincidencias con firmas públicas de Pegasus, Predator, Graphite y familias similares.
+        </p>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">General Spyware & Stalkerware</div>
+        <div className="text-lg font-semibold mt-1">Análisis heurístico de patrones</div>
+        <div className="flex items-center gap-3 mt-3">
+          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border ${riskBadgeClass(h?.overallRisk ?? "low")}`}>
+            {riskLabel(h?.overallRisk ?? "low")}
+          </span>
+          <span className="text-sm text-muted-foreground">{h?.findings.length ?? 0} hallazgo{(h?.findings.length ?? 0) === 1 ? "" : "s"}</span>
+        </div>
+        {h && (
+          <div className="text-xs text-muted-foreground mt-3 space-y-0.5">
+            <div>· {h.countsByKind.confirmed_indicator} indicador{h.countsByKind.confirmed_indicator === 1 ? "" : "es"} confirmado{h.countsByKind.confirmed_indicator === 1 ? "" : "s"}</div>
+            <div>· {h.countsByKind.suspicious_pattern} patrón{h.countsByKind.suspicious_pattern === 1 ? "" : "es"} sospechoso{h.countsByKind.suspicious_pattern === 1 ? "" : "s"}</div>
+            <div>· {h.countsByKind.informational} informativo{h.countsByKind.informational === 1 ? "" : "s"}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const KIND_BADGE: Record<string, string> = {
+  confirmed_indicator: "bg-destructive/15 text-destructive border-destructive/30",
+  suspicious_pattern: "bg-warning/15 text-warning border-warning/30",
+  informational: "bg-muted text-muted-foreground border-border",
+};
+
+function HeuristicFindingsView({ findings }: { findings: HeuristicFinding[] }) {
+  const groups: { cat: FindingCategory; items: HeuristicFinding[] }[] = (
+    ["dangerous_permission", "suspicious_app", "risky_config", "anomalous_behavior"] as FindingCategory[]
+  )
+    .map((cat) => ({ cat, items: findings.filter((f) => f.category === cat) }))
+    .filter((g) => g.items.length > 0);
+
+  return (
+    <div className="space-y-6">
+      {groups.map((g) => (
+        <div key={g.cat}>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            {CATEGORY_LABEL_HEUR[g.cat]} <span className="text-foreground/60">({g.items.length})</span>
+          </h3>
+          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {g.items.map((f) => (
+              <div key={f.id} className="p-4 flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${riskBadgeClass(f.severity)}`}>
+                      {severityLabel(f.severity)}
+                    </span>
+                    <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${KIND_BADGE[f.kind]}`}>
+                      {KIND_LABEL[f.kind]}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {ENGINE_LABEL[f.engine]}
+                    </span>
+                  </div>
+                  <div className="font-medium mt-1.5">{f.title}</div>
+                  <div className="text-xs text-muted-foreground font-mono break-all mt-0.5">{f.evidence}</div>
+                  <p className="text-sm text-foreground/80 mt-2">{f.reason}</p>
+                  <p className="text-xs text-muted-foreground mt-1.5"><strong>Recomendación:</strong> {f.recommendation}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 

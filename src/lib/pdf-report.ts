@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import { Analysis, riskLabel } from "./mock-store";
 import type { MvtDeviceInfo, MvtParsedResult, RiskLevel } from "./mvt-parser";
+import { KIND_LABEL, CATEGORY_LABEL_HEUR, type HeuristicFinding, type FindingCategory } from "./heuristics";
 
 /**
  * Generador de PDF 100 % vectorial con jsPDF. No depende del DOM ni de
@@ -507,6 +508,29 @@ export async function generatePdfReport(a: Analysis): Promise<void> {
     );
   }
 
+  // 02 Análisis por motor
+  if (r) {
+    eng.sectionTitle(sec(), "Análisis por motor");
+    eng.paragraph(
+      "El informe combina dos motores. El motor MVT busca indicadores conocidos (IOCs) de spyware mercenario. El motor heurístico detecta stalkerware comercial, apps espía simples, permisos peligrosos y configuraciones de riesgo basándose en patrones, no en firmas.",
+      SOFT, 9,
+    );
+    const h = r.heuristics;
+    eng.drawKpis([
+      { label: "MVT (IOCs)", value: String(r.totalDetections), color: r.totalDetections > 0 ? SEV_COLOR.high : TEXT },
+      { label: "Riesgo MVT", value: riskLabel(r.risk), color: SEV_COLOR[r.risk] ?? TEXT },
+      { label: "Heurístico", value: String(h?.findings.length ?? 0), color: (h?.findings.length ?? 0) > 0 ? SEV_COLOR.medium : TEXT },
+      { label: "Riesgo heurístico", value: riskLabel(h?.overallRisk ?? "low"), color: SEV_COLOR[h?.overallRisk ?? "low"] ?? TEXT },
+    ]);
+    if (h && h.findings.length > 0) {
+      eng.paragraph(
+        `Desglose heurístico: ${h.countsByKind.confirmed_indicator} indicador(es) confirmado(s), ${h.countsByKind.suspicious_pattern} patrón(es) sospechoso(s), ${h.countsByKind.informational} informativo(s).`,
+        MUTED, 9,
+      );
+    }
+  }
+
+
   // 02 Resumen ejecutivo
   if (r) {
     eng.sectionTitle(sec(), "Resumen ejecutivo");
@@ -600,6 +624,17 @@ export async function generatePdfReport(a: Analysis): Promise<void> {
     );
   }
 
+  // 06b Hallazgos heurísticos
+  if (r?.heuristics && r.heuristics.findings.length > 0) {
+    eng.sectionTitle(sec(), "Análisis general de spyware y stalkerware");
+    eng.paragraph(
+      "Hallazgos heurísticos agrupados por categoría. No son IOCs forenses: indican patrones compatibles con vigilancia que conviene verificar.",
+      SOFT, 9,
+    );
+    drawHeuristicFindings(eng, r.heuristics.findings);
+  }
+
+
   // 07 Próximos pasos recomendados
   eng.sectionTitle(sec(), "Próximos pasos recomendados");
   const recs = buildRecommendations(r);
@@ -673,6 +708,78 @@ export async function generatePdfReport(a: Analysis): Promise<void> {
 
   eng.doc.save(`informe-forense-${reportId}.pdf`);
 }
+
+// ---------- Hallazgos heurísticos ----------
+const KIND_COLOR: Record<string, RGB> = {
+  confirmed_indicator: SEV_COLOR.high,
+  suspicious_pattern: SEV_COLOR.medium,
+  informational: MUTED,
+};
+
+function drawHeuristicFindings(eng: PdfEngine, findings: HeuristicFinding[]) {
+  const cats: FindingCategory[] = ["dangerous_permission", "suspicious_app", "risky_config", "anomalous_behavior"];
+  for (const cat of cats) {
+    const items = findings.filter((f) => f.category === cat);
+    if (items.length === 0) continue;
+    eng.ensureSpace(22);
+    eng.text(SOFT);
+    eng.font("bold", 11);
+    eng.doc.text(`${CATEGORY_LABEL_HEUR[cat]} (${items.length})`, MARGIN.left, eng.y + 4);
+    eng.y += 16;
+
+    for (const f of items) {
+      const padX = 14;
+      const innerW = CW - padX * 2;
+      const reasonLines = eng.doc.splitTextToSize(f.reason, innerW) as string[];
+      const recLines = eng.doc.splitTextToSize(`Recomendación: ${f.recommendation}`, innerW) as string[];
+      const evLines = eng.doc.splitTextToSize(`Evidencia: ${f.evidence}`, innerW) as string[];
+      const cardH = 28 + 14 + evLines.length * 11 + reasonLines.length * 12 + 6 + recLines.length * 11 + 14;
+      eng.ensureSpace(cardH + 6);
+      eng.card(MARGIN.left, eng.y, CW, cardH, SURFACE);
+      // barra lateral por severidad
+      eng.fill(SEV_COLOR[f.severity] ?? SEV_COLOR.high);
+      eng.doc.rect(MARGIN.left, eng.y, 3, cardH, "F");
+      // chips
+      const sevColor = SEV_COLOR[f.severity] ?? SEV_COLOR.high;
+      eng.fill(sevColor);
+      eng.doc.roundedRect(MARGIN.left + padX, eng.y + 10, 44, 14, 3, 3, "F");
+      eng.text(TEXT);
+      eng.font("bold", 8);
+      eng.doc.text(severityLabel(f.severity), MARGIN.left + padX + 22, eng.y + 19, { align: "center" });
+      // chip kind
+      const kColor = KIND_COLOR[f.kind] ?? MUTED;
+      const kLabel = KIND_LABEL[f.kind];
+      const kW = eng.doc.getTextWidth(kLabel) + 14;
+      eng.fill(kColor);
+      eng.doc.roundedRect(MARGIN.left + padX + 50, eng.y + 10, kW, 14, 3, 3, "F");
+      eng.text(TEXT);
+      eng.font("bold", 8);
+      eng.doc.text(kLabel, MARGIN.left + padX + 50 + kW / 2, eng.y + 19, { align: "center" });
+      // título
+      eng.text(TEXT);
+      eng.font("bold", 11);
+      eng.doc.text(f.title, MARGIN.left + padX, eng.y + 38);
+      // evidencia
+      eng.text(MUTED);
+      eng.font("normal", 8);
+      let yy = eng.y + 52;
+      evLines.forEach((ln) => { eng.doc.text(ln, MARGIN.left + padX, yy); yy += 11; });
+      // razón
+      eng.text(SOFT);
+      eng.font("normal", 10);
+      reasonLines.forEach((ln) => { eng.doc.text(ln, MARGIN.left + padX, yy + 2); yy += 12; });
+      // recomendación
+      eng.text(MUTED);
+      eng.font("normal", 9);
+      yy += 4;
+      recLines.forEach((ln) => { eng.doc.text(ln, MARGIN.left + padX, yy); yy += 11; });
+
+      eng.y += cardH + 6;
+    }
+  }
+}
+
+
 
 // ---------- Datos auxiliares ----------
 function buildRecommendations(r?: MvtParsedResult): string[] {

@@ -1,55 +1,55 @@
 ## Diagnóstico
 
-El auto-updater de la app instalada (v1.0.42) pide `/releases/download/main/latest.yml` y recibe 404. Causa:
+El step "Install libimobiledevice (Windows via imobiledevice-net)" hace:
 
-1. La release `v1.0.43` está completa y bien (tiene `latest.yml`, `latest-mac.yml`, `latest-linux.yml`, los 3 instaladores).
-2. Existe en GitHub una release con **tag `main`** (vacía, sin assets). Se creó cuando re-disparaste el workflow con `workflow_dispatch`.
-3. GitHub marca como "latest release" la última creada que no sea draft/prerelease → la release `main` (vacía) pasó a ser "latest".
-4. `electron-updater` con provider GitHub resuelve "latest" → tag `main` → URL `/releases/download/main/latest.yml` → **404**.
-
-El job `create_release` que añadí ayer tiene este bug en `workflow_dispatch`:
-
-```yaml
-TAG="${{ needs.tag.outputs.tag || github.ref_name }}"
+```powershell
+$release = Invoke-RestMethod -Uri "https://api.github.com/repos/libimobiledevice-win32/imobiledevice-net/releases/latest" `
+  -Headers @{ "User-Agent" = "GitHubActions" }
 ```
 
-En `workflow_dispatch` sobre la rama main, el job `tag` se skipea (su `if` requiere `push`), `needs.tag.outputs.tag` queda vacío, y `github.ref_name` = `"main"` → crea release `main`.
+Sin `Authorization`, esa llamada usa el rate limit anónimo (60 req/h por IP). Los runners `windows-latest` comparten IP con miles de jobs, así que GitHub responde con la página HTML de "Unicorn timeout" / 503. `Invoke-RestMethod` intenta parsearla como JSON y aborta. Los logs muestran exactamente ese HTML (`Unicorn! GitHub`, `body { background-color: #f1f1f1 }`...).
 
-## Pasos
+Los jobs de macOS y Linux no se ven afectados porque instalan vía `brew`/`apt`, no vía la API de GitHub.
 
-### 1. Limpieza manual en GitHub (la haces tú, yo no tengo permisos)
+## Plan
 
-En https://github.com/JORGEPLAZA499/mvt-insight/releases :
+Endurecer el step de Windows con dos cambios mínimos:
 
-- **Borrar la release "main"** (la vacía).
-- **Borrar también el tag `main`** (al borrar la release, GitHub deja el tag; hay que eliminarlo desde la pestaña Tags o con `git push origin :refs/tags/main`).
-- Verificar que `v1.0.43` aparece marcada como **Latest** (debería ser automático al desaparecer la "main"; si no, click en "Set as the latest release" en `v1.0.43`).
+### 1. Autenticar la llamada a GitHub API con `GITHUB_TOKEN`
 
-Con eso, el auto-updater de cualquier instalación vuelve a pedir `/releases/download/v1.0.43/latest.yml` (que sí existe) y los usuarios en v1.0.42 se actualizan a v1.0.43 sin error.
+Subir rate limit de 60/h a 5000/h y reducir drásticamente los timeouts:
 
-### 2. Arreglar `.github/workflows/release.yml`
+```powershell
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
 
-Cambiar el job `create_release` para que **siempre** resuelva el tag desde `desktop/package.json` cuando `needs.tag.outputs.tag` esté vacío, en vez de caer a `github.ref_name`. Y añadir una guarda dura que aborte si el tag resultante no empieza por `v`.
+```powershell
+$headers = @{
+  "User-Agent"    = "GitHubActions"
+  "Authorization" = "Bearer $env:GH_TOKEN"
+  "Accept"        = "application/vnd.github+json"
+}
+```
 
-Cambios concretos en `create_release`:
+### 2. Retry con backoff y validación de respuesta
 
-- Añadir un step previo "Resolve tag" que lea `desktop/package.json` y compute `TAG=v$(node -p "require('./desktop/package.json').version")` cuando `needs.tag.outputs.tag` esté vacío.
-- Usar ese tag tanto en `actions/checkout@v4 ref` como en `gh release view/create`.
-- Si por cualquier motivo `TAG` no empieza por `v`, hacer `exit 1` con mensaje claro.
+Envolver `Invoke-RestMethod` en un bucle de hasta 5 intentos con `Start-Sleep` exponencial (5s, 10s, 20s, 40s). Si tras los reintentos la respuesta no parsea como JSON o no trae `assets`, hacer `throw` con mensaje claro (en vez de un stacktrace de parser HTML).
 
-Mismo cambio en el job `build` (usar el tag resuelto, no `github.ref`).
+Idéntico tratamiento para `Invoke-WebRequest` del `browser_download_url`.
 
-### 3. (Opcional) Restringir `workflow_dispatch`
+### 3. (Opcional, defensa en profundidad) Pin a una versión conocida
 
-Añadir un `input` `tag` requerido al `workflow_dispatch`, de forma que para re-disparar haya que escribir explícitamente `v1.0.43`. Elimina cualquier posibilidad de volver a crear releases fantasma.
+Añadir una variable `LIBIMOBILEDEVICE_TAG` al inicio del workflow (ej. `v1.3.17`) y, si está seteada, saltar el lookup `releases/latest` y construir la URL directamente. Por defecto vacío → comportamiento actual con `latest`. Esto te da escape hatch para cuando la última release del upstream se rompa.
 
 ## Lo que NO se toca
 
-- `desktop/package.json` (no se bumpea versión; v1.0.43 sigue siendo la release correcta).
-- `desktop/electron/main.cjs` (la configuración del auto-updater está bien).
-- El workflow de iOS.
+- Steps de macOS / Linux (funcionan).
+- `desktop/`.
+- Workflow de release de la app desktop.
 
-## Resultado esperado
+## Resultado
 
-- Auto-updater de la app v1.0.42 ya instalada → encuentra v1.0.43 y se actualiza.
-- Futuros `workflow_dispatch` no podrán crear releases con tags raros tipo `main`.
+- El step de Windows soporta rate-limits transitorios sin fallar el job entero.
+- Mensaje de error útil si el upstream realmente no tiene asset compatible.
+- Posibilidad de pinear a un tag concreto en el futuro sin reescribir el step.

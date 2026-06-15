@@ -112,8 +112,15 @@ export function App() {
       | ((cb: (p: { bytes: number; lastChangeAt: number; alive: boolean }) => void) => () => void)
       | undefined;
     const offActivity = onAct ? onAct((p) => setActivity({ bytes: p.bytes, lastChangeAt: p.lastChangeAt })) : () => {};
-    return () => { offLog(); offPhase(); offActivity(); };
+    const onModFailed = (window.mvt as any).onModuleFailed as
+      | ((cb: (p: { module: string; detail: string }) => void) => () => void)
+      | undefined;
+    const offModFailed = onModFailed
+      ? onModFailed((p) => setFailedModules((prev) => (prev.some((x) => x.module === p.module) ? prev : [...prev, p])))
+      : () => {};
+    return () => { offLog(); offPhase(); offActivity(); offModFailed(); };
   }, []);
+
 
 
   // Cronómetro de fase: re-renderiza cada segundo mientras estamos analizando,

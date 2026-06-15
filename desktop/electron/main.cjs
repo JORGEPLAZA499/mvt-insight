@@ -335,34 +335,36 @@ async function fetchJson(url) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-// Comprime una carpeta en un .zip usando herramientas nativas del SO.
-// - Windows: PowerShell Compress-Archive (siempre disponible).
-// - macOS/Linux: el comando `zip` (preinstalado en macOS; en linux suele estarlo).
-function zipFolder(srcDir, destZip) {
-  return new Promise((resolve, reject) => {
-    let cmd, args, opts = { windowsHide: true };
-    if (process.platform === "win32") {
-      cmd = "powershell.exe";
-      args = [
-        "-NoProfile",
-        "-NonInteractive",
-        "-Command",
-        `Compress-Archive -Path '${srcDir.replace(/'/g, "''")}\\*' -DestinationPath '${destZip.replace(/'/g, "''")}' -Force`,
-      ];
-    } else {
-      cmd = "zip";
-      args = ["-r", destZip, "."];
-      opts.cwd = srcDir;
+// Comprime una carpeta en un .zip usando JSZip (puro JS, fiable y multiplataforma).
+// Antes usábamos PowerShell `Compress-Archive` en Windows, pero produce ZIPs que
+// algunas librerías (yauzl en el backend) no consiguen parsear → error
+// "End of central directory record signature not found". JSZip genera ZIPs
+// estándar legibles en todas partes.
+async function zipFolder(srcDir, destZip) {
+  const JSZip = require("jszip");
+  const zip = new JSZip();
+
+  const addDir = (absDir, relBase) => {
+    const entries = fs.readdirSync(absDir, { withFileTypes: true });
+    for (const e of entries) {
+      const abs = path.join(absDir, e.name);
+      const rel = relBase ? `${relBase}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        addDir(abs, rel);
+      } else if (e.isFile()) {
+        const data = fs.readFileSync(abs);
+        zip.file(rel, data);
+      }
     }
-    const p = spawn(cmd, args, opts);
-    let stderr = "";
-    p.stderr?.on("data", (d) => { stderr += d.toString(); });
-    p.on("error", reject);
-    p.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`Compresión falló (código ${code}): ${stderr.trim()}`));
-    });
+  };
+  addDir(srcDir, "");
+
+  const buffer = await zip.generateAsync({
+    type: "nodebuffer",
+    compression: "DEFLATE",
+    compressionOptions: { level: 6 },
   });
+  fs.writeFileSync(destZip, buffer);
 }
 
 async function resolveAndroidqfUrl() {
@@ -782,14 +784,17 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         .filter((e) => e.isDir)
         .sort((a, b) => b.mtime - a.mtime)[0];
 
-      if (freshZip) {
-        zipPath = freshZip.full;
-        send("mvt:log", `📦 ZIP detectado: ${freshZip.name}`);
-      } else if (freshDir) {
+      // Preferimos re-comprimir desde la carpeta cuando existe: así garantizamos
+      // un ZIP estándar y evitamos ZIPs truncados o con formatos que el backend
+      // (yauzl) no consigue leer ("End of central directory record signature not found").
+      if (freshDir) {
         zipPath = path.join(dir, `${freshDir.name}.zip`);
         send("mvt:log", `📦 Comprimiendo carpeta de resultados "${freshDir.name}" → ${path.basename(zipPath)}`);
         send("mvt:phase", { phase: 3, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.95 });
         await zipFolder(freshDir.full, zipPath);
+      } else if (freshZip) {
+        zipPath = freshZip.full;
+        send("mvt:log", `📦 ZIP detectado: ${freshZip.name}`);
       } else {
         const listing = entries.map((e) => (e.isDir ? `${e.name}/` : e.name)).join(", ") || "(vacío)";
         throw new Error(

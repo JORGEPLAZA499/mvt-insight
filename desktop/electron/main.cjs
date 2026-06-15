@@ -875,32 +875,43 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       send("mvt:log", `💾 Backup en ${backupDir}`);
       const backupStart = Date.now();
       let lastBackupPhase = 0;
-      await iosTools.createBackup(dir, udid, backupDir, (data) => {
-        const text = String(data);
-        send("mvt:log", text);
-        // Heurística simple de progreso por mensajes conocidos
-        if (/Started\s+\"Backup\"/i.test(text) && lastBackupPhase < 0.2) {
-          lastBackupPhase = 0.2;
-          send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosBackup", label: "Creando backup del iPhone", progress: 0.85 });
-        }
-        const m = text.match(/(\d{1,3})%/);
-        if (m) {
-          const pct = Math.min(100, parseInt(m[1], 10)) / 100;
-          send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosBackup", label: "Creando backup del iPhone", progress: 0.8 + pct * 0.2 });
-        }
-      }).catch((e) => { throw e; });
+      currentActivityStop = startActivityWatcher(dir, backupStart, send);
+      try {
+        await iosTools.createBackup(dir, udid, backupDir, (data) => {
+          const text = String(data);
+          send("mvt:log", text);
+          // Heurística simple de progreso por mensajes conocidos
+          if (/Started\s+\"Backup\"/i.test(text) && lastBackupPhase < 0.2) {
+            lastBackupPhase = 0.2;
+            send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosBackup", label: "Creando backup del iPhone", progress: 0.85 });
+          }
+          const m = text.match(/(\d{1,3})%/);
+          if (m) {
+            const pct = Math.min(100, parseInt(m[1], 10)) / 100;
+            send("mvt:phase", { phase: 2, statusKey: "phaseStatus.iosBackup", label: "Creando backup del iPhone", progress: 0.8 + pct * 0.2 });
+          }
+        }).catch((e) => { throw e; });
+      } finally {
+        stopActivityWatcher();
+      }
       send("mvt:log", `✅ Backup completado en ${(Date.now() - backupStart) / 1000}s.`);
 
       // 5. Ejecutar mvt-ios sobre el backup
       const resultsDir = path.join(dir, `ios-results-${Date.now()}`);
       send("mvt:phase", { phase: 3, statusKey: "phaseStatus.iosAnalyzing", label: "Analizando backup con MVT", progress: 0.1 });
-      await iosTools.runMvtIos(dir, backupDir, resultsDir, password, (data) => {
-        const text = String(data);
-        send("mvt:log", text);
-        if (/Running module/i.test(text)) {
-          send("mvt:phase", { phase: 3, statusKey: "phaseStatus.iosAnalyzing", label: "Analizando backup con MVT", progress: 0.5 });
-        }
-      });
+      const mvtStart = Date.now();
+      currentActivityStop = startActivityWatcher(dir, mvtStart, send);
+      try {
+        await iosTools.runMvtIos(dir, backupDir, resultsDir, password, (data) => {
+          const text = String(data);
+          send("mvt:log", text);
+          if (/Running module/i.test(text)) {
+            send("mvt:phase", { phase: 3, statusKey: "phaseStatus.iosAnalyzing", label: "Analizando backup con MVT", progress: 0.5 });
+          }
+        });
+      } finally {
+        stopActivityWatcher();
+      }
 
       // 6. Comprimir resultados para mantener la misma UX que Android
       const zipPath = path.join(dir, `ios-results-${Date.now()}.zip`);

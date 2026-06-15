@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { listMyAnalyses, deleteAnalysis } from "@/lib/analyses.functions";
 import { mapServerAnalysis, type ServerAnalysisRow } from "@/lib/server-analyses";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 import i18n from "@/i18n";
 import {
@@ -38,17 +39,35 @@ function Reports() {
   const fetchAnalyses = useServerFn(listMyAnalyses);
   const removeAnalysis = useServerFn(deleteAnalysis);
 
-  useEffect(() => {
-    let alive = true;
-    fetchAnalyses()
+  const reload = useCallback(() => {
+    return fetchAnalyses()
       .then((r) => {
-        if (!alive) return;
         const mapped = ((r?.analyses ?? []) as ServerAnalysisRow[]).map(mapServerAnalysis);
         setItems(mapped.filter((a) => a.status === "completed"));
       })
-      .catch(() => { if (alive) setItems([]); });
-    return () => { alive = false; };
+      .catch(() => setItems([]));
   }, [fetchAnalyses]);
+
+  useEffect(() => {
+    let alive = true;
+    reload();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!alive || !data.user) return;
+      channel = supabase
+        .channel(`analyses-reports-${data.user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "analyses", filter: `user_id=eq.${data.user.id}` },
+          () => { reload(); },
+        )
+        .subscribe();
+    });
+    return () => {
+      alive = false;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [reload]);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);

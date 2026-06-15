@@ -826,7 +826,22 @@ export function App() {
                             );
                           })()}
                           <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
+                          {failedModules.length > 0 && (
+                            <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(255, 200, 0, 0.08)", border: "1px solid rgba(255, 200, 0, 0.35)", borderRadius: 6, fontSize: 12, color: "#e6c200" }}>
+                              <div style={{ fontWeight: 600 }}>
+                                {tr("running.moduleFailed.title", "Algunos módulos no están disponibles en este dispositivo")}
+                              </div>
+                              <div style={{ marginTop: 4, opacity: 0.9 }}>
+                                {tr(
+                                  "running.moduleFailed.description",
+                                  `El módulo ${failedModules.map((m) => m.module).join(", ")} no se pudo ejecutar. Suele ocurrir en MIUI, EMUI o One UI por restricciones del fabricante. El análisis continúa con normalidad.`,
+                                  { modules: failedModules.map((m) => m.module).join(", ") }
+                                )}
+                              </div>
+                            </div>
+                          )}
                           {(() => {
+
                             if (!lastLogAt) return null;
                             const lastActivityAt = Math.max(lastLogAt, activity?.lastChangeAt ?? 0);
                             const sinceActivityMs = Date.now() - lastActivityAt;

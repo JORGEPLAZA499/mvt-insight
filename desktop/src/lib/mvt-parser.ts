@@ -444,7 +444,7 @@ export function parseMvtEntries(entries: { name: string; text: string }[], sourc
       existing.entries += count;
       if (!deviceInfo) {
         if (meta.key === "getprop") deviceInfo = cleanDeviceInfo(extractAndroidGetprop(data));
-        else if (meta.key === "info") deviceInfo = cleanDeviceInfo(extractIosInfo(data));
+        else if (meta.key === "backup_info" || meta.key === "info") deviceInfo = cleanDeviceInfo(extractIosInfo(data));
       }
     }
 

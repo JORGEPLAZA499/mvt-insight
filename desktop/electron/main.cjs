@@ -932,6 +932,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
     return { ok: false, error: err.message };
   } finally {
     currentChild = null;
+    stopActivityWatcher();
   }
 
 });

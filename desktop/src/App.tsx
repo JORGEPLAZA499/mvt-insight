@@ -240,8 +240,11 @@ export function App() {
     setLogs([]);
     setError(null);
     setUpload({ state: "idle" });
+    setActivity(null);
+    setFailedModules([]);
     setPhase({ num: 1, label: tr("running.starting", "Iniciando…"), progress: 0 });
     cancelledRef.current = false;
+
 
     if (!window.mvt) {
       setError(tr("error.browserOnly", "Esta función solo está disponible en la app de escritorio."));

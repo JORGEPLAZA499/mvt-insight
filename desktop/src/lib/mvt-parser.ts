@@ -344,18 +344,29 @@ function extractAndroidGetprop(data: any): MvtDeviceInfo {
 function extractIosInfo(data: any): MvtDeviceInfo {
   if (!data || typeof data !== "object" || Array.isArray(data)) return {};
   const d: any = data;
-  const serial = typeof d.SerialNumber === "string" ? d.SerialNumber : undefined;
+  // MVT `backup_info.json` usa claves con espacios ("Product Type"). Dumps
+  // antiguos o `info.json` manuales usan PascalCase ("ProductType"). Aceptamos
+  // ambos para no romper informes previos.
+  const pick = (...keys: string[]): any => {
+    for (const k of keys) {
+      const v = d[k];
+      if (v !== undefined && v !== null && v !== "") return v;
+    }
+    return undefined;
+  };
+  const serialRaw = pick("Serial Number", "SerialNumber");
+  const serial = typeof serialRaw === "string" ? serialRaw : undefined;
   return {
     brand: "Apple",
     manufacturer: "Apple",
-    model: d.ProductType || d.HardwareModel,
-    deviceName: d.DeviceName,
-    osVersion: d.ProductVersion,
-    buildId: d.BuildVersion,
-    regionInfo: d.RegionInfo,
-    locale: d.Locale,
-    timezone: d.TimeZone,
-    carrier: d.CarrierName || d.SIMOperatorName,
+    model: pick("Product Type", "ProductType", "HardwareModel"),
+    deviceName: pick("Device Name", "DeviceName", "Display Name", "DisplayName"),
+    osVersion: pick("Product Version", "ProductVersion"),
+    buildId: pick("Build Version", "BuildVersion"),
+    regionInfo: pick("Region Info", "RegionInfo"),
+    locale: pick("Locale"),
+    timezone: pick("Time Zone", "TimeZone"),
+    carrier: pick("Carrier Name", "CarrierName", "SIM Operator Name", "SIMOperatorName"),
     serialLast4: serial && serial.length >= 4 ? serial.slice(-4) : undefined,
   };
 }

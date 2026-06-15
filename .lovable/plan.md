@@ -1,44 +1,33 @@
-# Ventana de la app: dejar de arrancar en pantalla completa
+# Fix: el panel de "información del dispositivo" en iPhone aparece vacío
 
 ## Causa
 
-En `desktop/electron/main.cjs` (línea 58) la ventana se crea con `fullscreen: true`. Esto fuerza el modo pantalla completa real del sistema operativo, que oculta la barra de título y por tanto los botones de minimizar/maximizar/cerrar. El usuario no puede mandar la app al fondo mientras corre el análisis (que puede durar muchos minutos en dispositivos con miles de archivos).
+El parser de informes (`desktop/src/lib/mvt-parser.ts`) intenta sacar los datos del dispositivo iOS de un fichero llamado `info.json` con claves tipo `ProductType`, `ProductVersion`, `DeviceName`, etc.
 
-## Cambio
+Pero `mvt-ios check-backup` no produce ese fichero. El módulo que lee `Info.plist` del backup se llama `BackupInfo`, y por la convención de `slug` de MVT (snake_case del nombre de la clase) genera **`backup_info.json`**, no `info.json`. Además las claves dentro de ese JSON llevan **espacios**: `Product Type`, `Product Version`, `Device Name`, `Build Version`, `Serial Number`, `Phone Number`, `Last Backup Date`, etc.
 
-En `createMainWindow()` reemplazar `fullscreen: true` por una ventana normal **maximizada** (ocupa toda la pantalla, pero CON barra de título y botones nativos):
+Resultado: el parser nunca encuentra el fichero, `deviceInfo` queda `undefined` y en el informe sólo se ve "Apple" (puesto a fuego en otro sitio) y el resto de campos en blanco — exactamente lo que muestra la captura.
 
-```js
-const opts = {
-  width: 1400,
-  height: 900,
-  minWidth: 900,
-  minHeight: 600,
-  backgroundColor: "#0b0b12",
-  show: false,
-  titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
-  webPreferences: { ... }   // sin cambios
-};
-```
+## Cambios
 
-Y en el handler `ready-to-show`, antes de `win.show()`:
+1. **`desktop/src/lib/mvt-parser.ts`**
+   - En el bucle principal, reconocer también `meta.key === "backup_info"` como fuente de info iOS (además de `"info"`, por compatibilidad con dumps antiguos).
+   - Reescribir `extractIosInfo` para que acepte ambos esquemas de claves:
+     - Las con espacios que produce realmente MVT (`Product Type`, `Product Version`, `Device Name`, `Build Version`, `Serial Number`, `Phone Number`, `Last Backup Date`, `Target Identifier`, `Unique Identifier`, `iTunes Version`).
+     - Las antiguas sin espacios (`ProductType`, `ProductVersion`, `DeviceName`, `BuildVersion`, `SerialNumber`, etc.) para no romper informes ya generados.
+   - Rellenar:
+     - `model` ← `Product Type` (ej. `iPhone14,5`)
+     - `osVersion` ← `Product Version`
+     - `buildId` ← `Build Version`
+     - `deviceName` ← `Device Name` / `Display Name`
+     - `serialLast4` ← últimos 4 de `Serial Number`
+     - Y dejar `brand`/`manufacturer` = `Apple`.
+   - Los campos que el backup nunca trae (parche de seguridad, zona horaria, idioma/región, operador SIM, bootloader, modo desarrollador) se quedan vacíos a propósito — no existen en `Info.plist` de un backup iOS y mostrarán "—" como ahora.
 
-```js
-win.maximize();   // arranca ocupando toda la pantalla pero NO en fullscreen real
-win.show();
-win.focus();
-```
+2. **Versión del desktop**
+   - Bump `desktop/package.json` a `1.0.43` para que la GitHub Action publique la build con el fix (los informes nuevos lo aprovechan; los antiguos no se reparsean).
 
-Con esto:
-- En **Windows/Linux**: aparecen los botones nativos minimizar / maximizar / cerrar arriba a la derecha, y la app arranca maximizada igual que ahora visualmente.
-- En **macOS**: aparecen los semáforos rojo/amarillo/verde (gracias a `titleBarStyle: "hiddenInset"` que ya estaba) y la app arranca maximizada. El usuario puede pulsar el botón amarillo para minimizar al Dock.
-- El usuario puede minimizar y seguir usando otras apps mientras el análisis continúa en segundo plano.
+## Lo que NO se cambia
 
-## Qué NO toca
-
-- Lógica de análisis, IPC, parser, subida, PDF, traducciones.
-- Versión de la app (no se bumpea — se agrupará con el próximo "saca versión").
-
-## Resultado esperado
-
-Al abrir la app, sigue ocupando toda la pantalla como hasta ahora, pero ya se ve la barra de título del sistema con los botones de minimizar/maximizar/cerrar, y el usuario puede mandarla al fondo durante el análisis.
+- Nada del flujo de subida ni de la edge function — el JSON que se sube ya contiene `backup_info.json`, simplemente el cliente no lo estaba leyendo.
+- Los campos vacíos en la captura que sólo existen en Android (parche de seguridad, bootloader, modo desarrollador, operador SIM) se quedan como "—" en iPhone porque MVT no los extrae del backup; podemos ocultarlos condicionalmente en un cambio aparte si quieres.

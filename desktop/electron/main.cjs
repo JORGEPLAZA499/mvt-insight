@@ -737,6 +737,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         child.onExit(({ exitCode: code }) => resolve(code ?? 0));
       });
       currentChild = null;
+      stopActivityWatcher();
       if (cancelled) {
         return { ok: false, error: "cancelled" };
       }

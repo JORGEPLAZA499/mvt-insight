@@ -455,6 +455,7 @@ let cancelled = false;
 
 ipcMain.handle("mvt:cancel", async () => {
   cancelled = true;
+  stopActivityWatcher();
   if (currentChild) {
     try { currentChild.kill(); } catch {}
   }

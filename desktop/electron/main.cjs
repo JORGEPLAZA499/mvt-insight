@@ -55,7 +55,10 @@ let updatePromptShown = false;
 function createMainWindow() {
   const iconPath = path.join(__dirname, "..", "build", "icon.png");
   const opts = {
-    fullscreen: true,
+    width: 1400,
+    height: 900,
+    minWidth: 900,
+    minHeight: 600,
     backgroundColor: "#0b0b12",
     show: false,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
@@ -72,6 +75,7 @@ function createMainWindow() {
   mainWindow = win;
 
   win.once("ready-to-show", () => {
+    win.maximize();
     win.show();
     win.focus();
   });

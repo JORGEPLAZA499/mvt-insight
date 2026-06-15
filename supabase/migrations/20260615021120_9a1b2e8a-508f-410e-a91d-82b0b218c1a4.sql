@@ -1,0 +1,1 @@
+ALTER TABLE public.analyses REPLICA IDENTITY FULL; ALTER PUBLICATION supabase_realtime ADD TABLE public.analyses;

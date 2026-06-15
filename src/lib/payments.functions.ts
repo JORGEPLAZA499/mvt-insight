@@ -52,7 +52,6 @@ export const createCreditsCheckout = createServerFn({ method: 'POST' })
     try {
       const stripe = createStripeClient(data.environment);
       const userId = context.userId as string;
-      const email = (context.claims as any)?.email as string | undefined;
 
       const credits = Number(data.priceId.replace('credits_', ''));
       if (!Number.isFinite(credits) || credits <= 0) throw new Error('Invalid priceId');
@@ -65,14 +64,15 @@ export const createCreditsCheckout = createServerFn({ method: 'POST' })
         typeof stripePrice.product === 'string' ? stripePrice.product : stripePrice.product.id;
       const product = await stripe.products.retrieve(productId);
 
-      const customerId = await resolveOrCreateCustomer(stripe, { email, userId });
-
+      // No adjuntamos `customer` ni `customer_email`: el correo de la cuenta
+      // es anónimo (mvt-accounts.*) y Stripe Link lo prerrellenaría. El
+      // cliente lo introduce a mano si quiere recibo. La acreditación de
+      // créditos se hace por `metadata.userId` en el webhook.
       const session = await stripe.checkout.sessions.create({
         line_items: [{ price: stripePrice.id, quantity: 1 }],
         mode: 'payment',
         ui_mode: 'embedded_page',
         return_url: data.returnUrl,
-        customer: customerId,
         payment_intent_data: { description: product.name },
         metadata: {
           userId,

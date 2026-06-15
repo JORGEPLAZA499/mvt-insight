@@ -816,16 +816,58 @@ export function App() {
                           <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
                           {(() => {
                             if (!lastLogAt) return null;
-                            const idleMin = Math.floor((Date.now() - lastLogAt) / 60000);
+                            const lastActivityAt = Math.max(lastLogAt, activity?.lastChangeAt ?? 0);
+                            const sinceActivityMs = Date.now() - lastActivityAt;
+                            const sinceLogMin = Math.floor((Date.now() - lastLogAt) / 60000);
+                            const sinceActivityMin = Math.floor(sinceActivityMs / 60000);
+                            const fmtMB = (b: number) => {
+                              if (b < 1024 * 1024) return `${Math.max(1, Math.round(b / 1024))} KB`;
+                              if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+                              return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+                            };
+                            const fmtAgo = (ms: number) => {
+                              const s = Math.max(0, Math.floor(ms / 1000));
+                              if (s < 60) return `${s}s`;
+                              return `${Math.floor(s / 60)} min`;
+                            };
+
+                            // Caso 1: el disco SÍ se está moviendo aunque androidqf no imprima.
+                            // Mostramos info azul tranquilizadora desde el primer minuto sin logs.
+                            if (activity && activity.bytes > 0 && sinceActivityMs < 90_000 && sinceLogMin >= 1) {
+                              return (
+                                <div style={{ marginTop: 8, padding: "6px 8px", background: "rgba(80, 160, 255, 0.08)", border: "1px solid rgba(80, 160, 255, 0.35)", borderRadius: 6, fontSize: 12, color: "#9ec5ff" }}>
+                                  {tr(
+                                    "running.activity.collecting",
+                                    `Recolectando archivos del dispositivo… ${fmtMB(activity.bytes)} transferidos (último cambio hace ${fmtAgo(sinceActivityMs)}).`,
+                                    { size: fmtMB(activity.bytes), ago: fmtAgo(sinceActivityMs) }
+                                  )}
+                                </div>
+                              );
+                            }
+
                             const threshold = device === "ios" ? 5 : 8;
-                            if (idleMin < threshold) return null;
+                            if (sinceActivityMin < threshold) return null;
+
+                            // Caso 2: >15 min sin nada (ni logs ni disco) → casi seguro colgado.
+                            if (sinceActivityMin >= 15) {
+                              return (
+                                <div style={{ marginTop: 8, padding: "6px 8px", background: "rgba(255, 80, 80, 0.10)", border: "1px solid rgba(255, 80, 80, 0.45)", borderRadius: 6, fontSize: 12, color: "#ff9b9b" }}>
+                                  <div>{tr("running.activity.frozen", `⛔ Sin actividad real desde hace ${sinceActivityMin} min. Probablemente el proceso está bloqueado.`, { min: sinceActivityMin })}</div>
+                                  <div style={{ marginTop: 4, opacity: 0.85 }}>
+                                    {tr("running.activity.frozenHint", "Pulsa Cancelar, desconecta y vuelve a conectar el dispositivo y reintenta.")}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Caso 3: entre threshold y 15 min sin actividad → ámbar.
                             const msgKey = device === "ios" ? "running.idleWarning.ios" : "running.idleWarning.android";
                             const fallback = device === "ios"
-                              ? `⚠ Sin actividad de mvt-ios desde hace ${idleMin} min.`
-                              : `⚠ Sin actividad de androidqf desde hace ${idleMin} min.`;
+                              ? `⚠ Sin actividad de mvt-ios desde hace ${sinceActivityMin} min.`
+                              : `⚠ Sin actividad de androidqf desde hace ${sinceActivityMin} min.`;
                             return (
                               <div style={{ marginTop: 8, padding: "6px 8px", background: "rgba(255, 200, 0, 0.08)", border: "1px solid rgba(255, 200, 0, 0.35)", borderRadius: 6, fontSize: 12, color: "#e6c200" }}>
-                                <div>{tr(msgKey, fallback, { min: idleMin })}</div>
+                                <div>{tr(msgKey, fallback, { min: sinceActivityMin })}</div>
                                 <div style={{ marginTop: 4, opacity: 0.85 }}>
                                   {tr("running.idleWarning.hint", "Esto suele ser normal mientras se recolectan apps o se crea el backup. Si supera 15 min, pulsa Cancelar y reintenta.")}
                                 </div>

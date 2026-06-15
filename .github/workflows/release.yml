@@ -10,6 +10,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag a (re)publicar, p.ej. v1.0.43. Si se omite, se usa la versión de desktop/package.json."
+        required: false
+        type: string
 
 permissions:
   contents: write

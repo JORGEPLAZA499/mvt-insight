@@ -128,7 +128,9 @@ export function App() {
   const [phaseStartedAt, setPhaseStartedAt] = useState<number | null>(null);
   const [lastLogAt, setLastLogAt] = useState<number | null>(null);
   const [activity, setActivity] = useState<{ bytes: number; lastChangeAt: number } | null>(null);
+  const [failedModules, setFailedModules] = useState<Array<{ module: string; detail: string }>>([]);
   const [nowTick, setNowTick] = useState(0);
+
 
   useEffect(() => {
     if (screen !== "running" || !phaseStartedAt) return;

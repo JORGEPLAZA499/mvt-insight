@@ -709,6 +709,78 @@ export async function generatePdfReport(a: Analysis): Promise<void> {
   eng.doc.save(`informe-forense-${reportId}.pdf`);
 }
 
+// ---------- Hallazgos heurísticos ----------
+const KIND_COLOR: Record<string, RGB> = {
+  confirmed_indicator: SEV_COLOR.high,
+  suspicious_pattern: SEV_COLOR.medium,
+  informational: MUTED,
+};
+
+function drawHeuristicFindings(eng: PdfEngine, findings: HeuristicFinding[]) {
+  const cats: FindingCategory[] = ["dangerous_permission", "suspicious_app", "risky_config", "anomalous_behavior"];
+  for (const cat of cats) {
+    const items = findings.filter((f) => f.category === cat);
+    if (items.length === 0) continue;
+    eng.ensureSpace(22);
+    eng.text(SOFT);
+    eng.font("bold", 11);
+    eng.doc.text(`${CATEGORY_LABEL_HEUR[cat]} (${items.length})`, MARGIN.left, eng.y + 4);
+    eng.y += 16;
+
+    for (const f of items) {
+      const padX = 14;
+      const innerW = CW - padX * 2;
+      const reasonLines = eng.doc.splitTextToSize(f.reason, innerW) as string[];
+      const recLines = eng.doc.splitTextToSize(`Recomendación: ${f.recommendation}`, innerW) as string[];
+      const evLines = eng.doc.splitTextToSize(`Evidencia: ${f.evidence}`, innerW) as string[];
+      const cardH = 28 + 14 + evLines.length * 11 + reasonLines.length * 12 + 6 + recLines.length * 11 + 14;
+      eng.ensureSpace(cardH + 6);
+      eng.card(MARGIN.left, eng.y, CW, cardH, SURFACE);
+      // barra lateral por severidad
+      eng.fill(SEV_COLOR[f.severity] ?? SEV_COLOR.high);
+      eng.doc.rect(MARGIN.left, eng.y, 3, cardH, "F");
+      // chips
+      const sevColor = SEV_COLOR[f.severity] ?? SEV_COLOR.high;
+      eng.fill(sevColor);
+      eng.doc.roundedRect(MARGIN.left + padX, eng.y + 10, 44, 14, 3, 3, "F");
+      eng.text(TEXT);
+      eng.font("bold", 8);
+      eng.doc.text(severityLabel(f.severity), MARGIN.left + padX + 22, eng.y + 19, { align: "center" });
+      // chip kind
+      const kColor = KIND_COLOR[f.kind] ?? MUTED;
+      const kLabel = KIND_LABEL[f.kind];
+      const kW = eng.doc.getTextWidth(kLabel) + 14;
+      eng.fill(kColor);
+      eng.doc.roundedRect(MARGIN.left + padX + 50, eng.y + 10, kW, 14, 3, 3, "F");
+      eng.text(TEXT);
+      eng.font("bold", 8);
+      eng.doc.text(kLabel, MARGIN.left + padX + 50 + kW / 2, eng.y + 19, { align: "center" });
+      // título
+      eng.text(TEXT);
+      eng.font("bold", 11);
+      eng.doc.text(f.title, MARGIN.left + padX, eng.y + 38);
+      // evidencia
+      eng.text(MUTED);
+      eng.font("normal", 8);
+      let yy = eng.y + 52;
+      evLines.forEach((ln) => { eng.doc.text(ln, MARGIN.left + padX, yy); yy += 11; });
+      // razón
+      eng.text(SOFT);
+      eng.font("normal", 10);
+      reasonLines.forEach((ln) => { eng.doc.text(ln, MARGIN.left + padX, yy + 2); yy += 12; });
+      // recomendación
+      eng.text(MUTED);
+      eng.font("normal", 9);
+      yy += 4;
+      recLines.forEach((ln) => { eng.doc.text(ln, MARGIN.left + padX, yy); yy += 11; });
+
+      eng.y += cardH + 6;
+    }
+  }
+}
+
+
+
 // ---------- Datos auxiliares ----------
 function buildRecommendations(r?: MvtParsedResult): string[] {
   const base = [

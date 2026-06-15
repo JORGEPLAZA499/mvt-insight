@@ -43,6 +43,11 @@
       "ios": "⚠ Sin actividad de mvt-ios desde hace {{min}} min.",
       "android": "⚠ Sin actividad de androidqf desde hace {{min}} min.",
       "hint": "Esto suele ser normal mientras se recolectan apps o se crea el backup. Si supera 15 min, pulsa Cancelar y reintenta."
+    },
+    "activity": {
+      "collecting": "Recolectando archivos del dispositivo… {{size}} transferidos (último cambio hace {{ago}}).",
+      "frozen": "⛔ Sin actividad real desde hace {{min}} min. Probablemente el proceso está bloqueado.",
+      "frozenHint": "Pulsa Cancelar, desconecta y vuelve a conectar el dispositivo y reintenta."
     }
   },
   "phases": {

@@ -112,8 +112,15 @@ export function App() {
       | ((cb: (p: { bytes: number; lastChangeAt: number; alive: boolean }) => void) => () => void)
       | undefined;
     const offActivity = onAct ? onAct((p) => setActivity({ bytes: p.bytes, lastChangeAt: p.lastChangeAt })) : () => {};
-    return () => { offLog(); offPhase(); offActivity(); };
+    const onModFailed = (window.mvt as any).onModuleFailed as
+      | ((cb: (p: { module: string; detail: string }) => void) => () => void)
+      | undefined;
+    const offModFailed = onModFailed
+      ? onModFailed((p) => setFailedModules((prev) => (prev.some((x) => x.module === p.module) ? prev : [...prev, p])))
+      : () => {};
+    return () => { offLog(); offPhase(); offActivity(); offModFailed(); };
   }, []);
+
 
 
   // Cronómetro de fase: re-renderiza cada segundo mientras estamos analizando,
@@ -121,7 +128,9 @@ export function App() {
   const [phaseStartedAt, setPhaseStartedAt] = useState<number | null>(null);
   const [lastLogAt, setLastLogAt] = useState<number | null>(null);
   const [activity, setActivity] = useState<{ bytes: number; lastChangeAt: number } | null>(null);
+  const [failedModules, setFailedModules] = useState<Array<{ module: string; detail: string }>>([]);
   const [nowTick, setNowTick] = useState(0);
+
 
   useEffect(() => {
     if (screen !== "running" || !phaseStartedAt) return;
@@ -231,8 +240,11 @@ export function App() {
     setLogs([]);
     setError(null);
     setUpload({ state: "idle" });
+    setActivity(null);
+    setFailedModules([]);
     setPhase({ num: 1, label: tr("running.starting", "Iniciando…"), progress: 0 });
     cancelledRef.current = false;
+
 
     if (!window.mvt) {
       setError(tr("error.browserOnly", "Esta función solo está disponible en la app de escritorio."));
@@ -814,7 +826,22 @@ export function App() {
                             );
                           })()}
                           <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
+                          {failedModules.length > 0 && (
+                            <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(255, 200, 0, 0.08)", border: "1px solid rgba(255, 200, 0, 0.35)", borderRadius: 6, fontSize: 12, color: "#e6c200" }}>
+                              <div style={{ fontWeight: 600 }}>
+                                {tr("running.moduleFailed.title", "Algunos módulos no están disponibles en este dispositivo")}
+                              </div>
+                              <div style={{ marginTop: 4, opacity: 0.9 }}>
+                                {tr(
+                                  "running.moduleFailed.description",
+                                  `El módulo ${failedModules.map((m) => m.module).join(", ")} no se pudo ejecutar. Suele ocurrir en MIUI, EMUI o One UI por restricciones del fabricante. El análisis continúa con normalidad.`,
+                                  { modules: failedModules.map((m) => m.module).join(", ") }
+                                )}
+                              </div>
+                            </div>
+                          )}
                           {(() => {
+
                             if (!lastLogAt) return null;
                             const lastActivityAt = Math.max(lastLogAt, activity?.lastChangeAt ?? 0);
                             const sinceActivityMs = Date.now() - lastActivityAt;

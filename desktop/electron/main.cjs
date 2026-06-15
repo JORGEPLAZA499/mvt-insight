@@ -696,6 +696,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       // cuando vemos un marcador real de recolección.
       let inSurvey = false;
       let collectionStarted = false;
+      const failedModules = new Set();
 
       child.onData((data) => {
         const text = data.toString();
@@ -705,6 +706,18 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         send("mvt:log", stripAnsi(text));
 
         const clean = stripAnsi(text);
+
+        // Detectar módulos que fallan (p.ej. bugreport en MIUI/EMUI/One UI).
+        // androidqf continúa con el resto; sólo queremos avisar al usuario.
+        const failMatch = clean.match(/failed to run module (\w+)\s*:\s*([^\r\n]+)/i);
+        if (failMatch) {
+          const mod = failMatch[1].toLowerCase();
+          if (!failedModules.has(mod)) {
+            failedModules.add(mod);
+            send("mvt:module-failed", { module: mod, detail: failMatch[2].trim() });
+          }
+        }
+
 
         // Detectar inicio de survey (prompt "? Modules:") → fase 2, sub-status "configuring".
         if (!collectionStarted && /\?\s+(Modules|Backup|Download|Remove|Acquire|Collect)/i.test(clean)) {

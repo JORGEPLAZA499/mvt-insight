@@ -1,82 +1,53 @@
-# Plan: soporte de teléfonos con ZIP grandes (muchas fotos/vídeos/apps)
+## El problema
 
-## Qué está pasando hoy
+Hoy el aviso "⚠ Sin actividad de androidqf desde hace N min" se calcula con `lastLogAt`, que solo se actualiza cuando androidqf escribe una línea por su pseudo-TTY (`child.onData` en `desktop/electron/main.cjs`). Durante la recolección real (pull de APKs, dumpsys, backup) androidqf puede estar **minutos sin imprimir nada** mientras `adb pull` transfiere gigas de fotos/vídeos. El usuario ve "sin actividad" cuando en realidad el disco está ardiendo.
 
-La captura muestra a la vez "✓ Análisis completado" y "No se pudo subir: File size (9129748452) is greater than 2 GiB". Eso resume tres problemas distintos que conviene arreglar juntos:
+En el caso de la captura, el móvil tiene miles de archivos y la barra amarilla apareció siendo perfectamente normal — no había forma de saberlo desde la UI.
 
-1. **El renderer de Electron carga el ZIP entero en memoria** antes de subir nada:
-   `desktop/src/App.tsx:287` → `window.mvt!.readZip(path)` devuelve un `Uint8Array` con los 9,1 GB.
-   Después se reenvuelve en un `File` y se pasa a `parseMvtFiles`. Con un ZIP de 9 GB el proceso se queda sin RAM (V8 corta sobre ~2 GiB por buffer) y la UI parece "colgada".
-2. **El servidor rechaza por tamaño** aunque nunca se sube el ZIP:
-   `src/routes/api/public/desktop/submit-analysis.ts:14` valida `fileSize ≤ 2_000_000_000`. Lo único que viaja al backend es el JSON `result` (parseo de MVT); `fileSize` es solo metadato. El límite no protege de nada y bloquea casos reales.
-3. **El "Análisis completado" se queda fijo aunque la subida falle.**
-   En `App.tsx` el `screen === "done"` se pone en cuanto AndroidQF termina de generar el ZIP, y la cabecera "✓ Análisis completado / Informe subido al dashboard" se renderiza sin mirar `upload.state`. Resultado: cabecera verde con error rojo justo debajo.
+## Idea
 
-Además: el parseo MVT (módulos `dumpsys_*`, `packages.json`, paquetes instalados, etc.) corre íntegro en el renderer. Con miles de apps y backups esto también puede hacer crecer el `result` JSON a varios cientos de MB, y entonces el `INSERT` en la columna `jsonb` también peta — pero más adelante.
+Añadir un **heartbeat real** basado en el sistema, no en el stdout:
 
-## Objetivo
+1. **Crecimiento del directorio de trabajo de androidqf** (cwd = `workDir()`): cada N segundos sumamos el tamaño de los archivos creados/modificados *después* del arranque del proceso. Si los bytes suben → está trabajando.
+2. **Proceso vivo**: `child.pid` sigue presente y `process.kill(pid, 0)` no lanza. Confirma que el binario no ha muerto en silencio.
+3. **Subprocesos adb (opcional, best-effort)**: en macOS/Linux `ps --ppid <pid>`; en Windows `wmic` o `tasklist /FI "PARENTID..."`. Solo informativo, no bloqueante.
 
-Que un teléfono con miles de fotos/vídeos/apps termine el análisis, suba un informe útil al panel y muestre estados coherentes, sin cargar el ZIP entero en memoria ni inventar un límite arbitrario en el servidor.
+Con eso, el main envía un nuevo evento IPC `mvt:activity` con `{ bytesWritten, deltaBytes, lastChangeAt, alive }` cada ~5 s. El renderer guarda `lastActivityAt = max(lastLogAt, lastChangeAt)` y muestra un mensaje útil.
 
-## Cambios propuestos
+## Cambios concretos
 
-### 1. Quitar el límite artificial del backend
-`src/routes/api/public/desktop/submit-analysis.ts`
-- Subir `fileSize.max()` a `9_000_000_000_000` (9 TB — efectivamente sin tope; sigue siendo un `int`).
-- `fileSize` solo es metadato informativo; el peso real del POST es `result` JSON. Ese sí lo seguimos limitando indirectamente vía tamaño máximo del request.
+### `desktop/electron/main.cjs`
+- Tras arrancar el `pty.spawn` de androidqf (línea ~550), registrar `startMs` y arrancar un `setInterval(5000)` que:
+  - Recorre `dir` recursivamente (saltando el propio binario `androidqf[.exe]` y carpetas conocidas como `node_modules`), suma bytes de archivos con `mtimeMs >= startMs`.
+  - Compara con la medición anterior y emite `send("mvt:activity", { bytesWritten, deltaBytes, lastChangeAt, alive: true })`.
+  - Limita el recorrido (máx ~5.000 entradas o profundidad 6) para que no se vuelva caro con miles de fotos: paramos en cuanto detectamos crecimiento.
+- Limpiar el interval en `child.onExit` y en `mvt:cancel`.
+- Misma lógica reutilizable para iOS (durante `idevicebackup2` y `mvt-ios`): el directorio `backupDir`/`resultsDir` también crece.
 
-### 2. No leer el ZIP en RAM en el renderer
-`desktop/electron/ios-tools.cjs` + `desktop/electron/preload.cjs` + `desktop/src/App.tsx`
-- Añadir en main process un nuevo IPC `mvt.parseZip(path)` que:
-  - abre el ZIP por *streaming* desde disco (Node `fs.createReadStream` + `yauzl` o `adm-zip` solo para el índice de entradas, **sin** descomprimir vídeos/fotos).
-  - itera por entradas y solo extrae a Buffer las que el parser MVT necesita (los `.json` / `.txt` / `dumpsys*` que ya conoce `desktop/src/lib/mvt-parser.ts`); el resto se ignora.
-  - llama al parser sobre cada entrada relevante en Node y devuelve el `result` JSON terminado al renderer.
-- En `App.tsx::autoUpload` reemplazar el bloque `readZip → File → parseMvtFiles` por:
-  ```ts
-  const { ok, result, fileSize, error } = await window.mvt!.parseZip(path);
-  if (!ok) throw new Error(error || "PARSE_FAILED");
-  ```
-- Ventaja: el renderer nunca aloja más de unos MB (la entrada actual + el JSON parcial), independientemente de si el ZIP pesa 200 MB o 30 GB.
+### `desktop/electron/preload.cjs`
+- Exponer `onActivity(cb)` con `ipcRenderer.on("mvt:activity", (_e, p) => cb(p))` devolviendo un unsub.
 
-### 3. Hacer que la UI refleje el estado real
-`desktop/src/App.tsx` (~lin. 950-1015) + `desktop/src/i18n/locales/{es,en}.json`
-- En la pantalla `done`:
-  - Cabecera condicional:
-    - `upload.state === "done"` → "✓ Análisis completado · Informe subido al panel".
-    - `upload.state === "uploading"` → "✓ Análisis completado · Subiendo al panel…" (con spinner).
-    - `upload.state === "error"` → "⚠ Análisis completado, pero no se pudo subir el informe" (icono ámbar, no verde).
-    - sin cuenta vinculada → "✓ Análisis completado · Copia local en Descargas".
-  - Subtítulo y color del icono derivados del mismo estado.
-- Añadir claves i18n: `done.uploaded`, `done.uploading`, `done.uploadFailed`, `done.localOnly`.
+### `desktop/src/App.tsx`
+- Estado nuevo: `const [activity, setActivity] = useState<{ bytes: number; lastChangeAt: number } | null>(null)`.
+- Suscribirse en el `useEffect` que ya engancha `onLog`/`onPhase`.
+- Calcular `lastActivityAt = Math.max(lastLogAt ?? 0, activity?.lastChangeAt ?? 0)`.
+- Reescribir el bloque de la línea 812:
+  - Si `Date.now() - lastActivityAt < threshold` → no mostrar warning.
+  - Si hay logs antiguos pero el disco crece → mostrar **caja azul informativa**: "Recolectando archivos del dispositivo… {{mb}} MB transferidos (hace {{s}} s)".
+  - Solo si **ni logs ni disco** se movieron en >5 min → la caja ámbar actual.
+  - A partir de 15 min sin nada → caja roja "Probablemente colgado, pulsa Cancelar".
 
-### 4. Limitar el riesgo del `result` JSON gigante (defensa en profundidad)
-`desktop/src/lib/mvt-parser.ts` (revisar tras el cambio 2)
-- Para listas potencialmente enormes (paquetes instalados, archivos escaneados, logs), guardar solo:
-  - conteo total,
-  - top-N por relevancia (paquetes con permisos peligrosos, con detecciones, etc.),
-  - hash de la lista completa por trazabilidad.
-- No es bloqueante para esta tarea; lo añadimos como segunda pasada si el ejemplo real (9 GB → ~? MB de JSON) sigue siendo grande. Mejor medirlo antes de truncar.
+### `desktop/src/i18n/locales/{es,en}.json`
+- Añadir `running.activity.collecting` ("Recolectando archivos del dispositivo… {{mb}} MB transferidos"), `running.activity.stalled` (warning ámbar actual), `running.activity.frozen` (rojo a partir de 15 min).
 
-### 5. Pequeñas mejoras de UX (mismo turno)
-- Botón **Reintentar** en estado `upload.state === "error"` ya existe; añadir botón **Copiar diagnóstico** que copie al portapapeles `{ device, fileName, fileSize, errorCode, errorMessage }` para soporte.
-- Mensaje de error legible cuando `parseZip` falla por ZIP corrupto vs. por falta de memoria (`code: "OUT_OF_MEMORY"` → texto guía: "El equipo no tiene memoria suficiente para procesar este ZIP. Cierra otras aplicaciones e intenta de nuevo.").
+## Por qué esto
 
-## Lo que NO toco
+- Hace la app **honesta**: el aviso aparece cuando *de verdad* no pasa nada, no cuando androidqf simplemente está callado.
+- No depende de parsear más stdout de androidqf (que cambia entre versiones).
+- Es barato: 1 lectura de directorio cada 5 s, con cortocircuito si ya detectamos crecimiento.
+- Reutilizable para el flujo iOS sin tocar `iosTools.createBackup` ni `runMvtIos`.
 
-- El crédito (`consume_credit_and_insert_analysis`) sigue cobrándose **solo** al insertar la fila — la subida fallida del ejemplo NO ha consumido el crédito del usuario, está bien así.
-- El generador de PDF vectorial (`src/lib/pdf-report.ts`) no se modifica aquí.
-- El esquema de la BD no cambia. Si más adelante el `result` JSON resulta ser de cientos de MB en estos casos extremos, abriremos otro plan para mover `result` a Storage en lugar de columna `jsonb`.
+## Fuera del alcance
 
-## Validación
-
-1. Caso pequeño (ZIP < 200 MB): comportamiento idéntico al actual; cabecera verde "subido al panel".
-2. Caso del usuario (ZIP ~9 GB): la app no se cuelga, termina el parseo en streaming, sube el `result` JSON, muestra cabecera verde + créditos descontados.
-3. Sin cuenta vinculada: cabecera neutra "copia local en Descargas", sin intento de subida.
-4. Sin créditos: cabecera ámbar "no se pudo subir" + mensaje claro de recarga; sin contradicción con el ✓.
-
-## Orden de implementación sugerido
-
-1. Backend: subir el límite (cambio mínimo y desbloquea pruebas).
-2. UI: estado coherente en pantalla `done`.
-3. Electron main: `mvt.parseZip` por streaming + reemplazo en `App.tsx`.
-4. Probar con el ZIP real del usuario y ajustar parser si el JSON resultante es demasiado grande.
+- No tocamos el parser MVT, ni el `submit-analysis`, ni el PDF.
+- No subimos la versión del desktop (lo haces tú cuando quieras publicar).

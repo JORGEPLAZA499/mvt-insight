@@ -230,6 +230,82 @@ function workDir() {
   return dir;
 }
 
+/* ---------- Heartbeat de actividad real ----------
+ * androidqf / mvt-ios pueden pasar minutos sin imprimir nada mientras adb
+ * descarga gigas de fotos. Para no mentir al usuario, vigilamos el disco:
+ * cada 5 s sumamos bytes de archivos nuevos/modificados desde el arranque
+ * del proceso. Si crece → está vivo.
+ *
+ * Limitamos el recorrido para que sea barato incluso con miles de archivos:
+ * cortocircuitamos en cuanto el total crece respecto a la medición anterior.
+ */
+function startActivityWatcher(rootDir, startMs, send) {
+  let lastBytes = 0;
+  let lastChangeAt = Date.now();
+  const SKIP_NAMES = new Set([
+    "androidqf", "androidqf.exe",
+    "node_modules", ".git",
+    "ios-tools",
+  ]);
+  const MAX_ENTRIES = 8000;
+
+  const measure = () => {
+    let total = 0;
+    let scanned = 0;
+    let earlyExit = false;
+    const walk = (dir, depth) => {
+      if (earlyExit || depth > 8) return;
+      let entries;
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+      catch { return; }
+      for (const e of entries) {
+        if (earlyExit) return;
+        if (SKIP_NAMES.has(e.name)) continue;
+        if (++scanned > MAX_ENTRIES) { earlyExit = true; return; }
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) {
+          walk(full, depth + 1);
+          continue;
+        }
+        let st;
+        try { st = fs.statSync(full); } catch { continue; }
+        if (st.mtimeMs < startMs - 5000) continue;
+        total += st.size;
+        // Cortocircuito: si ya superamos la marca anterior, sabemos que crece.
+        if (total > lastBytes) { earlyExit = true; return; }
+      }
+    };
+    walk(rootDir, 0);
+    return total;
+  };
+
+  const tick = () => {
+    try {
+      const current = measure();
+      if (current > lastBytes) {
+        lastChangeAt = Date.now();
+        lastBytes = current;
+      }
+      send("mvt:activity", { bytes: lastBytes, lastChangeAt, alive: true });
+    } catch (e) {
+      console.warn("[activity] tick error", e?.message);
+    }
+  };
+
+  // Primer tick rápido para inicializar la cifra base.
+  tick();
+  const id = setInterval(tick, 5000);
+  return () => { try { clearInterval(id); } catch {} };
+}
+
+let currentActivityStop = null;
+function stopActivityWatcher() {
+  if (currentActivityStop) {
+    try { currentActivityStop(); } catch {}
+    currentActivityStop = null;
+  }
+}
+
 function httpsGet(url, headers = {}, maxRedirects = 5) {
   return new Promise((resolve, reject) => {
     const visit = (u, left) => {

@@ -13,6 +13,7 @@ import { ShieldAlert, ShieldCheck, Layers, AlertOctagon, Database, Download, Tra
 import { generatePdfReport } from "@/lib/pdf-report";
 import { detectionKey, classifyDetection, humanizeDetection, humanizeModule, severityLabel, explainSeverity, buildVerdict, nextSteps, buildModuleHighlights, CROSS_CHECK_STEPS, CATEGORY_LABEL, CATEGORY_DESC, type Category, buildDeviceCard, buildTopApps, buildHumanTimeline, GLOSSARY, type SuspiciousApp, buildSystemIntegrity, buildAccessibilityList, buildConfigProfiles, buildTopNetwork, buildNetworkInterpretation, type AccessibilityRow, type ConfigProfileRow, type NetworkAppRow, type NetworkRowOrigin, type SystemIntegrityCard } from "@/lib/mvt-translate";
 import type { MvtDetection, MvtDeviceInfo, RiskLevel } from "@/lib/mvt-parser";
+import { KIND_LABEL, CATEGORY_LABEL_HEUR, ENGINE_LABEL, type HeuristicFinding, type FindingCategory } from "@/lib/heuristics";
 
 function formatDeviceLine(d?: MvtDeviceInfo): string {
   if (!d) return "";
@@ -284,6 +285,30 @@ function UserReport({ analysis }: { analysis: Analysis }) {
           <p className="text-sm text-foreground/80 mt-2">{verdict.detail}</p>
         </div>
       </section>
+
+      {/* Análisis por motor: MVT vs heurístico */}
+      <section data-pdf-section>
+        <SectionTitle num={sec()} title="Análisis por motor" />
+        <p className="text-sm text-muted-foreground mb-4">
+          El informe combina dos motores de análisis. El motor MVT busca indicadores conocidos
+          (IOCs) de spyware mercenario. El motor heurístico detecta stalkerware comercial, apps
+          espía simples, permisos peligrosos y configuraciones de riesgo basándose en patrones,
+          no en firmas.
+        </p>
+        <EngineSummary mvtRisk={r.risk} mvtDetections={r.totalDetections} heuristics={r.heuristics} />
+      </section>
+
+      {/* Análisis general de spyware y stalkerware */}
+      {r.heuristics && r.heuristics.findings.length > 0 && (
+        <section data-pdf-section>
+          <SectionTitle num={sec()} title="Análisis general de spyware y stalkerware" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Hallazgos heurísticos agrupados por categoría. No son IOCs forenses: indican
+            patrones compatibles con vigilancia que conviene verificar.
+          </p>
+          <HeuristicFindingsView findings={r.heuristics.findings} />
+        </section>
+      )}
 
       {/* Resumen ejecutivo */}
       <section data-pdf-section>

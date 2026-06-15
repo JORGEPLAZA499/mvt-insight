@@ -254,11 +254,16 @@ export interface Verdict {
 
 export function buildVerdict(result: MvtParsedResult): Verdict {
   const total = result.totalDetections;
-  if (total === 0) {
+  const heur = result.heuristics;
+  const heurCount = heur?.findings.length ?? 0;
+  const heurConfirmed = heur?.countsByKind.confirmed_indicator ?? 0;
+  const heurRisk = heur?.overallRisk ?? "low";
+
+  if (total === 0 && heurCount === 0) {
     return {
       level: "clean",
       headline: "Sin indicios de spyware conocido",
-      detail: "MVT no ha encontrado coincidencias con sus indicadores públicos en este informe. Esto no garantiza que el dispositivo esté limpio: MVT solo detecta amenazas con firma conocida.",
+      detail: "No se han encontrado IOCs conocidos ni patrones heurísticos sospechosos. Un resultado limpio no garantiza ausencia total de compromiso: solo se detectan amenazas con firma conocida o patrones de bajo/medio nivel.",
     };
   }
   const fams = detectFamilies(result.detections);
@@ -278,10 +283,24 @@ export function buildVerdict(result: MvtParsedResult): Verdict {
       detail: `Se han encontrado coincidencias con ${familyDesc(stalker[0])}. No es malware mercenario, pero permite vigilar el dispositivo de forma continua. Verifica si la instalaste tú o alguien con acceso físico.`,
     };
   }
+  if (total === 0 && heurCount > 0) {
+    if (heurConfirmed > 0 || heurRisk === "critical" || heurRisk === "high") {
+      return {
+        level: "suspicious",
+        headline: "Se encontraron indicadores compatibles con posible spyware",
+        detail: `No se hallaron IOCs conocidos por MVT, pero el análisis heurístico encontró ${heurCount} hallazgo(s) compatibles con vigilancia (riesgo ${heurRisk}). Revisa la sección heurística y verifica las apps y configuraciones marcadas.`,
+      };
+    }
+    return {
+      level: "suspicious",
+      headline: "No se encontraron IOCs conocidos, pero existen patrones sospechosos",
+      detail: `MVT no encontró firmas conocidas, pero la capa heurística encontró ${heurCount} hallazgo(s) de bajo o medio nivel. Revísalos para descartar configuraciones abusivas o apps poco recomendables.`,
+    };
+  }
   return {
     level: "suspicious",
     headline: "Comportamiento sospechoso sin firma conocida",
-    detail: `Se han encontrado ${total} indicios técnicos sin coincidencia directa con familias conocidas. Revisa el detalle y considera repetir el análisis con la herramienta oficial MVT.`,
+    detail: `Se han encontrado ${total} indicios técnicos sin coincidencia directa con familias conocidas, junto a ${heurCount} hallazgo(s) heurístico(s). Revisa el detalle y considera repetir el análisis con la herramienta oficial MVT.`,
   };
 }
 

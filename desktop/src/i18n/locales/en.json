@@ -43,6 +43,11 @@
       "ios": "⚠ No activity from mvt-ios for {{min}} min.",
       "android": "⚠ No activity from androidqf for {{min}} min.",
       "hint": "This is usually normal while apps are being collected or the backup is being created. If it goes over 15 min, click Cancel and retry."
+    },
+    "activity": {
+      "collecting": "Collecting files from the device… {{size}} transferred (last change {{ago}} ago).",
+      "frozen": "⛔ No real activity for {{min}} min. The process is likely stuck.",
+      "frozenHint": "Click Cancel, unplug and replug the device, and try again."
     }
   },
   "phases": {

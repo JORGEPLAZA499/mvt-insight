@@ -14,6 +14,11 @@ contextBridge.exposeInMainWorld("mvt", {
     ipcRenderer.on("mvt:phase", listener);
     return () => ipcRenderer.removeListener("mvt:phase", listener);
   },
+  onActivity: (cb) => {
+    const listener = (_e, payload) => cb(payload);
+    ipcRenderer.on("mvt:activity", listener);
+    return () => ipcRenderer.removeListener("mvt:activity", listener);
+  },
   openFolder: (p) => ipcRenderer.invoke("mvt:openFolder", p),
   openExternal: (url) => ipcRenderer.invoke("mvt:openExternal", url),
   getVersion: () => ipcRenderer.invoke("app:getVersion"),

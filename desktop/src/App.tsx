@@ -103,11 +103,16 @@ export function App() {
         if (prev.num !== num) {
           setPhaseStartedAt(Date.now());
           setLastLogAt(Date.now());
+          setActivity(null);
         }
         return { num, label, statusKey, progress };
       });
     });
-    return () => { offLog(); offPhase(); };
+    const onAct = (window.mvt as any).onActivity as
+      | ((cb: (p: { bytes: number; lastChangeAt: number; alive: boolean }) => void) => () => void)
+      | undefined;
+    const offActivity = onAct ? onAct((p) => setActivity({ bytes: p.bytes, lastChangeAt: p.lastChangeAt })) : () => {};
+    return () => { offLog(); offPhase(); offActivity(); };
   }, []);
 
 

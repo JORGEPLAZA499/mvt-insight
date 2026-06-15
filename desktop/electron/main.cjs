@@ -632,6 +632,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         env: process.env,
       });
       currentChild = child;
+      currentActivityStop = startActivityWatcher(dir, startMs, send);
 
 
       // Auto-responder a los prompts interactivos de AndroidQF (librería survey).

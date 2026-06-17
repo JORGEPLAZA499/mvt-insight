@@ -93,6 +93,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/92779c35-a2f2-4c0d-8ce9-60b5141ac48e/id-preview-839d2e31--9a02aa66-84b2-4251-8832-d9d10e4c30cb.lovable.app-1780104988561.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/92779c35-a2f2-4c0d-8ce9-60b5141ac48e/id-preview-839d2e31--9a02aa66-84b2-4251-8832-d9d10e4c30cb.lovable.app-1780104988561.png" },
     ],
+    scripts: [
+      {
+        src: "https://plausible.io/js/pa-k0aaV4_hs1tteRksH2Wfx.js",
+        async: true,
+      },
+      {
+        type: "text/javascript",
+        children: "window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init();",
+      },
+    ],
     links: [
       {
         rel: "stylesheet",

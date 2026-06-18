@@ -43,7 +43,7 @@ export function usePurchaseCardOpen() {
 }
 
 export const ANALYSIS_COST = 98;
-const CREDIT_OPTIONS = [100, ...Array.from({ length: 10 }, (_, i) => (i + 1) * ANALYSIS_COST)];
+const CREDIT_OPTIONS = Array.from({ length: 10 }, (_, i) => (i + 1) * ANALYSIS_COST);
 
 export function PurchaseCard() {
   const { t } = useTranslation();

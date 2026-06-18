@@ -24,7 +24,13 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language?.split("-")[0] ?? "es";
+  const isEnglish = currentLang === "en";
+  const adAsset = isEnglish ? publicidadEnAsset : publicidadAsset;
+  const adAlt = isEnglish
+    ? "Spyware Forensic Analyzer - Forensic analysis of mercenary spyware indicators on mobile devices"
+    : "Spyware Forensic Analyzer - Análisis forense de spyware mercenario";
 
   const features = [
     { icon: Shield, key: "mvt" },

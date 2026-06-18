@@ -136,21 +136,18 @@ function Landing() {
             ))}
           </div>
 
-          {/* Publicidad image with gradient fade edges */}
-          <div className="relative mt-16 mx-auto max-w-3xl overflow-hidden rounded-2xl">
+          {/* Publicidad image with deep transparency fade edges */}
+          <div className="relative mt-16 mx-auto max-w-3xl">
             <img
               src={publicidadAsset.url}
               alt="Spyware Forensic Analyzer - Análisis forense de spyware mercenario"
               className="w-full h-auto object-cover"
+              style={{
+                maskImage:
+                  "linear-gradient(to right, transparent 0%, black 28%, black 72%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 28%, black 72%, transparent 100%)",
+                maskComposite: "intersect",
+              }}
             />
-            {/* Top fade */}
-            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-background to-transparent pointer-events-none" />
-            {/* Bottom fade */}
-            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent pointer-events-none" />
-            {/* Left fade */}
-            <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-background to-transparent pointer-events-none" />
-            {/* Right fade */}
-            <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-background to-transparent pointer-events-none" />
           </div>
         </div>
       </section>

@@ -585,11 +585,13 @@ ipcMain.handle("mvt:cancel", async () => {
     try { currentChild.kill(); } catch {}
   }
   if (process.platform === "win32") {
-    await new Promise((resolve) => {
-      const k = spawn("taskkill", ["/F", "/IM", "androidqf.exe", "/T"], { windowsHide: true });
-      k.on("close", () => resolve());
-      k.on("error", () => resolve());
-    });
+    for (const img of ["androidqf.exe", "adb.exe"]) {
+      await new Promise((resolve) => {
+        const k = spawn("taskkill", ["/F", "/IM", img, "/T"], { windowsHide: true });
+        k.on("close", () => resolve());
+        k.on("error", () => resolve());
+      });
+    }
   }
   return { ok: true };
 });

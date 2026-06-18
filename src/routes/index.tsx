@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import i18n from "@/i18n";
+import publicidadAsset from "@/assets/publicidad.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => {

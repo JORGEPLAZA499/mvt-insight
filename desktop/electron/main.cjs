@@ -434,11 +434,43 @@ function resolveAdbPath(workDir) {
 // el binario `adb` (y sus DLLs en Windows) junto al binario de AndroidQF.
 // AndroidQF resuelve `adb` desde su propio directorio, así que con esto queda
 // autocontenido y no requiere que el usuario instale nada.
+// Comprueba ejecutando `adb version` que un binario `adb` funcione realmente.
+// Devuelve true si exit code 0; false en cualquier otro caso (no existe,
+// bloqueado por antivirus, DLL faltante, binario corrupto, etc.).
+function probeAdb(adbPath) {
+  try {
+    const r = require("child_process").spawnSync(adbPath, ["version"], {
+      windowsHide: true,
+      timeout: 8000,
+    });
+    return !r.error && r.status === 0;
+  } catch {
+    return false;
+  }
+}
+
 async function ensureAdb(dir, send) {
   const platform = process.platform;
   const adbName = platform === "win32" ? "adb.exe" : "adb";
   const adbPath = path.join(dir, adbName);
-  if (fs.existsSync(adbPath)) return adbPath;
+  const winDlls = ["AdbWinApi.dll", "AdbWinUsbApi.dll"];
+
+  // Reutilizar caché sólo si TODO está presente y `adb version` funciona.
+  const haveDlls = platform !== "win32"
+    || winDlls.every((d) => fs.existsSync(path.join(dir, d)));
+  if (fs.existsSync(adbPath) && haveDlls) {
+    if (probeAdb(adbPath)) {
+      send?.("mvt:log", `✅ ADB cacheado válido en ${adbPath}`);
+      return adbPath;
+    }
+    send?.("mvt:log", "⚠️ ADB cacheado no responde. Re-descargando platform-tools…");
+    try { fs.unlinkSync(adbPath); } catch {}
+    if (platform === "win32") {
+      for (const d of winDlls) {
+        try { fs.unlinkSync(path.join(dir, d)); } catch {}
+      }
+    }
+  }
 
   const urls = {
     win32: "https://dl.google.com/android/repository/platform-tools-latest-windows.zip",
@@ -451,8 +483,6 @@ async function ensureAdb(dir, send) {
   send?.("mvt:log", `⬇️ Descargando platform-tools desde ${url}`);
   const zipPath = path.join(dir, "platform-tools.zip");
 
-  // Descarga sin validación de tamaño mínimo (el zip pesa ~13 MB y eso ya
-  // supera el umbral, pero usamos una ruta dedicada por claridad).
   const res = await httpsGet(url);
   if (res.statusCode !== 200) {
     res.resume();
@@ -466,9 +496,8 @@ async function ensureAdb(dir, send) {
   const buf = fs.readFileSync(zipPath);
   const zip = await JSZip.loadAsync(buf);
 
-  // Ficheros a extraer (sin la subcarpeta "platform-tools/" del zip).
   const WANTED = platform === "win32"
-    ? ["adb.exe", "AdbWinApi.dll", "AdbWinUsbApi.dll"]
+    ? ["adb.exe", ...winDlls]
     : ["adb"];
 
   let extracted = 0;
@@ -494,8 +523,30 @@ async function ensureAdb(dir, send) {
       `Como alternativa, instala manualmente las Android Platform-Tools y reintenta.`
     );
   }
-  send?.("mvt:log", `✅ ADB listo (${extracted} archivos extraídos).`);
+  if (platform === "win32") {
+    const missing = winDlls.filter((d) => !fs.existsSync(path.join(dir, d)));
+    if (missing.length) {
+      throw new Error(`Faltan DLLs de ADB en platform-tools: ${missing.join(", ")}`);
+    }
+  }
+  send?.("mvt:log", `✅ ADB listo (${extracted} archivos extraídos) en ${adbPath}`);
   return adbPath;
+}
+
+// Espera (con reintentos) a que un fichero se pueda abrir para lectura.
+// Antivirus en Windows suele bloquear binarios recién escritos unos segundos.
+async function waitFileReadable(file, send, attempts = 10, delayMs = 500) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const fd = fs.openSync(file, "r");
+      fs.closeSync(fd);
+      return true;
+    } catch (e) {
+      send?.("mvt:log", `⏳ ${path.basename(file)} aún bloqueado (${e.code || e.message})…`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  return false;
 }
 
 // Devuelve el "mejor" estado entre los dispositivos listados por `adb devices`.
@@ -534,11 +585,13 @@ ipcMain.handle("mvt:cancel", async () => {
     try { currentChild.kill(); } catch {}
   }
   if (process.platform === "win32") {
-    await new Promise((resolve) => {
-      const k = spawn("taskkill", ["/F", "/IM", "androidqf.exe", "/T"], { windowsHide: true });
-      k.on("close", () => resolve());
-      k.on("error", () => resolve());
-    });
+    for (const img of ["androidqf.exe", "adb.exe"]) {
+      await new Promise((resolve) => {
+        const k = spawn("taskkill", ["/F", "/IM", img, "/T"], { windowsHide: true });
+        k.on("close", () => resolve());
+        k.on("error", () => resolve());
+      });
+    }
   }
   return { ok: true };
 });
@@ -599,14 +652,16 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       }
       send("mvt:phase", { phase: 1, statusKey: "phaseStatus.binaryReady", label: "AndroidQF listo", progress: 1 });
 
-      // En Windows, si quedó un androidqf.exe colgado de un intento previo,
-      // lo cerramos para evitar EBUSY al volver a ejecutarlo.
+      // En Windows, si quedó un androidqf.exe o adb.exe colgado de un intento
+      // previo, los cerramos para evitar EBUSY y servidores ADB obsoletos.
       if (platform === "win32") {
-        await new Promise((resolve) => {
-          const k = spawn("taskkill", ["/F", "/IM", "androidqf.exe", "/T"], { windowsHide: true });
-          k.on("close", () => resolve());
-          k.on("error", () => resolve());
-        });
+        for (const img of ["androidqf.exe", "adb.exe"]) {
+          await new Promise((resolve) => {
+            const k = spawn("taskkill", ["/F", "/IM", img, "/T"], { windowsHide: true });
+            k.on("close", () => resolve());
+            k.on("error", () => resolve());
+          });
+        }
       }
 
       // Comprueba que el archivo se pueda abrir (no esté bloqueado por antivirus).
@@ -638,14 +693,53 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       //    failed to use the adb executable: exit status 1" en equipos sin
       //    platform-tools instaladas.
       send("mvt:phase", { phase: 2, statusKey: "phaseStatus.preparingAdb", label: "Preparando herramientas ADB", progress: 0 });
+      let managedAdb;
       try {
-        await ensureAdb(dir, send);
+        managedAdb = await ensureAdb(dir, send);
       } catch (e) {
         throw new Error(
           `No se pudieron preparar las herramientas ADB: ${e.message}. ` +
           `Comprueba tu conexión a Internet o instala manualmente las Android Platform-Tools.`
         );
       }
+
+      // Esperar a que ADB y sus DLLs estén legibles (antivirus suele bloquearlos).
+      const adbFiles = platform === "win32"
+        ? [managedAdb, path.join(dir, "AdbWinApi.dll"), path.join(dir, "AdbWinUsbApi.dll")]
+        : [managedAdb];
+      for (const f of adbFiles) {
+        const ok = await waitFileReadable(f, send);
+        if (!ok) {
+          throw new Error(
+            `Windows tiene ${path.basename(f)} bloqueado (probablemente Windows Defender). ` +
+            `Añade la carpeta de trabajo a las exclusiones del antivirus y reintenta.`
+          );
+        }
+      }
+
+      // Validar que el ADB gestionado funciona ANTES de lanzar AndroidQF.
+      // Si no, AndroidQF acabaría con "failed to use the adb executable: exit status 1".
+      if (!probeAdb(managedAdb)) {
+        // Un último intento: borrar y re-descargar de cero.
+        send("mvt:log", "⚠️ ADB no responde tras la descarga. Re-descargando platform-tools…");
+        try { fs.unlinkSync(managedAdb); } catch {}
+        if (platform === "win32") {
+          for (const d of ["AdbWinApi.dll", "AdbWinUsbApi.dll"]) {
+            try { fs.unlinkSync(path.join(dir, d)); } catch {}
+          }
+        }
+        managedAdb = await ensureAdb(dir, send);
+        if (!probeAdb(managedAdb)) {
+          throw new Error(
+            "El ejecutable adb no funciona en este equipo (`adb version` falla). " +
+            (platform === "win32"
+              ? "Asegúrate de tener el Visual C++ Redistributable 2015-2022 (x64) y de no tener antivirus bloqueando la carpeta de trabajo."
+              : "Revisa permisos de ejecución del binario.")
+          );
+        }
+      }
+      send("mvt:log", `🛠️ ADB gestionado listo: ${managedAdb}`);
+
 
       // 3. Esperar a que el usuario conecte y autorice el móvil.
       //    Sondeamos `adb devices` si está disponible para reflejar la realidad
@@ -712,12 +806,18 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       // real y se controla con teclas de flecha. Lanzamos el binario dentro
       // de un pseudo-terminal y enviamos escapes ANSI para responder.
       const startMs = Date.now();
+      // Construir env con la carpeta de trabajo al frente del PATH para que
+      // AndroidQF use SIEMPRE el adb que gestionamos nosotros, no uno
+      // potencialmente roto o incompatible que esté en el PATH del usuario.
+      const pathKey = process.platform === "win32" ? "Path" : "PATH";
+      const childEnv = { ...process.env };
+      childEnv[pathKey] = dir + path.delimiter + (childEnv[pathKey] || "");
       const child = pty.spawn(binPath, [], {
         name: "xterm-color",
         cwd: dir,
         cols: 120,
         rows: 30,
-        env: process.env,
+        env: childEnv,
       });
       currentChild = child;
       currentActivityStop = startActivityWatcher(dir, startMs, send);

@@ -1,21 +1,34 @@
-## Publicar nueva versión de escritorio (v1.0.44) con el fix de ADB
+## Problema detectado
 
-El error "Impossible to initialize ADB: failed to use the adb executable: exit status 1" que aparece en la app instalada del usuario ya está corregido en el código (`desktop/electron/main.cjs` → `ensureAdb()` descarga las platform-tools oficiales de Google la primera vez). Pero la app del usuario sigue mostrando el error porque su instalación es una versión anterior. Para que el fix llegue a su PC, hay que publicar una release nueva.
+El error ya no parece ser “no existe ADB”, sino que AndroidQF encuentra/ejecuta un `adb` que falla con `exit status 1` al inicializar. En el flujo actual hay tres puntos débiles:
 
-## Cambios
+1. `ensureAdb()` devuelve inmediatamente si existe `adb.exe`, pero no comprueba si ese ADB cacheado funciona.
+2. AndroidQF se lanza con `env: process.env`, sin priorizar la carpeta de trabajo donde la app descarga `adb.exe`; si hay otro `adb` roto/incompatible en el PATH del PC, AndroidQF puede usar ese.
+3. En Windows se mata `androidqf.exe`, pero no `adb.exe`; un servidor/proceso ADB viejo puede quedar bloqueando el siguiente intento.
 
-1. **`desktop/package.json`** → bumpear `version` de `1.0.43` a `1.0.44` (un único bump que agrupa el fix de `ensureAdb()` + las claves i18n `preparingAdb` añadidas en español e inglés).
+## Plan de implementación
 
-No se toca nada más: el fix ya está en `main.cjs` y los locales ya tienen la traducción.
+1. En `desktop/electron/main.cjs`, reforzar `ensureAdb(dir, send)` para:
+   - validar `adb version` antes de reutilizar un `adb` cacheado;
+   - si falla, borrar `adb.exe` y DLLs de Platform Tools y descargarlos de nuevo;
+   - verificar también que las DLLs necesarias de Windows existan.
 
-## Qué pasa después del bump
+2. Añadir preparación robusta de ADB antes de lanzar AndroidQF:
+   - esperar a que `adb.exe`, `AdbWinApi.dll` y `AdbWinUsbApi.dll` estén legibles tras la descarga;
+   - ejecutar una prueba controlada (`adb version` / `adb devices`) y registrar la salida útil en el log de la app sin exponer datos sensibles.
 
-- Al hacer push a `main`, GitHub Actions construye los instaladores (Windows NSIS, macOS DMG, Linux AppImage) y crea la GitHub Release `v1.0.44` con `electron-builder --publish always`.
-- La app instalada del usuario, a los ~30 segundos de arrancar, consulta `electron-updater` contra el repo `JORGEPLAZA499/mvt-insight`, detecta la nueva versión y muestra el diálogo "Actualización disponible".
-- Tras instalar `v1.0.44`, la primera vez que el usuario pulse "Android", la nueva fase `preparingAdb` descargará ~13 MB de platform-tools de Google y dejará `adb.exe` (+ DLLs en Windows) dentro de la carpeta de trabajo. El error ya no debería volver a aparecer.
+3. Forzar que AndroidQF use el ADB gestionado por la app:
+   - construir un `env` específico para AndroidQF;
+   - anteponer `Downloads/mvt-insight` al `PATH`/`Path`;
+   - usar ese `env` en `pty.spawn(...)`.
 
-## Notas
+4. Limpiar procesos ADB colgados en Windows:
+   - en cancelación y antes de cada ejecución Android, matar también `adb.exe` además de `androidqf.exe`;
+   - hacerlo de forma tolerante para no fallar si no hay procesos.
 
-- Regla de memoria respetada: solo se bumpea cuando el usuario dice explícitamente "publica / saca versión" — lo acaba de pedir, así que un único bump agrupa todos los cambios pendientes.
-- No se necesita ningún cambio en el flujo de iPhone: el problema de la captura es Android, e iOS ya tiene su propio mecanismo (`ios-tools.cjs`) que descarga libimobiledevice + mvt-ios de la release `ios-tools-v1` y no depende de ADB.
-- Hay que esperar a que GitHub Actions termine de publicar los assets (Windows suele ser el más lento, ~5–10 min) antes de que el auto-updater del usuario detecte la versión.
+5. Añadir logs diagnósticos mínimos para saber qué ADB se está usando:
+   - ruta esperada del ADB gestionado;
+   - resultado de validación;
+   - mensaje claro si el ADB cacheado estaba corrupto y se redescargó.
+
+6. Después de implementar, revisar el archivo modificado y confirmar que no hay bump de versión todavía. Si quieres publicar el arreglo, haría falta un nuevo bump posterior, agrupado en una release nueva según tu regla.

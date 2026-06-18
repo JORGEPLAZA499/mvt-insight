@@ -70,6 +70,7 @@
     "resolvingVersion": "Looking up the latest version…",
     "downloadingBinary": "Downloading the analysis tool…",
     "binaryReady": "Tool ready",
+    "preparingAdb": "Preparing ADB tools…",
     "waitingDevice": "Connect your phone via USB. No device detected.",
     "waitingUsbAuth": "Waiting for authorization on your phone. Accept «Allow USB debugging».",
     "deviceDetected": "Device connected and authorized.",

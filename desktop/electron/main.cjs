@@ -430,6 +430,74 @@ function resolveAdbPath(workDir) {
   return null;
 }
 
+// Descarga las platform-tools oficiales de Google (que incluyen `adb`) y deja
+// el binario `adb` (y sus DLLs en Windows) junto al binario de AndroidQF.
+// AndroidQF resuelve `adb` desde su propio directorio, así que con esto queda
+// autocontenido y no requiere que el usuario instale nada.
+async function ensureAdb(dir, send) {
+  const platform = process.platform;
+  const adbName = platform === "win32" ? "adb.exe" : "adb";
+  const adbPath = path.join(dir, adbName);
+  if (fs.existsSync(adbPath)) return adbPath;
+
+  const urls = {
+    win32: "https://dl.google.com/android/repository/platform-tools-latest-windows.zip",
+    darwin: "https://dl.google.com/android/repository/platform-tools-latest-darwin.zip",
+    linux: "https://dl.google.com/android/repository/platform-tools-latest-linux.zip",
+  };
+  const url = urls[platform];
+  if (!url) throw new Error(`Plataforma no soportada para ADB: ${platform}`);
+
+  send?.("mvt:log", `⬇️ Descargando platform-tools desde ${url}`);
+  const zipPath = path.join(dir, "platform-tools.zip");
+
+  // Descarga sin validación de tamaño mínimo (el zip pesa ~13 MB y eso ya
+  // supera el umbral, pero usamos una ruta dedicada por claridad).
+  const res = await httpsGet(url);
+  if (res.statusCode !== 200) {
+    res.resume();
+    throw new Error(`HTTP ${res.statusCode} al descargar platform-tools`);
+  }
+  const file = fs.createWriteStream(zipPath);
+  await pipeline(res, file);
+
+  // Extrae con JSZip (puro JS, ya en uso).
+  const JSZip = require("jszip");
+  const buf = fs.readFileSync(zipPath);
+  const zip = await JSZip.loadAsync(buf);
+
+  // Ficheros a extraer (sin la subcarpeta "platform-tools/" del zip).
+  const WANTED = platform === "win32"
+    ? ["adb.exe", "AdbWinApi.dll", "AdbWinUsbApi.dll"]
+    : ["adb"];
+
+  let extracted = 0;
+  for (const entryName of Object.keys(zip.files)) {
+    const entry = zip.files[entryName];
+    if (entry.dir) continue;
+    const base = path.basename(entryName);
+    if (!WANTED.includes(base)) continue;
+    const out = path.join(dir, base);
+    const data = await entry.async("nodebuffer");
+    fs.writeFileSync(out, data);
+    if (platform !== "win32" && base === "adb") {
+      try { fs.chmodSync(out, 0o755); } catch {}
+    }
+    extracted++;
+  }
+
+  try { fs.unlinkSync(zipPath); } catch {}
+
+  if (!fs.existsSync(adbPath)) {
+    throw new Error(
+      `No se pudo extraer ${adbName} de platform-tools (${extracted} archivos extraídos). ` +
+      `Como alternativa, instala manualmente las Android Platform-Tools y reintenta.`
+    );
+  }
+  send?.("mvt:log", `✅ ADB listo (${extracted} archivos extraídos).`);
+  return adbPath;
+}
+
 // Devuelve el "mejor" estado entre los dispositivos listados por `adb devices`.
 // Prioridad: device > unauthorized > offline > "none".
 async function adbDeviceState(adbBin) {

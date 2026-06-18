@@ -70,6 +70,7 @@
     "resolvingVersion": "Buscando la última versión disponible…",
     "downloadingBinary": "Descargando herramienta de análisis…",
     "binaryReady": "Herramienta lista",
+    "preparingAdb": "Preparando herramientas ADB…",
     "waitingDevice": "Conecta el móvil por USB. No se detecta ningún dispositivo.",
     "waitingUsbAuth": "Esperando autorización en el móvil. Acepta «Permitir depuración USB».",
     "deviceDetected": "Dispositivo conectado y autorizado.",

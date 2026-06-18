@@ -1,36 +1,21 @@
-## Problema
+## Publicar nueva versión de escritorio (v1.0.44) con el fix de ADB
 
-AndroidQF falla con `Impossible to initialize ADB: failed to use the adb executable: exit status 1`. Significa que AndroidQF intentó invocar `adb` pero el binario no estaba disponible (o estaba pero no se pudo ejecutar) en el entorno del usuario. Hoy `desktop/electron/main.cjs` sólo intenta *localizar* un `adb` existente en PATH/ANDROID_HOME; si el usuario no lo tiene instalado, AndroidQF se cae.
+El error "Impossible to initialize ADB: failed to use the adb executable: exit status 1" que aparece en la app instalada del usuario ya está corregido en el código (`desktop/electron/main.cjs` → `ensureAdb()` descarga las platform-tools oficiales de Google la primera vez). Pero la app del usuario sigue mostrando el error porque su instalación es una versión anterior. Para que el fix llegue a su PC, hay que publicar una release nueva.
 
-## Solución
+## Cambios
 
-Descargar automáticamente las **platform-tools oficiales de Google** (que incluyen `adb`) y dejarlas junto al binario de AndroidQF en `~/Downloads/mvt-insight/`. AndroidQF resuelve `adb` desde su propio directorio, así que con eso queda autocontenido — el usuario no necesita instalar nada.
+1. **`desktop/package.json`** → bumpear `version` de `1.0.43` a `1.0.44` (un único bump que agrupa el fix de `ensureAdb()` + las claves i18n `preparingAdb` añadidas en español e inglés).
 
-URLs oficiales (estables):
-- Windows: `https://dl.google.com/android/repository/platform-tools-latest-windows.zip`
-- macOS: `https://dl.google.com/android/repository/platform-tools-latest-darwin.zip`
-- Linux: `https://dl.google.com/android/repository/platform-tools-latest-linux.zip`
+No se toca nada más: el fix ya está en `main.cjs` y los locales ya tienen la traducción.
 
-## Cambios en `desktop/electron/main.cjs`
+## Qué pasa después del bump
 
-1. Nueva función `ensureAdb(dir)`:
-   - Si ya existe `dir/adb(.exe)`, no hace nada.
-   - Si no, descarga el zip de platform-tools, lo extrae con JSZip (ya usado en el proyecto), copia `adb`, `AdbWinApi.dll`, `AdbWinUsbApi.dll` (Windows) o `adb` + libs (`.so`/`.dylib` si las hubiera) al `dir` raíz, y hace `chmod 0o755` en Linux/macOS.
-   - Usa una variante de `download()` que no aplica el filtro de `MIN_BINARY_BYTES` (el zip de platform-tools pesa ~13 MB pero la función actual ya lo aceptaría; aun así se añade flag `skipMinSize` para futuros assets).
+- Al hacer push a `main`, GitHub Actions construye los instaladores (Windows NSIS, macOS DMG, Linux AppImage) y crea la GitHub Release `v1.0.44` con `electron-builder --publish always`.
+- La app instalada del usuario, a los ~30 segundos de arrancar, consulta `electron-updater` contra el repo `JORGEPLAZA499/mvt-insight`, detecta la nueva versión y muestra el diálogo "Actualización disponible".
+- Tras instalar `v1.0.44`, la primera vez que el usuario pulse "Android", la nueva fase `preparingAdb` descargará ~13 MB de platform-tools de Google y dejará `adb.exe` (+ DLLs en Windows) dentro de la carpeta de trabajo. El error ya no debería volver a aparecer.
 
-2. Llamar a `ensureAdb(dir)` **antes** del bloque de espera de dispositivo (línea ~568), reportando una nueva sub-fase de descarga (`phaseStatus.preparingAdb`) y log:
-   - `🔧 Preparando herramientas ADB…`
-   - `✅ ADB listo.`
+## Notas
 
-3. `resolveAdbPath(workDir)` ya prioriza `workDir`, así que detectará el `adb` recién descargado y el polling de dispositivo funcionará igual que antes.
-
-4. Mensaje de error mejorado en caso de fallo de descarga ADB, indicando que se pueden instalar manualmente las platform-tools como fallback.
-
-## i18n
-
-Añadir claves nuevas en `desktop/src/i18n/locales/{es,en}.json`:
-- `phaseStatus.preparingAdb`: "Preparando herramientas ADB" / "Preparing ADB tools"
-
-## Versionado
-
-No bumpear `desktop/package.json > version` (regla de memoria). Quedará agrupado para la próxima release cuando el usuario diga "publica".
+- Regla de memoria respetada: solo se bumpea cuando el usuario dice explícitamente "publica / saca versión" — lo acaba de pedir, así que un único bump agrupa todos los cambios pendientes.
+- No se necesita ningún cambio en el flujo de iPhone: el problema de la captura es Android, e iOS ya tiene su propio mecanismo (`ios-tools.cjs`) que descarga libimobiledevice + mvt-ios de la release `ios-tools-v1` y no depende de ADB.
+- Hay que esperar a que GitHub Actions termine de publicar los assets (Windows suele ser el más lento, ~5–10 min) antes de que el auto-updater del usuario detecte la versión.

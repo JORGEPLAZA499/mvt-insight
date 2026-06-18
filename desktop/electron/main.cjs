@@ -434,11 +434,43 @@ function resolveAdbPath(workDir) {
 // el binario `adb` (y sus DLLs en Windows) junto al binario de AndroidQF.
 // AndroidQF resuelve `adb` desde su propio directorio, así que con esto queda
 // autocontenido y no requiere que el usuario instale nada.
+// Comprueba ejecutando `adb version` que un binario `adb` funcione realmente.
+// Devuelve true si exit code 0; false en cualquier otro caso (no existe,
+// bloqueado por antivirus, DLL faltante, binario corrupto, etc.).
+function probeAdb(adbPath) {
+  try {
+    const r = require("child_process").spawnSync(adbPath, ["version"], {
+      windowsHide: true,
+      timeout: 8000,
+    });
+    return !r.error && r.status === 0;
+  } catch {
+    return false;
+  }
+}
+
 async function ensureAdb(dir, send) {
   const platform = process.platform;
   const adbName = platform === "win32" ? "adb.exe" : "adb";
   const adbPath = path.join(dir, adbName);
-  if (fs.existsSync(adbPath)) return adbPath;
+  const winDlls = ["AdbWinApi.dll", "AdbWinUsbApi.dll"];
+
+  // Reutilizar caché sólo si TODO está presente y `adb version` funciona.
+  const haveDlls = platform !== "win32"
+    || winDlls.every((d) => fs.existsSync(path.join(dir, d)));
+  if (fs.existsSync(adbPath) && haveDlls) {
+    if (probeAdb(adbPath)) {
+      send?.("mvt:log", `✅ ADB cacheado válido en ${adbPath}`);
+      return adbPath;
+    }
+    send?.("mvt:log", "⚠️ ADB cacheado no responde. Re-descargando platform-tools…");
+    try { fs.unlinkSync(adbPath); } catch {}
+    if (platform === "win32") {
+      for (const d of winDlls) {
+        try { fs.unlinkSync(path.join(dir, d)); } catch {}
+      }
+    }
+  }
 
   const urls = {
     win32: "https://dl.google.com/android/repository/platform-tools-latest-windows.zip",
@@ -451,8 +483,6 @@ async function ensureAdb(dir, send) {
   send?.("mvt:log", `⬇️ Descargando platform-tools desde ${url}`);
   const zipPath = path.join(dir, "platform-tools.zip");
 
-  // Descarga sin validación de tamaño mínimo (el zip pesa ~13 MB y eso ya
-  // supera el umbral, pero usamos una ruta dedicada por claridad).
   const res = await httpsGet(url);
   if (res.statusCode !== 200) {
     res.resume();
@@ -466,9 +496,8 @@ async function ensureAdb(dir, send) {
   const buf = fs.readFileSync(zipPath);
   const zip = await JSZip.loadAsync(buf);
 
-  // Ficheros a extraer (sin la subcarpeta "platform-tools/" del zip).
   const WANTED = platform === "win32"
-    ? ["adb.exe", "AdbWinApi.dll", "AdbWinUsbApi.dll"]
+    ? ["adb.exe", ...winDlls]
     : ["adb"];
 
   let extracted = 0;
@@ -494,8 +523,30 @@ async function ensureAdb(dir, send) {
       `Como alternativa, instala manualmente las Android Platform-Tools y reintenta.`
     );
   }
-  send?.("mvt:log", `✅ ADB listo (${extracted} archivos extraídos).`);
+  if (platform === "win32") {
+    const missing = winDlls.filter((d) => !fs.existsSync(path.join(dir, d)));
+    if (missing.length) {
+      throw new Error(`Faltan DLLs de ADB en platform-tools: ${missing.join(", ")}`);
+    }
+  }
+  send?.("mvt:log", `✅ ADB listo (${extracted} archivos extraídos) en ${adbPath}`);
   return adbPath;
+}
+
+// Espera (con reintentos) a que un fichero se pueda abrir para lectura.
+// Antivirus en Windows suele bloquear binarios recién escritos unos segundos.
+async function waitFileReadable(file, send, attempts = 10, delayMs = 500) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const fd = fs.openSync(file, "r");
+      fs.closeSync(fd);
+      return true;
+    } catch (e) {
+      send?.("mvt:log", `⏳ ${path.basename(file)} aún bloqueado (${e.code || e.message})…`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  return false;
 }
 
 // Devuelve el "mejor" estado entre los dispositivos listados por `adb devices`.

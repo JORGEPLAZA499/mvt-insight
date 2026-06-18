@@ -137,20 +137,20 @@ function Landing() {
           </div>
 
           {/* Publicidad image with gradient fade edges */}
-          <div className="relative mt-16 mx-auto max-w-5xl overflow-hidden rounded-2xl">
+          <div className="relative mt-16 mx-auto max-w-3xl overflow-hidden rounded-2xl">
             <img
               src={publicidadAsset.url}
               alt="Spyware Forensic Analyzer - Análisis forense de spyware mercenario"
               className="w-full h-auto object-cover"
             />
             {/* Top fade */}
-            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-background to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-background to-transparent pointer-events-none" />
             {/* Bottom fade */}
-            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background to-transparent pointer-events-none" />
             {/* Left fade */}
-            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+            <div className="absolute inset-y-0 left-0 w-28 bg-gradient-to-r from-background to-transparent pointer-events-none" />
             {/* Right fade */}
-            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-background to-transparent pointer-events-none" />
           </div>
         </div>
       </section>

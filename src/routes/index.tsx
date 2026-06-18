@@ -146,8 +146,8 @@ function Landing() {
           {/* Publicidad image with deep transparency fade edges */}
           <div className="relative mt-16 mx-auto max-w-3xl">
             <img
-              src={publicidadAsset.url}
-              alt="Spyware Forensic Analyzer - Análisis forense de spyware mercenario"
+              src={adAsset.url}
+              alt={adAlt}
               className="w-full h-auto object-cover"
               style={{
                 maskImage:

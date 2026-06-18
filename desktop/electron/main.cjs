@@ -652,14 +652,16 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       }
       send("mvt:phase", { phase: 1, statusKey: "phaseStatus.binaryReady", label: "AndroidQF listo", progress: 1 });
 
-      // En Windows, si quedó un androidqf.exe colgado de un intento previo,
-      // lo cerramos para evitar EBUSY al volver a ejecutarlo.
+      // En Windows, si quedó un androidqf.exe o adb.exe colgado de un intento
+      // previo, los cerramos para evitar EBUSY y servidores ADB obsoletos.
       if (platform === "win32") {
-        await new Promise((resolve) => {
-          const k = spawn("taskkill", ["/F", "/IM", "androidqf.exe", "/T"], { windowsHide: true });
-          k.on("close", () => resolve());
-          k.on("error", () => resolve());
-        });
+        for (const img of ["androidqf.exe", "adb.exe"]) {
+          await new Promise((resolve) => {
+            const k = spawn("taskkill", ["/F", "/IM", img, "/T"], { windowsHide: true });
+            k.on("close", () => resolve());
+            k.on("error", () => resolve());
+          });
+        }
       }
 
       // Comprueba que el archivo se pueda abrir (no esté bloqueado por antivirus).
@@ -691,14 +693,53 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       //    failed to use the adb executable: exit status 1" en equipos sin
       //    platform-tools instaladas.
       send("mvt:phase", { phase: 2, statusKey: "phaseStatus.preparingAdb", label: "Preparando herramientas ADB", progress: 0 });
+      let managedAdb;
       try {
-        await ensureAdb(dir, send);
+        managedAdb = await ensureAdb(dir, send);
       } catch (e) {
         throw new Error(
           `No se pudieron preparar las herramientas ADB: ${e.message}. ` +
           `Comprueba tu conexión a Internet o instala manualmente las Android Platform-Tools.`
         );
       }
+
+      // Esperar a que ADB y sus DLLs estén legibles (antivirus suele bloquearlos).
+      const adbFiles = platform === "win32"
+        ? [managedAdb, path.join(dir, "AdbWinApi.dll"), path.join(dir, "AdbWinUsbApi.dll")]
+        : [managedAdb];
+      for (const f of adbFiles) {
+        const ok = await waitFileReadable(f, send);
+        if (!ok) {
+          throw new Error(
+            `Windows tiene ${path.basename(f)} bloqueado (probablemente Windows Defender). ` +
+            `Añade la carpeta de trabajo a las exclusiones del antivirus y reintenta.`
+          );
+        }
+      }
+
+      // Validar que el ADB gestionado funciona ANTES de lanzar AndroidQF.
+      // Si no, AndroidQF acabaría con "failed to use the adb executable: exit status 1".
+      if (!probeAdb(managedAdb)) {
+        // Un último intento: borrar y re-descargar de cero.
+        send("mvt:log", "⚠️ ADB no responde tras la descarga. Re-descargando platform-tools…");
+        try { fs.unlinkSync(managedAdb); } catch {}
+        if (platform === "win32") {
+          for (const d of ["AdbWinApi.dll", "AdbWinUsbApi.dll"]) {
+            try { fs.unlinkSync(path.join(dir, d)); } catch {}
+          }
+        }
+        managedAdb = await ensureAdb(dir, send);
+        if (!probeAdb(managedAdb)) {
+          throw new Error(
+            "El ejecutable adb no funciona en este equipo (`adb version` falla). " +
+            (platform === "win32"
+              ? "Asegúrate de tener el Visual C++ Redistributable 2015-2022 (x64) y de no tener antivirus bloqueando la carpeta de trabajo."
+              : "Revisa permisos de ejecución del binario.")
+          );
+        }
+      }
+      send("mvt:log", `🛠️ ADB gestionado listo: ${managedAdb}`);
+
 
       // 3. Esperar a que el usuario conecte y autorice el móvil.
       //    Sondeamos `adb devices` si está disponible para reflejar la realidad

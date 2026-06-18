@@ -6,6 +6,7 @@ import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import i18n from "@/i18n";
 import publicidadAsset from "@/assets/publicidad.png.asset.json";
+import publicidadEnAsset from "@/assets/publicidad_en.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => {
@@ -23,7 +24,13 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language?.split("-")[0] ?? "es";
+  const isEnglish = currentLang === "en";
+  const adAsset = isEnglish ? publicidadEnAsset : publicidadAsset;
+  const adAlt = isEnglish
+    ? "Spyware Forensic Analyzer - Forensic analysis of mercenary spyware indicators on mobile devices"
+    : "Spyware Forensic Analyzer - Análisis forense de spyware mercenario";
 
   const features = [
     { icon: Shield, key: "mvt" },
@@ -139,8 +146,8 @@ function Landing() {
           {/* Publicidad image with deep transparency fade edges */}
           <div className="relative mt-16 mx-auto max-w-3xl">
             <img
-              src={publicidadAsset.url}
-              alt="Spyware Forensic Analyzer - Análisis forense de spyware mercenario"
+              src={adAsset.url}
+              alt={adAlt}
               className="w-full h-auto object-cover"
               style={{
                 maskImage:

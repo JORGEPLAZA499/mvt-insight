@@ -633,7 +633,21 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       }
 
 
-      // 2. Esperar a que el usuario conecte y autorice el móvil.
+      // 2. Asegurar ADB disponible junto al binario de AndroidQF.
+      //    Sin esto, AndroidQF aborta con "Impossible to initialize ADB:
+      //    failed to use the adb executable: exit status 1" en equipos sin
+      //    platform-tools instaladas.
+      send("mvt:phase", { phase: 2, statusKey: "phaseStatus.preparingAdb", label: "Preparando herramientas ADB", progress: 0 });
+      try {
+        await ensureAdb(dir, send);
+      } catch (e) {
+        throw new Error(
+          `No se pudieron preparar las herramientas ADB: ${e.message}. ` +
+          `Comprueba tu conexión a Internet o instala manualmente las Android Platform-Tools.`
+        );
+      }
+
+      // 3. Esperar a que el usuario conecte y autorice el móvil.
       //    Sondeamos `adb devices` si está disponible para reflejar la realidad
       //    en la UI; si no lo está, mantenemos la fase 2 activa hasta que
       //    AndroidQF empiece a hablar con el dispositivo de verdad.

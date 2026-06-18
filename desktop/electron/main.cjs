@@ -806,12 +806,18 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       // real y se controla con teclas de flecha. Lanzamos el binario dentro
       // de un pseudo-terminal y enviamos escapes ANSI para responder.
       const startMs = Date.now();
+      // Construir env con la carpeta de trabajo al frente del PATH para que
+      // AndroidQF use SIEMPRE el adb que gestionamos nosotros, no uno
+      // potencialmente roto o incompatible que esté en el PATH del usuario.
+      const pathKey = process.platform === "win32" ? "Path" : "PATH";
+      const childEnv = { ...process.env };
+      childEnv[pathKey] = dir + path.delimiter + (childEnv[pathKey] || "");
       const child = pty.spawn(binPath, [], {
         name: "xterm-color",
         cwd: dir,
         cols: 120,
         rows: 30,
-        env: process.env,
+        env: childEnv,
       });
       currentChild = child;
       currentActivityStop = startActivityWatcher(dir, startMs, send);

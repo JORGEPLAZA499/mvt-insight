@@ -854,7 +854,8 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       const pathKey = process.platform === "win32" ? "Path" : "PATH";
       const childEnv = { ...process.env };
       childEnv[pathKey] = dir + path.delimiter + (childEnv[pathKey] || "");
-      const child = pty.spawn(binPath, [], {
+      const androidqfArgs = selectedSerial ? ["--serial", selectedSerial] : [];
+      const child = pty.spawn(binPath, androidqfArgs, {
         name: "xterm-color",
         cwd: dir,
         cols: 120,

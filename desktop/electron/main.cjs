@@ -549,27 +549,38 @@ async function waitFileReadable(file, send, attempts = 10, delayMs = 500) {
   return false;
 }
 
-// Devuelve el "mejor" estado entre los dispositivos listados por `adb devices`.
-// Prioridad: device > unauthorized > offline > "none".
-async function adbDeviceState(adbBin) {
+// Lista los dispositivos visibles por `adb devices` con su serial y estado.
+async function listAdbDevices(adbBin) {
   return new Promise((resolve) => {
     const p = spawn(adbBin, ["devices"], { windowsHide: true });
     let out = "";
     p.stdout?.on("data", (d) => { out += d.toString(); });
-    p.on("error", () => resolve("none"));
+    p.on("error", () => resolve([]));
     p.on("close", () => {
-      const states = out
+      const devices = out
         .split(/\r?\n/)
         .slice(1)
         .map((l) => l.trim())
         .filter(Boolean)
-        .map((l) => l.split(/\s+/)[1] || "");
-      if (states.includes("device")) return resolve("device");
-      if (states.includes("unauthorized")) return resolve("unauthorized");
-      if (states.includes("offline")) return resolve("offline");
-      return resolve("none");
+        .map((l) => {
+          const [serial, state] = l.split(/\s+/);
+          return { serial: serial || "", state: state || "" };
+        })
+        .filter((d) => d.serial);
+      resolve(devices);
     });
   });
+}
+
+// Devuelve el "mejor" estado entre los dispositivos listados por `adb devices`.
+// Prioridad: device > unauthorized > offline > "none".
+async function adbDeviceState(adbBin) {
+  const devices = await listAdbDevices(adbBin);
+  const states = devices.map((d) => d.state);
+  if (states.includes("device")) return "device";
+  if (states.includes("unauthorized")) return "unauthorized";
+  if (states.includes("offline")) return "offline";
+  return "none";
 }
 
 /* ---------- IPC handlers ---------- */

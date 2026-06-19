@@ -549,27 +549,38 @@ async function waitFileReadable(file, send, attempts = 10, delayMs = 500) {
   return false;
 }
 
-// Devuelve el "mejor" estado entre los dispositivos listados por `adb devices`.
-// Prioridad: device > unauthorized > offline > "none".
-async function adbDeviceState(adbBin) {
+// Lista los dispositivos visibles por `adb devices` con su serial y estado.
+async function listAdbDevices(adbBin) {
   return new Promise((resolve) => {
     const p = spawn(adbBin, ["devices"], { windowsHide: true });
     let out = "";
     p.stdout?.on("data", (d) => { out += d.toString(); });
-    p.on("error", () => resolve("none"));
+    p.on("error", () => resolve([]));
     p.on("close", () => {
-      const states = out
+      const devices = out
         .split(/\r?\n/)
         .slice(1)
         .map((l) => l.trim())
         .filter(Boolean)
-        .map((l) => l.split(/\s+/)[1] || "");
-      if (states.includes("device")) return resolve("device");
-      if (states.includes("unauthorized")) return resolve("unauthorized");
-      if (states.includes("offline")) return resolve("offline");
-      return resolve("none");
+        .map((l) => {
+          const [serial, state] = l.split(/\s+/);
+          return { serial: serial || "", state: state || "" };
+        })
+        .filter((d) => d.serial);
+      resolve(devices);
     });
   });
+}
+
+// Devuelve el "mejor" estado entre los dispositivos listados por `adb devices`.
+// Prioridad: device > unauthorized > offline > "none".
+async function adbDeviceState(adbBin) {
+  const devices = await listAdbDevices(adbBin);
+  const states = devices.map((d) => d.state);
+  if (states.includes("device")) return "device";
+  if (states.includes("unauthorized")) return "unauthorized";
+  if (states.includes("offline")) return "offline";
+  return "none";
 }
 
 /* ---------- IPC handlers ---------- */
@@ -749,6 +760,8 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       send("mvt:log", "🔌 Conecta el móvil por USB y acepta «Permitir depuración USB» en la pantalla.");
 
       const adbBin = resolveAdbPath(dir);
+      let authorizedSerials = [];
+      let otherDevices = [];
       if (adbBin) {
         const WAIT_DEVICE_TIMEOUT_MS = 120_000;
         const POLL_MS = 1500;
@@ -756,7 +769,13 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         let lastState = "";
         while (true) {
           if (cancelled) return { ok: false, error: "cancelled" };
-          const state = await adbDeviceState(adbBin);
+          const devices = await listAdbDevices(adbBin);
+          const states = devices.map((d) => d.state);
+          let state = "none";
+          if (states.includes("device")) state = "device";
+          else if (states.includes("unauthorized")) state = "unauthorized";
+          else if (states.includes("offline")) state = "offline";
+
           if (state !== lastState) {
             lastState = state;
             if (state === "device") {
@@ -771,7 +790,11 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
               send("mvt:phase", { phase: 2, statusKey: "phaseStatus.waitingDevice", label: "Esperando que conectes el móvil", progress: 0 });
             }
           }
-          if (state === "device") break;
+          if (state === "device") {
+            authorizedSerials = devices.filter((d) => d.state === "device").map((d) => d.serial);
+            otherDevices = devices.filter((d) => d.state !== "device");
+            break;
+          }
           if (Date.now() - tStart > WAIT_DEVICE_TIMEOUT_MS) {
             throw new Error(
               "Dispositivo no detectado. Conecta el móvil por USB con la depuración activada y vuelve a intentarlo."
@@ -782,6 +805,25 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       } else {
         send("mvt:log", "ℹ️ `adb` no disponible para sondear el dispositivo; AndroidQF lo gestionará internamente.");
       }
+
+      // Si hay más de un dispositivo autorizado, AndroidQF aborta con
+      // "multiple devices connected, please stop AndroidQF and provide a serial number".
+      // Forzamos al usuario a desconectar los que sobren para evitar análisis ambiguos.
+      if (authorizedSerials.length > 1) {
+        throw new Error(
+          `Hay varios dispositivos conectados y autorizados (${authorizedSerials.join(", ")}). ` +
+          `Desconecta los que no quieras analizar y vuelve a intentarlo.`
+        );
+      }
+      if (otherDevices.length > 0) {
+        const detail = otherDevices.map((d) => `${d.serial} (${d.state})`).join(", ");
+        send("mvt:log", `⚠️ Otros dispositivos ADB visibles que pueden interferir: ${detail}. Si AndroidQF falla, desconéctalos.`);
+      }
+      const selectedSerial = authorizedSerials[0] || null;
+      if (selectedSerial) {
+        send("mvt:log", `🎯 Usando dispositivo ${selectedSerial}`);
+      }
+
 
       // 3. Ejecutar AndroidQF. La fase 3 sólo se anunciará cuando detectemos
       //    salida real de recolección (heurística más abajo); mientras tanto
@@ -812,7 +854,8 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       const pathKey = process.platform === "win32" ? "Path" : "PATH";
       const childEnv = { ...process.env };
       childEnv[pathKey] = dir + path.delimiter + (childEnv[pathKey] || "");
-      const child = pty.spawn(binPath, [], {
+      const androidqfArgs = selectedSerial ? ["--serial", selectedSerial] : [];
+      const child = pty.spawn(binPath, androidqfArgs, {
         name: "xterm-color",
         cwd: dir,
         cols: 120,

@@ -1,34 +1,42 @@
-## Problema detectado
+## Problema
 
-El error ya no parece ser “no existe ADB”, sino que AndroidQF encuentra/ejecuta un `adb` que falla con `exit status 1` al inicializar. En el flujo actual hay tres puntos débiles:
+AndroidQF aborta con:
 
-1. `ensureAdb()` devuelve inmediatamente si existe `adb.exe`, pero no comprueba si ese ADB cacheado funciona.
-2. AndroidQF se lanza con `env: process.env`, sin priorizar la carpeta de trabajo donde la app descarga `adb.exe`; si hay otro `adb` roto/incompatible en el PATH del PC, AndroidQF puede usar ese.
-3. En Windows se mata `androidqf.exe`, pero no `adb.exe`; un servidor/proceso ADB viejo puede quedar bloqueando el siguiente intento.
+> Error trying to connect over ADB: multiple devices connected, please stop AndroidQF and provide a serial number
 
-## Plan de implementación
+Esto ocurre cuando `adb devices` ve más de una entrada (móvil real + emulador, móvil + dispositivo "offline" colgado de un intento anterior, varios cables, Wi-Fi ADB, etc.). Hoy lanzamos `androidqf.exe` sin argumentos, así que no podemos desambiguar.
 
-1. En `desktop/electron/main.cjs`, reforzar `ensureAdb(dir, send)` para:
-   - validar `adb version` antes de reutilizar un `adb` cacheado;
-   - si falla, borrar `adb.exe` y DLLs de Platform Tools y descargarlos de nuevo;
-   - verificar también que las DLLs necesarias de Windows existan.
+## Solución (en `desktop/electron/main.cjs`)
 
-2. Añadir preparación robusta de ADB antes de lanzar AndroidQF:
-   - esperar a que `adb.exe`, `AdbWinApi.dll` y `AdbWinUsbApi.dll` estén legibles tras la descarga;
-   - ejecutar una prueba controlada (`adb version` / `adb devices`) y registrar la salida útil en el log de la app sin exponer datos sensibles.
+1. **Nueva función `listAdbDevices(adbBin)`** que devuelva `[{ serial, state }]` parseando `adb devices` (ya tenemos `adbDeviceState`, la ampliamos en vez de duplicar). `adbDeviceState` puede reescribirse encima de ella para no duplicar lógica.
 
-3. Forzar que AndroidQF use el ADB gestionado por la app:
-   - construir un `env` específico para AndroidQF;
-   - anteponer `Downloads/mvt-insight` al `PATH`/`Path`;
-   - usar ese `env` en `pty.spawn(...)`.
+2. **En la espera de dispositivo** (bloque `phaseStatus.waitingDevice`, ~líneas 748-784): seguir esperando hasta que haya **al menos un** dispositivo en estado `device`. Guardar la lista de serials autorizados al salir del bucle.
 
-4. Limpiar procesos ADB colgados en Windows:
-   - en cancelación y antes de cada ejecución Android, matar también `adb.exe` además de `androidqf.exe`;
-   - hacerlo de forma tolerante para no fallar si no hay procesos.
+3. **Antes de `pty.spawn`**:
+   - Si hay **exactamente 1** serial autorizado → guardarlo en `selectedSerial`.
+   - Si hay **>1** serial autorizado → lanzar un error claro y traducible al usuario: "Hay varios dispositivos conectados (`<lista de serials>`). Desconecta los que no quieras analizar y reintenta." (Mantenemos esto simple; no añadimos UI de selección en esta iteración.)
+   - Sugerencia añadida: detectar y avisar de dispositivos en estado `offline`/`unauthorized` presentes a la vez, ya que también disparan el error.
 
-5. Añadir logs diagnósticos mínimos para saber qué ADB se está usando:
-   - ruta esperada del ADB gestionado;
-   - resultado de validación;
-   - mensaje claro si el ADB cacheado estaba corrupto y se redescargó.
+4. **Pasar el serial a AndroidQF**: cambiar
+   ```js
+   const child = pty.spawn(binPath, [], { ... });
+   ```
+   por
+   ```js
+   const args = selectedSerial ? ["--serial", selectedSerial] : [];
+   const child = pty.spawn(binPath, args, { ... });
+   ```
+   AndroidQF acepta `--serial <id>` (flag estándar de su CLI Go) y eso elimina la ambigüedad incluso si más adelante aparece otro dispositivo.
 
-6. Después de implementar, revisar el archivo modificado y confirmar que no hay bump de versión todavía. Si quieres publicar el arreglo, haría falta un nuevo bump posterior, agrupado en una release nueva según tu regla.
+5. **Log de diagnóstico** (sin datos sensibles): `🎯 Usando dispositivo <serial>` antes del spawn. El serial USB no es información sensible.
+
+6. **Sin bump de versión** en este turno (regla de memoria: solo bumpear cuando el usuario diga "publica"). Si el usuario quiere distribuirlo, en un turno posterior agrupamos el fix en una sola release nueva.
+
+## Cambios
+
+- `desktop/electron/main.cjs` — único archivo tocado.
+
+## Verificación
+
+- Releer el archivo modificado para confirmar sintaxis y que el `pty.spawn` recibe los args correctos.
+- No se puede probar el flujo USB en el sandbox; el cambio es contenido y revertible.

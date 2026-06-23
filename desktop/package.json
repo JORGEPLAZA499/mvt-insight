@@ -29,6 +29,7 @@
     "vite": "^7.0.0"
   },
   "dependencies": {
+    "archiver": "^8.0.0",
     "electron-updater": "^6.8.3",
     "i18next": "^23.15.2",
     "jszip": "^3.10.1",

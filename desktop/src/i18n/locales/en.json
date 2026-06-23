@@ -40,14 +40,14 @@
     "cancel": "Cancel",
     "cancelConfirm": "Cancel the running analysis?",
     "idleWarning": {
-      "ios": "⚠ No activity from mvt-ios for {{min}} min.",
-      "android": "⚠ No activity from androidqf for {{min}} min.",
-      "hint": "This is usually normal while apps are being collected or the backup is being created. If it goes over 15 min, click Cancel and retry."
+      "ios": "ℹ No new mvt-ios messages for {{min}} min.",
+      "android": "ℹ No new androidqf messages for {{min}} min.",
+      "hint": "This is normal: during backup, app downloads or module analysis the process can stay quiet for a while. Wait before cancelling."
     },
     "activity": {
       "collecting": "Collecting files from the device… {{size}} transferred (last change {{ago}} ago).",
-      "frozen": "⛔ No real activity for {{min}} min. The process is likely stuck.",
-      "frozenHint": "Click Cancel, unplug and replug the device, and try again."
+      "frozen": "⚠ No changes detected for {{min}} min. The process may still be working in the background (compression, backup) or it may be stuck.",
+      "frozenHint": "Wait a few more minutes. Only click Cancel if you do NOT see any disk activity."
     },
     "moduleFailed": {
       "title": "Some modules are not available on this device",

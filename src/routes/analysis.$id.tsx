@@ -129,7 +129,7 @@ function AnalysisPage() {
             )}
           </div>
           <div className="flex gap-2">
-            <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(analysis)}>
+            <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(analysis, i18n.language)}>
               <Download className="h-4 w-4 mr-2" /> {t("analysisPage.downloadPdf")}
             </Button>
           </div>

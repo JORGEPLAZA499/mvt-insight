@@ -1057,13 +1057,12 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         await zipFolder(freshDir.full, zipPath, (p) => {
           const pct = p.total ? p.processed / p.total : 0;
           const mb = (p.bytes / (1024 * 1024)).toFixed(1);
-          const totalMb = (p.totalBytes / (1024 * 1024)).toFixed(0);
-          send("mvt:log", `📦 Comprimiendo ${p.processed}/${p.total} archivos (${mb} MB escritos de ~${totalMb} MB sin comprimir)`);
           send("mvt:phase", {
             phase: 3,
-            statusKey: "phaseStatus.compressing",
-            label: "Comprimiendo resultados",
+            statusKey: "phaseStatus.compressingProgress",
+            label: `Compressing ${p.processed}/${p.total} files (${mb} MB written)`,
             progress: 0.9 + pct * 0.09,
+            data: { processed: p.processed, total: p.total, mb },
           });
         });
       } else if (freshZip) {

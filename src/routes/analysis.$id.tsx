@@ -35,7 +35,7 @@ export const Route = createFileRoute("/analysis/$id")({
 });
 
 function AnalysisPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams({ from: "/analysis/$id" });
   const search = Route.useSearch();
   const [analysis, setAnalysis] = useState<Analysis | undefined>();

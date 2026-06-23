@@ -15,6 +15,7 @@ interface PhaseState {
   label: string;
   statusKey?: string;
   progress: number;
+  data?: Record<string, unknown>;
 }
 
 interface Account {
@@ -98,14 +99,14 @@ export function App() {
       setLastLogAt(Date.now());
     });
     const offPhase = window.mvt.onPhase((payload: any) => {
-      const { phase: num, label, statusKey, progress } = payload || {};
+      const { phase: num, label, statusKey, progress, data } = payload || {};
       setPhase((prev) => {
         if (prev.num !== num) {
           setPhaseStartedAt(Date.now());
           setLastLogAt(Date.now());
           setActivity(null);
         }
-        return { num, label, statusKey, progress };
+        return { num, label, statusKey, progress, data };
       });
     });
     const onAct = (window.mvt as any).onActivity as
@@ -802,7 +803,7 @@ export function App() {
                     <>
                       <div className="phase-sub">
                         {phase.statusKey
-                          ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"))
+                          ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"), phase.data)
                           : (phase.label || tr("running.working", "Analizando"))}
                         <span className="dot-pulse">
                           <span /><span /><span />

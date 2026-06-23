@@ -803,7 +803,7 @@ export function App() {
                     <>
                       <div className="phase-sub">
                         {phase.statusKey
-                          ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"))
+                          ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"), phase.data)
                           : (phase.label || tr("running.working", "Analizando"))}
                         <span className="dot-pulse">
                           <span /><span /><span />

@@ -335,36 +335,74 @@ async function fetchJson(url) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-// Comprime una carpeta en un .zip usando JSZip (puro JS, fiable y multiplataforma).
-// Antes usábamos PowerShell `Compress-Archive` en Windows, pero produce ZIPs que
-// algunas librerías (yauzl en el backend) no consiguen parsear → error
-// "End of central directory record signature not found". JSZip genera ZIPs
-// estándar legibles en todas partes.
-async function zipFolder(srcDir, destZip) {
-  const JSZip = require("jszip");
-  const zip = new JSZip();
+// Comprime una carpeta en un .zip usando `archiver`, escribiendo en streaming
+// directo a disco. Antes usábamos JSZip cargando todo en memoria, lo que
+// provocaba "Array buffer allocation failed" en carpetas de análisis de varios
+// GB (V8 corta los buffers en torno a 2 GiB). archiver lee cada archivo como
+// stream y lo va deflatando al fichero destino, manteniendo el uso de RAM bajo
+// y produciendo un ZIP estándar perfectamente legible por yauzl.
+async function zipFolder(srcDir, destZip, onProgress) {
+  const archiver = require("archiver");
 
-  const addDir = (absDir, relBase) => {
-    const entries = fs.readdirSync(absDir, { withFileTypes: true });
+  // 1) Recolectar lista de archivos para poder reportar progreso real
+  //    (archivos procesados / total y bytes leídos).
+  const files = [];
+  const walk = (absDir, relBase) => {
+    let entries;
+    try { entries = fs.readdirSync(absDir, { withFileTypes: true }); }
+    catch { return; }
     for (const e of entries) {
       const abs = path.join(absDir, e.name);
       const rel = relBase ? `${relBase}/${e.name}` : e.name;
       if (e.isDirectory()) {
-        addDir(abs, rel);
+        walk(abs, rel);
       } else if (e.isFile()) {
-        const data = fs.readFileSync(abs);
-        zip.file(rel, data);
+        let size = 0;
+        try { size = fs.statSync(abs).size; } catch {}
+        files.push({ abs, rel, size });
       }
     }
   };
-  addDir(srcDir, "");
+  walk(srcDir, "");
+  const totalBytes = files.reduce((a, f) => a + f.size, 0);
 
-  const buffer = await zip.generateAsync({
-    type: "nodebuffer",
-    compression: "DEFLATE",
-    compressionOptions: { level: 6 },
+  await new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(destZip);
+    const archive = archiver("zip", { zlib: { level: 6 } });
+    let lastReport = 0;
+    let processed = 0;
+
+    output.on("close", () => resolve());
+    output.on("error", reject);
+    archive.on("warning", (err) => {
+      if (err.code === "ENOENT") return;
+      reject(err);
+    });
+    archive.on("error", reject);
+    archive.on("entry", (entry) => {
+      processed++;
+      const now = Date.now();
+      // Reportar cada 500 ms para no saturar el IPC con archivos pequeños.
+      if (onProgress && (now - lastReport > 500 || processed === files.length)) {
+        lastReport = now;
+        try {
+          onProgress({
+            processed,
+            total: files.length,
+            bytes: archive.pointer(),
+            totalBytes,
+            currentFile: entry?.name,
+          });
+        } catch {}
+      }
+    });
+
+    archive.pipe(output);
+    for (const f of files) {
+      archive.file(f.abs, { name: f.rel });
+    }
+    archive.finalize().catch(reject);
   });
-  fs.writeFileSync(destZip, buffer);
 }
 
 async function resolveAndroidqfUrl() {

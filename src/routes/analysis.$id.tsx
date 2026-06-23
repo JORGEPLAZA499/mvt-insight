@@ -35,7 +35,7 @@ export const Route = createFileRoute("/analysis/$id")({
 });
 
 function AnalysisPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams({ from: "/analysis/$id" });
   const search = Route.useSearch();
   const [analysis, setAnalysis] = useState<Analysis | undefined>();
@@ -65,7 +65,7 @@ function AnalysisPage() {
     setAutoExported(true);
     // Esperar a que el DOM del informe esté pintado
     const tid = window.setTimeout(() => {
-      generatePdfReport(analysis).finally(() => {
+      generatePdfReport(analysis, i18n.language).finally(() => {
         navigate({ to: "/analysis/$id", params: { id }, search: {}, replace: true });
       });
     }, 600);
@@ -129,7 +129,7 @@ function AnalysisPage() {
             )}
           </div>
           <div className="flex gap-2">
-            <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(analysis)}>
+            <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90" onClick={() => generatePdfReport(analysis, i18n.language)}>
               <Download className="h-4 w-4 mr-2" /> {t("analysisPage.downloadPdf")}
             </Button>
           </div>

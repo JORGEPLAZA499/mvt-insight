@@ -893,9 +893,9 @@ export function App() {
                             if (sinceActivityMin >= 15) {
                               return (
                                 <div style={{ marginTop: 8, padding: "6px 8px", background: "rgba(255, 80, 80, 0.10)", border: "1px solid rgba(255, 80, 80, 0.45)", borderRadius: 6, fontSize: 12, color: "#ff9b9b" }}>
-                                  <div>{tr("running.activity.frozen", `⛔ Sin actividad real desde hace ${sinceActivityMin} min. Probablemente el proceso está bloqueado.`, { min: sinceActivityMin })}</div>
+                                  <div>{tr("running.activity.frozen", `⚠ Llevamos ${sinceActivityMin} min sin detectar cambios. Puede que el proceso siga trabajando en segundo plano (operaciones largas como compresión o backup) o que esté bloqueado.`, { min: sinceActivityMin })}</div>
                                   <div style={{ marginTop: 4, opacity: 0.85 }}>
-                                    {tr("running.activity.frozenHint", "Pulsa Cancelar, desconecta y vuelve a conectar el dispositivo y reintenta.")}
+                                    {tr("running.activity.frozenHint", "Espera unos minutos más. Solo si NO ves el indicador de actividad de tu disco duro moverse, pulsa Cancelar y reintenta.")}
                                   </div>
                                 </div>
                               );

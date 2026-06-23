@@ -205,107 +205,45 @@ function Feature({ icon: Icon, text }: { icon: any; text: string }) {
   );
 }
 
-type BrandItem = { key: string; node: React.ReactNode };
+type BrandItem = { key: string; src: string; alt: string; bg?: string };
+
+const CARD_CDN = "https://cdn.jsdelivr.net/gh/aaronfagan/svg-credit-card-payment-icons@main/flat-rounded";
+const CRYPTO_CDN = "https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color";
 
 const cardBrands: BrandItem[] = [
-  {
-    key: "mc",
-    node: (
-      <div className="h-7 w-10 rounded-md bg-white grid place-items-center shadow-sm">
-        <svg viewBox="0 0 32 20" className="h-4">
-          <circle cx="12" cy="10" r="7" fill="#EB001B" />
-          <circle cx="20" cy="10" r="7" fill="#F79E1B" fillOpacity="0.9" />
-          <path d="M16 5.2a7 7 0 0 0 0 9.6 7 7 0 0 0 0-9.6Z" fill="#FF5F00" />
-        </svg>
-      </div>
-    ),
-  },
-  {
-    key: "visa",
-    node: (
-      <div className="h-7 w-10 rounded-md bg-white grid place-items-center shadow-sm">
-        <span className="text-[10px] font-black italic tracking-tight text-[#1A1F71]">VISA</span>
-      </div>
-    ),
-  },
-  {
-    key: "amex",
-    node: (
-      <div className="h-7 w-10 rounded-md bg-[#1F72CD] grid place-items-center shadow-sm">
-        <span className="text-[8px] font-black tracking-tight text-white">AMEX</span>
-      </div>
-    ),
-  },
-  {
-    key: "applepay",
-    node: (
-      <div className="h-7 w-10 rounded-md bg-black border border-white/10 grid place-items-center shadow-sm">
-        <span className="text-[9px] font-semibold text-white tracking-tight"> Pay</span>
-      </div>
-    ),
-  },
-  {
-    key: "gpay",
-    node: (
-      <div className="h-7 w-10 rounded-md bg-white grid place-items-center shadow-sm">
-        <span className="text-[8px] font-medium tracking-tight">
-          <span className="text-[#4285F4]">G</span>
-          <span className="text-[#EA4335]">o</span>
-          <span className="text-[#FBBC04]">o</span>
-          <span className="text-[#4285F4]">g</span>
-          <span className="text-[#34A853]">l</span>
-          <span className="text-[#EA4335]">e</span>
-          <span className="text-foreground/70"> Pay</span>
-        </span>
-      </div>
-    ),
-  },
+  { key: "visa", src: `${CARD_CDN}/visa.svg`, alt: "Visa" },
+  { key: "mc", src: `${CARD_CDN}/mastercard.svg`, alt: "Mastercard" },
+  { key: "amex", src: `${CARD_CDN}/amex.svg`, alt: "American Express" },
+  { key: "applepay", src: "https://cdn.simpleicons.org/applepay/000000", alt: "Apple Pay", bg: "#ffffff" },
+  { key: "gpay", src: "https://cdn.simpleicons.org/googlepay/3C4043", alt: "Google Pay", bg: "#ffffff" },
 ];
 
 const cryptoBrands: BrandItem[] = [
-  { key: "btc", node: <CryptoCircle bg="#F7931A" label="₿" /> },
-  {
-    key: "eth",
-    node: (
-      <CryptoCircle bg="#627EEA">
-        <svg viewBox="0 0 32 32" className="h-4 w-4">
-          <path fill="#fff" d="M16 4 9 16.3l7 4.1 7-4.1z" opacity=".9" />
-          <path fill="#fff" d="m16 21.6-7-4.1L16 28l7-10.5z" opacity=".7" />
-        </svg>
-      </CryptoCircle>
-    ),
-  },
-  { key: "usdt", node: <CryptoCircle bg="#26A17B" label="₮" /> },
-  { key: "trx", node: <CryptoCircle bg="#EF0027" label="T" /> },
-  { key: "bnb", node: <CryptoCircle bg="#F3BA2F" label="◆" /> },
+  { key: "btc", src: `${CRYPTO_CDN}/btc.svg`, alt: "Bitcoin" },
+  { key: "eth", src: `${CRYPTO_CDN}/eth.svg`, alt: "Ethereum" },
+  { key: "usdt", src: `${CRYPTO_CDN}/usdt.svg`, alt: "Tether" },
+  { key: "trx", src: `${CRYPTO_CDN}/trx.svg`, alt: "Tron" },
+  { key: "bnb", src: `${CRYPTO_CDN}/bnb.svg`, alt: "BNB" },
 ];
-
-function CryptoCircle({
-  bg,
-  label,
-  children,
-}: {
-  bg: string;
-  label?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div
-      className="h-7 w-7 rounded-full grid place-items-center shadow-sm text-white font-bold text-xs"
-      style={{ background: bg }}
-    >
-      {children ?? label}
-    </div>
-  );
-}
 
 function PayGroup({ title, items }: { title: string; items: BrandItem[] }) {
   return (
     <div>
-      <div className="text-[10px] italic text-muted-foreground mb-1.5 text-center">{title}</div>
-      <div className="flex flex-nowrap gap-1.5 justify-center items-center">
+      <div className="text-[11px] italic text-muted-foreground mb-2 text-center">{title}</div>
+      <div className="flex flex-wrap gap-2 justify-center items-center">
         {items.map((it) => (
-          <span key={it.key} className="shrink-0">{it.node}</span>
+          <div
+            key={it.key}
+            className="h-10 w-14 rounded-md grid place-items-center shadow-sm overflow-hidden"
+            style={{ background: it.bg ?? "#ffffff" }}
+          >
+            <img
+              src={it.src}
+              alt={it.alt}
+              loading="lazy"
+              className="max-h-7 max-w-[80%] object-contain"
+            />
+          </div>
         ))}
       </div>
     </div>

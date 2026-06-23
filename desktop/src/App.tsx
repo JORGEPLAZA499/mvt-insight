@@ -843,6 +843,20 @@ export function App() {
                           {(() => {
 
                             if (!lastLogAt) return null;
+                            // Algunas fases trabajan en bloque sin emitir logs ni
+                            // tocar archivos visibles para el watcher (compresión
+                            // del ZIP, parsing del ZIP en el main process, subida
+                            // del informe, etc.). Durante esas fases NO mostramos
+                            // el aviso de "sin actividad", porque sería mentira:
+                            // el sistema sí está trabajando.
+                            const blockingStatuses = new Set([
+                              "phaseStatus.compressing",
+                              "phaseStatus.done",
+                              "phaseStatus.downloadingBinary",
+                              "phaseStatus.iosEnablingEncryption",
+                            ]);
+                            if (phase.statusKey && blockingStatuses.has(phase.statusKey)) return null;
+                            if (upload.state === "uploading") return null;
                             const lastActivityAt = Math.max(lastLogAt, activity?.lastChangeAt ?? 0);
                             const sinceActivityMs = Date.now() - lastActivityAt;
                             const sinceLogMin = Math.floor((Date.now() - lastLogAt) / 60000);

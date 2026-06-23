@@ -1053,8 +1053,19 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       if (freshDir) {
         zipPath = path.join(dir, `${freshDir.name}.zip`);
         send("mvt:log", `📦 Comprimiendo carpeta de resultados "${freshDir.name}" → ${path.basename(zipPath)}`);
-        send("mvt:phase", { phase: 3, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.95 });
-        await zipFolder(freshDir.full, zipPath);
+        send("mvt:phase", { phase: 3, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.9 });
+        await zipFolder(freshDir.full, zipPath, (p) => {
+          const pct = p.total ? p.processed / p.total : 0;
+          const mb = (p.bytes / (1024 * 1024)).toFixed(1);
+          const totalMb = (p.totalBytes / (1024 * 1024)).toFixed(0);
+          send("mvt:log", `📦 Comprimiendo ${p.processed}/${p.total} archivos (${mb} MB escritos de ~${totalMb} MB sin comprimir)`);
+          send("mvt:phase", {
+            phase: 3,
+            statusKey: "phaseStatus.compressing",
+            label: "Comprimiendo resultados",
+            progress: 0.9 + pct * 0.09,
+          });
+        });
       } else if (freshZip) {
         zipPath = freshZip.full;
         send("mvt:log", `📦 ZIP detectado: ${freshZip.name}`);

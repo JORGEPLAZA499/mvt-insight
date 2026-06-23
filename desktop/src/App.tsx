@@ -15,6 +15,7 @@ interface PhaseState {
   label: string;
   statusKey?: string;
   progress: number;
+  data?: Record<string, unknown>;
 }
 
 interface Account {

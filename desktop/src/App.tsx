@@ -99,14 +99,14 @@ export function App() {
       setLastLogAt(Date.now());
     });
     const offPhase = window.mvt.onPhase((payload: any) => {
-      const { phase: num, label, statusKey, progress } = payload || {};
+      const { phase: num, label, statusKey, progress, data } = payload || {};
       setPhase((prev) => {
         if (prev.num !== num) {
           setPhaseStartedAt(Date.now());
           setLastLogAt(Date.now());
           setActivity(null);
         }
-        return { num, label, statusKey, progress };
+        return { num, label, statusKey, progress, data };
       });
     });
     const onAct = (window.mvt as any).onActivity as

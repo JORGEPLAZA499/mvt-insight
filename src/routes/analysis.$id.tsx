@@ -65,7 +65,7 @@ function AnalysisPage() {
     setAutoExported(true);
     // Esperar a que el DOM del informe esté pintado
     const tid = window.setTimeout(() => {
-      generatePdfReport(analysis).finally(() => {
+      generatePdfReport(analysis, i18n.language).finally(() => {
         navigate({ to: "/analysis/$id", params: { id }, search: {}, replace: true });
       });
     }, 600);

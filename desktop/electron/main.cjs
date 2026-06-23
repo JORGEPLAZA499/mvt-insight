@@ -1212,7 +1212,17 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       // 6. Comprimir resultados para mantener la misma UX que Android
       const zipPath = path.join(dir, `ios-results-${Date.now()}.zip`);
       send("mvt:phase", { phase: 3, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.9 });
-      await zipFolder(resultsDir, zipPath);
+      await zipFolder(resultsDir, zipPath, (p) => {
+        const pct = p.total ? p.processed / p.total : 0;
+        const mb = (p.bytes / (1024 * 1024)).toFixed(1);
+        send("mvt:log", `📦 Comprimiendo ${p.processed}/${p.total} archivos (${mb} MB escritos)`);
+        send("mvt:phase", {
+          phase: 3,
+          statusKey: "phaseStatus.compressing",
+          label: "Comprimiendo resultados",
+          progress: 0.9 + pct * 0.09,
+        });
+      });
       send("mvt:phase", { phase: 3, statusKey: "phaseStatus.done", label: "Listo", progress: 1 });
 
       // Limpieza: borramos el backup (es enorme) pero conservamos los resultados.

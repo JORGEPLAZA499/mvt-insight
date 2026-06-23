@@ -40,14 +40,14 @@
     "cancel": "Cancelar",
     "cancelConfirm": "¿Cancelar el análisis en curso?",
     "idleWarning": {
-      "ios": "⚠ Sin actividad de mvt-ios desde hace {{min}} min.",
-      "android": "⚠ Sin actividad de androidqf desde hace {{min}} min.",
-      "hint": "Esto suele ser normal mientras se recolectan apps o se crea el backup. Si supera 15 min, pulsa Cancelar y reintenta."
+      "ios": "ℹ Sin nuevos mensajes de mvt-ios desde hace {{min}} min.",
+      "android": "ℹ Sin nuevos mensajes de androidqf desde hace {{min}} min.",
+      "hint": "Es normal: durante el backup, descarga de apps o análisis de módulos puede pasar mucho rato sin imprimir nada. Espera antes de cancelar."
     },
     "activity": {
       "collecting": "Recolectando archivos del dispositivo… {{size}} transferidos (último cambio hace {{ago}}).",
-      "frozen": "⛔ Sin actividad real desde hace {{min}} min. Probablemente el proceso está bloqueado.",
-      "frozenHint": "Pulsa Cancelar, desconecta y vuelve a conectar el dispositivo y reintenta."
+      "frozen": "⚠ Llevamos {{min}} min sin detectar cambios. Puede que el proceso siga trabajando en segundo plano (compresión, backup) o que esté bloqueado.",
+      "frozenHint": "Espera unos minutos más. Solo si NO ves actividad del disco duro, pulsa Cancelar y reintenta."
     },
     "moduleFailed": {
       "title": "Algunos módulos no están disponibles en este dispositivo",

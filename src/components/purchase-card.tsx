@@ -221,7 +221,7 @@ export function PurchaseCard() {
               </button>
 
 
-              <div className="mt-2 grid grid-cols-2 gap-3">
+              <div className="mt-3 space-y-3">
                 <PayGroup title={t("purchase.cardPayments")} items={cardBrands} />
                 <PayGroup title={t("purchase.cryptoPayments")} items={cryptoBrands} />
               </div>

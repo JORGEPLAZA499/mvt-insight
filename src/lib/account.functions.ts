@@ -95,7 +95,7 @@ export const resolveLoginEmail = createServerFn({ method: "POST" })
     if (authError || !authUser.user?.email) {
       throw new Error("Código o contraseña incorrectos.");
     }
-    return { email: authUser.user.email };
+    return { email: authUser.user.email, userCode: row.user_code };
   });
 
 export const touchLastLogin = createServerFn({ method: "POST" })

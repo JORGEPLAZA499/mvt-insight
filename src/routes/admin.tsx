@@ -19,7 +19,7 @@ import {
 } from "@/lib/admin.functions";
 import { adminGetUserLegalSummary } from "@/lib/legal.functions";
 import { LegalAcceptanceViewer } from "@/components/legal-acceptance-viewer";
-import { parseMvtFiles } from "@/lib/mvt-parser";
+import { getMvtUploadKind, parseUploadedMvtAnalysisFile } from "@/lib/mvt-parser";
 
 type AdminTab = "clients" | "tokens" | "health" | "upload";
 
@@ -444,8 +444,8 @@ function UploadTab() {
       setError(t("admin.upload.errors.noFile"));
       return;
     }
-    const lowerName = file.name.toLowerCase();
-    if (!lowerName.endsWith(".zip") && !lowerName.endsWith(".json")) {
+    const uploadKind = getMvtUploadKind(file);
+    if (uploadKind !== "zip" && uploadKind !== "json") {
       setError(t("admin.upload.errors.badExt"));
       return;
     }
@@ -455,23 +455,16 @@ function UploadTab() {
     }
     setBusy(true);
     try {
-      let result;
-      if (lowerName.endsWith(".json")) {
-        // JSON ya parseado: lo subimos tal cual.
-        const text = await file.text();
-        try {
-          result = JSON.parse(text);
-        } catch {
-          setError(t("admin.upload.errors.badJson"));
-          return;
-        }
-      } else {
-        result = await parseMvtFiles([file], file.name);
-        const moduleCount = (result as { modules?: unknown[] })?.modules?.length ?? 0;
-        if (!moduleCount) {
-          setError(t("admin.upload.errors.emptyZip"));
-          return;
-        }
+      const parsed = await parseUploadedMvtAnalysisFile(file, file.name);
+      const result = parsed.result;
+      const moduleCount = result.modules?.length ?? 0;
+      if (!moduleCount) {
+        setError(
+          uploadKind === "zip"
+            ? t("admin.upload.errors.emptyZip")
+            : t("admin.upload.errors.badJson"),
+        );
+        return;
       }
       const r = await uploadFn({
         data: {
@@ -496,7 +489,14 @@ function UploadTab() {
       (document.getElementById("admin-upload-file") as HTMLInputElement | null)?.value &&
         ((document.getElementById("admin-upload-file") as HTMLInputElement).value = "");
     } catch (err: any) {
-      setError(err?.message ?? t("admin.upload.errors.generic"));
+      const message = err?.message || "";
+      setError(
+        uploadKind === "json"
+          ? t("admin.upload.errors.badJson")
+          : uploadKind === "zip" && /zip|corrupt|central directory|end of data/i.test(message)
+            ? t("admin.upload.errors.badZip")
+            : t("admin.upload.errors.generic"),
+      );
     } finally {
       setBusy(false);
     }
@@ -541,8 +541,12 @@ function UploadTab() {
               <Input
                 id="admin-upload-file"
                 type="file"
-                accept=".zip,.json,application/zip,application/json,application/octet-stream"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                accept=".zip,.json,application/zip,application/x-zip,application/x-zip-compressed,multipart/x-zip,application/json,application/octet-stream"
+                onChange={(e) => {
+                  setError(null);
+                  setSuccess(null);
+                  setFile(e.currentTarget.files?.item(0) ?? null);
+                }}
               />
               <p className="text-xs text-muted-foreground">{t("admin.upload.fileHint")}</p>
               {file && (

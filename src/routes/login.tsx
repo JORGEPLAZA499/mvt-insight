@@ -110,7 +110,7 @@ function Login() {
     }
     setBusy(true);
     try {
-      const { email } = await resolveEmail({ data: { code: normalized } });
+      const { email, userCode } = await resolveEmail({ data: { code: normalized } });
       const { data, error: signErr } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -121,12 +121,7 @@ function Login() {
       await touch({ data: { userId: data.user.id } });
       pwdBuf.current.clear();
       setPassword("");
-      const { data: acc } = await supabase
-        .from("accounts")
-        .select("user_code")
-        .eq("id", data.user.id)
-        .maybeSingle();
-      navigate({ to: acc?.user_code === "Admin" ? "/admin" : "/dashboard" });
+      navigate({ to: userCode === "Admin" ? "/admin" : "/dashboard", replace: true });
     } catch (err: any) {
       setError(err?.message || t("loginExt.errors.generic"));
     } finally {

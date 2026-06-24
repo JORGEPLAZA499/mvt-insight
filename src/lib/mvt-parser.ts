@@ -285,6 +285,185 @@ function extractNetworkTop(data: any): NetworkProcUsage[] {
   return [...map.values()].sort((a, b) => b.totalBytes - a.totalBytes).slice(0, 5);
 }
 
+const ZIP_TEXT_ENTRY_MAX_BYTES = 64 * 1024 * 1024;
+
+type ZipCentralEntry = {
+  name: string;
+  method: number;
+  compressedSize: number;
+  uncompressedSize: number;
+  localHeaderOffset: number;
+};
+
+function getU16(view: DataView, offset: number): number {
+  return view.getUint16(offset, true);
+}
+
+function getU32(view: DataView, offset: number): number {
+  return view.getUint32(offset, true);
+}
+
+function getU64(view: DataView, offset: number): number {
+  const lo = view.getUint32(offset, true);
+  const hi = view.getUint32(offset + 4, true);
+  return hi * 0x100000000 + lo;
+}
+
+async function readBlobRange(blob: Blob, start: number, length: number): Promise<ArrayBuffer> {
+  return blob.slice(start, start + length).arrayBuffer();
+}
+
+function decodeZipName(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+  } catch {
+    return Array.from(bytes, (b) => String.fromCharCode(b)).join("");
+  }
+}
+
+async function findZipCentralDirectory(file: File): Promise<{ offset: number; size: number; count: number }> {
+  const eocdMin = 22;
+  const tailSize = Math.min(file.size, 65_535 + eocdMin);
+  const tailStart = file.size - tailSize;
+  const tail = await readBlobRange(file, tailStart, tailSize);
+  const view = new DataView(tail);
+
+  let eocd = -1;
+  for (let i = tailSize - eocdMin; i >= 0; i -= 1) {
+    if (getU32(view, i) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) throw new Error("ZIP_EOCD_NOT_FOUND");
+
+  let count = getU16(view, eocd + 10);
+  let size = getU32(view, eocd + 12);
+  let offset = getU32(view, eocd + 16);
+  const needsZip64 = count === 0xffff || size === 0xffffffff || offset === 0xffffffff;
+
+  if (!needsZip64) return { offset, size, count };
+
+  const locatorPos = eocd - 20;
+  if (locatorPos < 0 || getU32(view, locatorPos) !== 0x07064b50) {
+    throw new Error("ZIP64_LOCATOR_NOT_FOUND");
+  }
+  const zip64EocdOffset = getU64(view, locatorPos + 8);
+  const zip64 = await readBlobRange(file, zip64EocdOffset, 56);
+  const z = new DataView(zip64);
+  if (getU32(z, 0) !== 0x06064b50) throw new Error("ZIP64_EOCD_NOT_FOUND");
+  count = getU64(z, 32);
+  size = getU64(z, 40);
+  offset = getU64(z, 48);
+  return { offset, size, count };
+}
+
+function applyZip64Extra(entry: ZipCentralEntry, extra: Uint8Array): ZipCentralEntry {
+  let pos = 0;
+  let out = entry;
+  while (pos + 4 <= extra.length) {
+    const headerId = extra[pos] | (extra[pos + 1] << 8);
+    const dataSize = extra[pos + 2] | (extra[pos + 3] << 8);
+    const dataStart = pos + 4;
+    const dataEnd = dataStart + dataSize;
+    if (dataEnd > extra.length) break;
+    if (headerId === 0x0001) {
+      const view = new DataView(extra.buffer, extra.byteOffset + dataStart, dataSize);
+      let p = 0;
+      out = { ...out };
+      if (out.uncompressedSize === 0xffffffff && p + 8 <= dataSize) {
+        out.uncompressedSize = getU64(view, p);
+        p += 8;
+      }
+      if (out.compressedSize === 0xffffffff && p + 8 <= dataSize) {
+        out.compressedSize = getU64(view, p);
+        p += 8;
+      }
+      if (out.localHeaderOffset === 0xffffffff && p + 8 <= dataSize) {
+        out.localHeaderOffset = getU64(view, p);
+      }
+      return out;
+    }
+    pos = dataEnd;
+  }
+  return out;
+}
+
+async function listZipCentralEntries(file: File): Promise<ZipCentralEntry[]> {
+  const directory = await findZipCentralDirectory(file);
+  const cd = await readBlobRange(file, directory.offset, directory.size);
+  const view = new DataView(cd);
+  const bytes = new Uint8Array(cd);
+  const entries: ZipCentralEntry[] = [];
+  let pos = 0;
+
+  while (pos + 46 <= cd.byteLength && entries.length < directory.count) {
+    if (getU32(view, pos) !== 0x02014b50) break;
+    const flags = getU16(view, pos + 8);
+    const method = getU16(view, pos + 10);
+    const compressedSize = getU32(view, pos + 20);
+    const uncompressedSize = getU32(view, pos + 24);
+    const nameLength = getU16(view, pos + 28);
+    const extraLength = getU16(view, pos + 30);
+    const commentLength = getU16(view, pos + 32);
+    const localHeaderOffset = getU32(view, pos + 42);
+    const nameStart = pos + 46;
+    const nameEnd = nameStart + nameLength;
+    const extraEnd = nameEnd + extraLength;
+    if (extraEnd + commentLength > cd.byteLength) break;
+
+    const nameBytes = bytes.slice(nameStart, nameEnd);
+    const name = flags & 0x800
+      ? decodeZipName(nameBytes)
+      : Array.from(nameBytes, (b) => String.fromCharCode(b)).join("");
+    const extra = bytes.slice(nameEnd, extraEnd);
+    entries.push(
+      applyZip64Extra(
+        { name, method, compressedSize, uncompressedSize, localHeaderOffset },
+        extra,
+      ),
+    );
+    pos = extraEnd + commentLength;
+  }
+
+  return entries;
+}
+
+async function inflateRawBlob(blob: Blob): Promise<string> {
+  if (typeof DecompressionStream !== "function") {
+    throw new Error("DECOMPRESSION_STREAM_UNAVAILABLE");
+  }
+  const stream = blob.stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return await new Response(stream).text();
+}
+
+async function readZipEntryText(file: File, entry: ZipCentralEntry): Promise<string | null> {
+  if (entry.uncompressedSize > ZIP_TEXT_ENTRY_MAX_BYTES) return null;
+  const localHeader = await readBlobRange(file, entry.localHeaderOffset, 30);
+  const view = new DataView(localHeader);
+  if (getU32(view, 0) !== 0x04034b50) return null;
+  const nameLength = getU16(view, 26);
+  const extraLength = getU16(view, 28);
+  const dataStart = entry.localHeaderOffset + 30 + nameLength + extraLength;
+  const compressed = file.slice(dataStart, dataStart + entry.compressedSize);
+
+  if (entry.method === 0) return await compressed.text();
+  if (entry.method === 8) return await inflateRawBlob(compressed);
+  return null;
+}
+
+async function readZipTextEntries(file: File): Promise<{ name: string; text: string }[]> {
+  const entries = await listZipCentralEntries(file);
+  const out: { name: string; text: string }[] = [];
+  for (const entry of entries) {
+    const lower = entry.name.toLowerCase();
+    if (lower.endsWith("/") || (!lower.endsWith(".json") && !lower.endsWith(".txt"))) continue;
+    const text = await readZipEntryText(file, entry);
+    if (text != null) out.push({ name: entry.name, text });
+  }
+  return out;
+}
+
 async function readFileEntries(files: File[]): Promise<{ name: string; text: string }[]> {
   const out: { name: string; text: string }[] = [];
   const accept = (p: string) => {
@@ -294,15 +473,19 @@ async function readFileEntries(files: File[]): Promise<{ name: string; text: str
   for (const f of files) {
     const kind = getMvtUploadKind(f);
     if (kind === "zip") {
-      const buf = await f.arrayBuffer();
-      const zip = await JSZip.loadAsync(buf);
-      const tasks: Promise<void>[] = [];
-      zip.forEach((path, entry) => {
-        if (entry.dir) return;
-        if (!accept(path)) return;
-        tasks.push(entry.async("string").then((text) => { out.push({ name: path, text }); }));
-      });
-      await Promise.all(tasks);
+      const streamedEntries = await readZipTextEntries(f);
+      if (streamedEntries.length) out.push(...streamedEntries);
+      else if (f.size < 250 * 1024 * 1024) {
+        const buf = await f.arrayBuffer();
+        const zip = await JSZip.loadAsync(buf);
+        const tasks: Promise<void>[] = [];
+        zip.forEach((path, entry) => {
+          if (entry.dir) return;
+          if (!accept(path)) return;
+          tasks.push(entry.async("string").then((text) => { out.push({ name: path, text }); }));
+        });
+        await Promise.all(tasks);
+      }
     } else if (kind === "json" || kind === "text" || accept(f.name)) {
       const text = await f.text();
       out.push({ name: f.name, text });

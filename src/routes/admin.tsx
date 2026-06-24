@@ -444,13 +444,35 @@ function UploadTab() {
       setError(t("admin.upload.errors.noFile"));
       return;
     }
+    const lowerName = file.name.toLowerCase();
+    if (!lowerName.endsWith(".zip") && !lowerName.endsWith(".json")) {
+      setError(t("admin.upload.errors.badExt"));
+      return;
+    }
     if (!userCode.trim()) {
       setError(t("admin.upload.errors.noCode"));
       return;
     }
     setBusy(true);
     try {
-      const result = await parseMvtFiles([file], file.name);
+      let result;
+      if (lowerName.endsWith(".json")) {
+        // JSON ya parseado: lo subimos tal cual.
+        const text = await file.text();
+        try {
+          result = JSON.parse(text);
+        } catch {
+          setError(t("admin.upload.errors.badJson"));
+          return;
+        }
+      } else {
+        result = await parseMvtFiles([file], file.name);
+        const moduleCount = (result as { modules?: unknown[] })?.modules?.length ?? 0;
+        if (!moduleCount) {
+          setError(t("admin.upload.errors.emptyZip"));
+          return;
+        }
+      }
       const r = await uploadFn({
         data: {
           userCode: userCode.trim(),
@@ -519,10 +541,15 @@ function UploadTab() {
               <Input
                 id="admin-upload-file"
                 type="file"
-                accept=".zip,.json"
+                accept=".zip,.json,application/zip,application/json,application/octet-stream"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />
               <p className="text-xs text-muted-foreground">{t("admin.upload.fileHint")}</p>
+              {file && (
+                <p className="text-xs text-muted-foreground font-mono truncate">
+                  {file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              )}
             </div>
             <Button type="submit" disabled={busy} className="w-full">
               {busy ? (

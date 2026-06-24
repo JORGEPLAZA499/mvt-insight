@@ -259,7 +259,7 @@ function Login() {
         <div className="absolute top-4 right-4">
           <LanguageSelector />
         </div>
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-lg">
           <h1 className="text-2xl font-semibold tracking-tight">
             {mode === "login" ? t("loginExt.loginTitle") : t("loginExt.registerTitle")}
           </h1>

@@ -63,7 +63,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
       key={label + extra}
       type="button"
       onClick={onClick}
-      className="h-14 sm:h-12 aspect-square rounded-lg border border-border bg-background hover:bg-accent active:bg-accent active:scale-95 text-lg sm:text-base font-semibold shadow-sm transition select-none"
+      className="h-10 sm:h-10 aspect-square rounded-lg border border-border bg-background hover:bg-accent active:bg-accent active:scale-95 text-base sm:text-base font-semibold shadow-sm transition select-none"
       aria-label={t("a11y.key", { label })}
     >
       {label}
@@ -72,7 +72,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
 
   return (
     <div
-      className="mt-2 rounded-lg border border-border bg-card p-5 sm:p-4 shadow-lg min-w-max"
+      className="mt-2 rounded-lg border border-border bg-card p-4 shadow-lg"
       role="group"
       aria-label={t("a11y.virtualKeyboard")}
     >
@@ -107,37 +107,37 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
         </div>
       </div>
 
-      <div className="grid gap-2 sm:gap-1.5 mb-2" style={{ gridTemplateColumns: "repeat(10, min-content)" }}>
+      <div className="grid gap-1.5 mb-2" style={{ gridTemplateColumns: "repeat(10, min-content)" }}>
         {digits.map((d) => keyBtn(d, () => press(d)))}
       </div>
 
       {!showSymbols ? (
-        <div className="grid gap-2 sm:gap-1.5" style={{ gridTemplateColumns: "repeat(13, min-content)" }}>
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(10, min-content)" }}>
           {letters.map((l) =>
             keyBtn(shift ? l.toUpperCase() : l, () => press(l)),
           )}
         </div>
       ) : (
-        <div className="grid gap-2 sm:gap-1.5" style={{ gridTemplateColumns: "repeat(13, min-content)" }}>
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(10, min-content)" }}>
           {symbols.map((s) => keyBtn(s, () => onChange(value + s)))}
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2 sm:gap-1.5 mt-3">
+      <div className="flex flex-wrap gap-1.5 mt-2">
         <button
           type="button"
           onClick={() => setShift((s) => !s)}
-          className={`h-14 sm:h-12 px-4 sm:px-3 rounded-lg border border-border text-base sm:text-sm font-semibold inline-flex items-center gap-1 shadow-sm active:scale-95 transition ${
+          className={`h-10 sm:h-10 px-3 rounded-lg border border-border text-sm font-semibold inline-flex items-center gap-1 shadow-sm active:scale-95 transition ${
             shift ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent"
           }`}
           aria-pressed={shift}
         >
-          <ArrowUp className="h-5 w-5 sm:h-4 sm:w-4" /> {t("a11y.shift")}
+          <ArrowUp className="h-4 w-4" /> {t("a11y.shift")}
         </button>
         <button
           type="button"
           onClick={() => setShowSymbols((s) => !s)}
-          className={`h-14 sm:h-12 px-4 sm:px-3 rounded-lg border border-border text-base sm:text-sm font-semibold shadow-sm active:scale-95 transition ${
+          className={`h-10 sm:h-10 px-3 rounded-lg border border-border text-sm font-semibold shadow-sm active:scale-95 transition ${
             showSymbols
               ? "bg-primary text-primary-foreground"
               : "bg-background hover:bg-accent"
@@ -149,17 +149,17 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
         <button
           type="button"
           onClick={() => onChange(value + " ")}
-          className="flex-1 h-14 sm:h-12 rounded-lg border border-border bg-background hover:bg-accent active:scale-95 text-base sm:text-sm font-semibold shadow-sm transition"
+          className="flex-1 h-10 sm:h-10 rounded-lg border border-border bg-background hover:bg-accent active:scale-95 text-sm font-semibold shadow-sm transition"
         >
           {t("a11y.space")}
         </button>
         <button
           type="button"
           onClick={backspace}
-          className="h-14 sm:h-12 px-4 sm:px-3 rounded-lg border border-border bg-background hover:bg-accent active:scale-95 text-base sm:text-sm font-semibold shadow-sm inline-flex items-center gap-1 transition"
+          className="h-10 sm:h-10 px-3 rounded-lg border border-border bg-background hover:bg-accent active:scale-95 text-sm font-semibold shadow-sm inline-flex items-center gap-1 transition"
           aria-label={t("a11y.deleteLast")}
         >
-          <Delete className="h-5 w-5 sm:h-4 sm:w-4" /> {t("a11y.delete")}
+          <Delete className="h-4 w-4" /> {t("a11y.delete")}
         </button>
       </div>
     </div>

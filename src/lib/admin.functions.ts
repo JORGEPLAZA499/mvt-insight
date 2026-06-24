@@ -163,3 +163,49 @@ export const claimAdmin = createServerFn({ method: "POST" })
 
     return { success: true };
   });
+
+/**
+ * Sube un análisis ya parseado en cliente y lo asigna a la cuenta indicada
+ * por `userCode`. Pensado para recuperar informes que se quedaron sin subir
+ * (p. ej. caída de la app de escritorio). No consume créditos: el cliente ya
+ * los pagó cuando se ejecutó el análisis original.
+ */
+export const adminUploadAnalysisForUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        userCode: z.string().trim().min(1).max(64),
+        device: z.string().trim().min(1).max(32),
+        fileName: z.string().trim().min(1).max(512),
+        fileSize: z.number().int().min(0).max(9_000_000_000_000),
+        result: z.unknown(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+
+    const { data: acc, error: accErr } = await supabaseAdmin
+      .from("accounts")
+      .select("id, user_code")
+      .eq("user_code", data.userCode)
+      .maybeSingle();
+    if (accErr) throw new Error(accErr.message);
+    if (!acc) return { ok: false as const, error: "ACCOUNT_NOT_FOUND" };
+
+    const { data: row, error } = await supabaseAdmin
+      .from("analyses")
+      .insert({
+        user_id: acc.id,
+        device: data.device,
+        file_name: data.fileName,
+        file_size: data.fileSize,
+        result: data.result as never,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+
+    return { ok: true as const, analysisId: row.id, userCode: acc.user_code };
+  });

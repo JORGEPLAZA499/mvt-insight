@@ -444,13 +444,35 @@ function UploadTab() {
       setError(t("admin.upload.errors.noFile"));
       return;
     }
+    const lowerName = file.name.toLowerCase();
+    if (!lowerName.endsWith(".zip") && !lowerName.endsWith(".json")) {
+      setError(t("admin.upload.errors.badExt"));
+      return;
+    }
     if (!userCode.trim()) {
       setError(t("admin.upload.errors.noCode"));
       return;
     }
     setBusy(true);
     try {
-      const result = await parseMvtFiles([file], file.name);
+      let result;
+      if (lowerName.endsWith(".json")) {
+        // JSON ya parseado: lo subimos tal cual.
+        const text = await file.text();
+        try {
+          result = JSON.parse(text);
+        } catch {
+          setError(t("admin.upload.errors.badJson"));
+          return;
+        }
+      } else {
+        result = await parseMvtFiles([file], file.name);
+        const moduleCount = (result as { modules?: unknown[] })?.modules?.length ?? 0;
+        if (!moduleCount) {
+          setError(t("admin.upload.errors.emptyZip"));
+          return;
+        }
+      }
       const r = await uploadFn({
         data: {
           userCode: userCode.trim(),

@@ -63,7 +63,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
       key={label + extra}
       type="button"
       onClick={onClick}
-      className="h-14 sm:h-12 w-full rounded-lg border border-border bg-background hover:bg-accent active:bg-accent active:scale-95 text-lg sm:text-base font-semibold shadow-sm transition select-none"
+      className="h-14 sm:h-12 aspect-square rounded-lg border border-border bg-background hover:bg-accent active:bg-accent active:scale-95 text-lg sm:text-base font-semibold shadow-sm transition select-none"
       aria-label={t("a11y.key", { label })}
     >
       {label}
@@ -72,7 +72,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
 
   return (
     <div
-      className="mt-2 rounded-lg border border-border bg-card p-5 sm:p-4 shadow-lg"
+      className="mt-2 rounded-lg border border-border bg-card p-5 sm:p-4 shadow-lg min-w-max"
       role="group"
       aria-label={t("a11y.virtualKeyboard")}
     >
@@ -107,18 +107,18 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-10 gap-2 sm:gap-1.5 mb-2">
+      <div className="grid gap-2 sm:gap-1.5 mb-2" style={{ gridTemplateColumns: "repeat(10, min-content)" }}>
         {digits.map((d) => keyBtn(d, () => press(d)))}
       </div>
 
       {!showSymbols ? (
-        <div className="grid grid-cols-13 gap-2 sm:gap-1.5" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
+        <div className="grid gap-2 sm:gap-1.5" style={{ gridTemplateColumns: "repeat(13, min-content)" }}>
           {letters.map((l) =>
             keyBtn(shift ? l.toUpperCase() : l, () => press(l)),
           )}
         </div>
       ) : (
-        <div className="grid gap-2 sm:gap-1.5" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
+        <div className="grid gap-2 sm:gap-1.5" style={{ gridTemplateColumns: "repeat(13, min-content)" }}>
           {symbols.map((s) => keyBtn(s, () => onChange(value + s)))}
         </div>
       )}

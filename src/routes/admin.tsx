@@ -8,18 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Copy, RefreshCw, Scale } from "lucide-react";
+import { Loader2, Copy, RefreshCw, Scale, UploadCloud } from "lucide-react";
 import i18n from "@/i18n";
 import {
   listAccounts,
   generateCreditToken,
   listCreditTokens,
   getSystemHealth,
+  adminUploadAnalysisForUser,
 } from "@/lib/admin.functions";
 import { adminGetUserLegalSummary } from "@/lib/legal.functions";
 import { LegalAcceptanceViewer } from "@/components/legal-acceptance-viewer";
+import { parseMvtFiles } from "@/lib/mvt-parser";
 
-type AdminTab = "clients" | "tokens" | "health";
+type AdminTab = "clients" | "tokens" | "health" | "upload";
 
 export const Route = createFileRoute("/admin")({
   head: () => {
@@ -29,7 +31,8 @@ export const Route = createFileRoute("/admin")({
   validateSearch: (search: Record<string, unknown>): { tab: AdminTab } => {
     const t = search.tab;
     return {
-      tab: t === "tokens" || t === "health" ? t : "clients",
+      tab:
+        t === "tokens" || t === "health" || t === "upload" ? t : "clients",
     };
   },
   component: AdminPanel,

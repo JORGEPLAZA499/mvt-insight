@@ -292,8 +292,8 @@ async function readFileEntries(files: File[]): Promise<{ name: string; text: str
     return l.endsWith(".json") || l.endsWith(".txt");
   };
   for (const f of files) {
-    const lower = f.name.toLowerCase();
-    if (lower.endsWith(".zip")) {
+    const kind = getMvtUploadKind(f);
+    if (kind === "zip") {
       const buf = await f.arrayBuffer();
       const zip = await JSZip.loadAsync(buf);
       const tasks: Promise<void>[] = [];
@@ -303,7 +303,7 @@ async function readFileEntries(files: File[]): Promise<{ name: string; text: str
         tasks.push(entry.async("string").then((text) => { out.push({ name: path, text }); }));
       });
       await Promise.all(tasks);
-    } else if (accept(lower)) {
+    } else if (kind === "json" || kind === "text" || accept(f.name)) {
       const text = await f.text();
       out.push({ name: f.name, text });
     }

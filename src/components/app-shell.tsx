@@ -44,6 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const purchaseOpen = usePurchaseCardOpen();
   const [credits, setCredits] = useState(0);
   const [userCode, setUserCode] = useState<string | null>(null);
+  const [accountLoaded, setAccountLoaded] = useState(false);
   const [historyCount, setHistoryCount] = useState(0);
 
 
@@ -54,7 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isAdmin = userCode === "Admin";
   const isAdminRoute = path.startsWith("/admin");
   const adminTab = (typeof search?.tab === "string" ? search.tab : "clients") as string;
-  const inAdminMode = isAdmin && isAdminRoute;
+  const inAdminMode = isAdminRoute && (isAdmin || !accountLoaded);
 
   const nav = inAdminMode
     ? [
@@ -104,10 +105,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    setAccountLoaded(false);
     (async () => {
       const { data } = await supabase.auth.getUser();
       if (!active) return;
       if (!data.user) {
+        setAccountLoaded(true);
         navigate({ to: "/login" });
         return;
       }
@@ -121,6 +124,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       setUserCode(acc?.user_code ?? null);
       setCredits(acc?.credits ?? 0);
       setHistoryCount(getAnalyses().length);
+      setAccountLoaded(true);
 
       channel = supabase
         .channel(`account-credits-${userId}`)
@@ -182,7 +186,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         {/* Brand */}
         <Link
-          to="/dashboard"
+          to={inAdminMode ? "/admin" : "/dashboard"}
           className="relative flex flex-col items-center px-2 py-1 group"
         >
           <div className="relative">

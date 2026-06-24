@@ -292,8 +292,8 @@ async function readFileEntries(files: File[]): Promise<{ name: string; text: str
     return l.endsWith(".json") || l.endsWith(".txt");
   };
   for (const f of files) {
-    const lower = f.name.toLowerCase();
-    if (lower.endsWith(".zip")) {
+    const kind = getMvtUploadKind(f);
+    if (kind === "zip") {
       const buf = await f.arrayBuffer();
       const zip = await JSZip.loadAsync(buf);
       const tasks: Promise<void>[] = [];
@@ -303,7 +303,7 @@ async function readFileEntries(files: File[]): Promise<{ name: string; text: str
         tasks.push(entry.async("string").then((text) => { out.push({ name: path, text }); }));
       });
       await Promise.all(tasks);
-    } else if (accept(lower)) {
+    } else if (kind === "json" || kind === "text" || accept(f.name)) {
       const text = await f.text();
       out.push({ name: f.name, text });
     }
@@ -401,8 +401,94 @@ function cleanDeviceInfo(info: MvtDeviceInfo): MvtDeviceInfo | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
+export type MvtTextEntry = { name: string; text: string };
+
+export type MvtUploadKind = "zip" | "json" | "text" | "unsupported";
+
+export function getMvtUploadKind(file: File): MvtUploadKind {
+  const lowerName = file.name.toLowerCase();
+  const mime = file.type.toLowerCase();
+  if (
+    lowerName.endsWith(".zip") ||
+    mime === "application/zip" ||
+    mime === "application/x-zip" ||
+    mime === "application/x-zip-compressed" ||
+    mime === "multipart/x-zip"
+  ) {
+    return "zip";
+  }
+  if (lowerName.endsWith(".json") || mime === "application/json") return "json";
+  if (lowerName.endsWith(".txt") || mime.startsWith("text/")) return "text";
+  return "unsupported";
+}
+
+function looksLikeParsedMvtResult(value: unknown): value is MvtParsedResult {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Partial<MvtParsedResult>;
+  return Array.isArray(v.modules) && Array.isArray(v.detections) && typeof v.risk === "string";
+}
+
+function normalizeEmbeddedParsedResult(result: MvtParsedResult, sourceName: string): MvtParsedResult {
+  return {
+    ...result,
+    sourceName: result.sourceName || sourceName,
+    parsedAt: result.parsedAt || new Date().toISOString(),
+  };
+}
+
+export async function parseUploadedMvtAnalysisFile(
+  file: File,
+  sourceName = file.name,
+): Promise<{ result: MvtParsedResult; entriesRead: number; usedEmbeddedResult: boolean }> {
+  const kind = getMvtUploadKind(file);
+  if (kind === "unsupported") throw new Error("UNSUPPORTED_FORMAT");
+
+  if (kind === "json") {
+    const parsed = JSON.parse(await file.text()) as unknown;
+    if (looksLikeParsedMvtResult(parsed)) {
+      return {
+        result: normalizeEmbeddedParsedResult(parsed, sourceName),
+        entriesRead: 1,
+        usedEmbeddedResult: true,
+      };
+    }
+    return {
+      result: parseMvtEntries([{ name: file.name, text: JSON.stringify(parsed) }], sourceName),
+      entriesRead: 1,
+      usedEmbeddedResult: false,
+    };
+  }
+
+  const entries = await readFileEntries([file]);
+  for (const entry of entries) {
+    if (!entry.name.toLowerCase().endsWith(".json")) continue;
+    try {
+      const parsed = JSON.parse(entry.text) as unknown;
+      if (looksLikeParsedMvtResult(parsed)) {
+        return {
+          result: normalizeEmbeddedParsedResult(parsed, sourceName),
+          entriesRead: entries.length,
+          usedEmbeddedResult: true,
+        };
+      }
+    } catch {
+      // Not an embedded parsed report; continue with raw MVT parsing.
+    }
+  }
+
+  return {
+    result: parseMvtEntries(entries, sourceName),
+    entriesRead: entries.length,
+    usedEmbeddedResult: false,
+  };
+}
+
 export async function parseMvtFiles(files: File[], sourceName: string): Promise<MvtParsedResult> {
   const entries = await readFileEntries(files);
+  return parseMvtEntries(entries, sourceName);
+}
+
+export function parseMvtEntries(entries: MvtTextEntry[], sourceName: string): MvtParsedResult {
   const moduleMap = new Map<string, MvtModuleResult>();
   const detections: MvtDetection[] = [];
   const timeline: MvtParsedResult["timeline"] = [];

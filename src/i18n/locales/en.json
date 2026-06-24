@@ -570,6 +570,7 @@
         "noCode": "Enter the target user code.",
         "accountNotFound": "No account found with that code.",
         "badExt": "Invalid format. Upload a .zip or .json.",
+        "badZip": "The ZIP could not be read. Generate it again or choose the original .zip file.",
         "badJson": "The .json file is not valid.",
         "emptyZip": "The ZIP doesn't contain recognizable MVT files (JSON/TXT).",
         "generic": "Could not upload the report."

@@ -100,6 +100,7 @@ function AdminSectionContent() {
   const { tab } = Route.useSearch();
   if (tab === "tokens") return <TokensTab />;
   if (tab === "health") return <HealthTab />;
+  if (tab === "upload") return <UploadTab />;
   return <ClientsTab />;
 }
 

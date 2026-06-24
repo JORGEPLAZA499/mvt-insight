@@ -63,6 +63,7 @@
     "admin": {
       "clients": "Clients",
       "tokens": "Tokens",
+      "upload": "Upload report",
       "health": "System health"
     },
     "quick": {
@@ -552,6 +553,24 @@
       "lastRecharge": "Last recharge",
       "lastCheck": "Last check: {{when}}",
       "refresh": "Refresh"
+    },
+    "upload": {
+      "title": "Upload pending report",
+      "subtitle": "Upload a processed AndroidQF / iOS Backup ZIP and assign it to a client by their user code. Useful for recovering reports that didn't get uploaded automatically. No credits are consumed.",
+      "userCode": "Target user code",
+      "device": "Device",
+      "file": "Analysis file (.zip or .json)",
+      "fileHint": "Accepts the ZIP produced by the desktop app (AndroidQF or iOS results) or an already-parsed JSON.",
+      "submit": "Upload and assign to client",
+      "processing": "Processing file…",
+      "success": "Report uploaded successfully",
+      "assignedTo": "Assigned to",
+      "errors": {
+        "noFile": "Choose a file.",
+        "noCode": "Enter the target user code.",
+        "accountNotFound": "No account found with that code.",
+        "generic": "Could not upload the report."
+      }
     },
     "legal": {
       "statusOk": "Current acceptance on file",

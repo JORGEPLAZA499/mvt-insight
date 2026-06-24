@@ -63,6 +63,7 @@
     "admin": {
       "clients": "Clientes",
       "tokens": "Tokens",
+      "upload": "Subir informe",
       "health": "Salud del sistema"
     },
     "quick": {
@@ -552,6 +553,24 @@
       "lastRecharge": "Última recarga",
       "lastCheck": "Última comprobación: {{when}}",
       "refresh": "Actualizar"
+    },
+    "upload": {
+      "title": "Subir informe pendiente",
+      "subtitle": "Sube un ZIP de AndroidQF o iOS Backup ya procesado y asígnalo a un cliente por su código de usuario. Útil para recuperar informes que no llegaron a subirse automáticamente. No descuenta créditos.",
+      "userCode": "Código de usuario destinatario",
+      "device": "Dispositivo",
+      "file": "Archivo del análisis (.zip o .json)",
+      "fileHint": "Acepta el ZIP generado por la app de escritorio (AndroidQF o iOS results) o un JSON ya parseado.",
+      "submit": "Subir y asignar al cliente",
+      "processing": "Procesando archivo…",
+      "success": "Informe subido correctamente",
+      "assignedTo": "Asignado a",
+      "errors": {
+        "noFile": "Selecciona un archivo.",
+        "noCode": "Introduce el código del usuario destinatario.",
+        "accountNotFound": "No existe ninguna cuenta con ese código.",
+        "generic": "No se pudo subir el informe."
+      }
     },
     "legal": {
       "statusOk": "Aceptación vigente",

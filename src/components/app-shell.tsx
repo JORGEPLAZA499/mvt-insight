@@ -60,6 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     ? [
         { to: "/admin", label: t("shell.admin.clients"), icon: Users, hint: "", search: { tab: "clients" }, tabKey: "clients" },
         { to: "/admin", label: t("shell.admin.tokens"), icon: Ticket, hint: "", search: { tab: "tokens" }, tabKey: "tokens" },
+        { to: "/admin", label: t("shell.admin.upload"), icon: UploadCloud, hint: "", search: { tab: "upload" }, tabKey: "upload" },
         { to: "/admin", label: t("shell.admin.health"), icon: Activity, hint: "", search: { tab: "health" }, tabKey: "health" },
       ]
     : [

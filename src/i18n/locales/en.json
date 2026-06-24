@@ -726,6 +726,7 @@
     "copied": "Copied!",
     "copy": "Copy",
     "virtualKeyboard": "Virtual keyboard",
+    "secureVirtualKeyboard": "Secure virtual keyboard",
     "key": "Key {{label}}",
     "reorderKeys": "Shuffle keys",
     "reorder": "Shuffle",

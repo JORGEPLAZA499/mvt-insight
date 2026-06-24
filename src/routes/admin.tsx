@@ -541,10 +541,15 @@ function UploadTab() {
               <Input
                 id="admin-upload-file"
                 type="file"
-                accept=".zip,.json"
+                accept=".zip,.json,application/zip,application/json,application/octet-stream"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />
               <p className="text-xs text-muted-foreground">{t("admin.upload.fileHint")}</p>
+              {file && (
+                <p className="text-xs text-muted-foreground font-mono truncate">
+                  {file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              )}
             </div>
             <Button type="submit" disabled={busy} className="w-full">
               {busy ? (

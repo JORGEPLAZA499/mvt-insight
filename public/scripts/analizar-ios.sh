@@ -140,7 +140,7 @@ if [[ "$RM" =~ ^[sS]$ ]]; then rm -rf "$DEC_DIR"; fi
 
 echo
 echo "✅ Análisis completado: $(pwd)/$ZIP_FILE"
-URL="https://id-preview--9a02aa66-84b2-4251-8832-d9d10e4c30cb.lovable.app/upload"
+URL="https://spyware.rpjsoftware.com/upload"
 if command -v open >/dev/null 2>&1; then open "$URL";
 elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$URL";
 fi

@@ -569,6 +569,9 @@
         "noFile": "Selecciona un archivo.",
         "noCode": "Introduce el código del usuario destinatario.",
         "accountNotFound": "No existe ninguna cuenta con ese código.",
+        "badExt": "Formato no válido. Sube un .zip o .json.",
+        "badJson": "El archivo .json no es válido.",
+        "emptyZip": "El ZIP no contiene archivos MVT reconocibles (JSON/TXT).",
         "generic": "No se pudo subir el informe."
       }
     },

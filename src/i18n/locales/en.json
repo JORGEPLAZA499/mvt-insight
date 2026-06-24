@@ -63,6 +63,7 @@
     "admin": {
       "clients": "Clients",
       "tokens": "Tokens",
+      "upload": "Upload report",
       "health": "System health"
     },
     "quick": {

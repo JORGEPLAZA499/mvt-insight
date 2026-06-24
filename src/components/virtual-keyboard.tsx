@@ -78,7 +78,7 @@ export function VirtualKeyboard({ value, onChange, onClose }: Props) {
     >
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium tracking-wide text-muted-foreground">
-          Teclado virtual de seguridad
+          {t("a11y.secureVirtualKeyboard")}
         </span>
         <div className="flex gap-1">
           <button

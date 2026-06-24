@@ -425,3 +425,130 @@ function HealthTab() {
     </div>
   );
 }
+
+function UploadTab() {
+  const { t } = useTranslation();
+  const uploadFn = useServerFn(adminUploadAnalysisForUser);
+  const [file, setFile] = useState<File | null>(null);
+  const [userCode, setUserCode] = useState("");
+  const [device, setDevice] = useState<"android" | "ios">("android");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<{ analysisId: string; userCode: string } | null>(null);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    if (!file) {
+      setError(t("admin.upload.errors.noFile"));
+      return;
+    }
+    if (!userCode.trim()) {
+      setError(t("admin.upload.errors.noCode"));
+      return;
+    }
+    setBusy(true);
+    try {
+      const result = await parseMvtFiles([file], file.name);
+      const r = await uploadFn({
+        data: {
+          userCode: userCode.trim(),
+          device,
+          fileName: file.name,
+          fileSize: file.size,
+          result,
+        },
+      });
+      if (!r.ok) {
+        setError(
+          r.error === "ACCOUNT_NOT_FOUND"
+            ? t("admin.upload.errors.accountNotFound")
+            : t("admin.upload.errors.generic"),
+        );
+        return;
+      }
+      setSuccess({ analysisId: r.analysisId, userCode: r.userCode });
+      setFile(null);
+      setUserCode("");
+      (document.getElementById("admin-upload-file") as HTMLInputElement | null)?.value &&
+        ((document.getElementById("admin-upload-file") as HTMLInputElement).value = "");
+    } catch (err: any) {
+      setError(err?.message ?? t("admin.upload.errors.generic"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UploadCloud className="h-5 w-5 text-primary" />
+            {t("admin.upload.title")}
+          </CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">{t("admin.upload.subtitle")}</p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-upload-code">{t("admin.upload.userCode")}</Label>
+              <Input
+                id="admin-upload-code"
+                value={userCode}
+                onChange={(e) => setUserCode(e.target.value)}
+                placeholder="XXX-XXX-XXX"
+                className="font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-upload-device">{t("admin.upload.device")}</Label>
+              <select
+                id="admin-upload-device"
+                value={device}
+                onChange={(e) => setDevice(e.target.value as "android" | "ios")}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+              >
+                <option value="android">Android</option>
+                <option value="ios">iOS</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="admin-upload-file">{t("admin.upload.file")}</Label>
+              <Input
+                id="admin-upload-file"
+                type="file"
+                accept=".zip,.json"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+              <p className="text-xs text-muted-foreground">{t("admin.upload.fileHint")}</p>
+            </div>
+            <Button type="submit" disabled={busy} className="w-full">
+              {busy ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" /> {t("admin.upload.processing")}
+                </>
+              ) : (
+                t("admin.upload.submit")
+              )}
+            </Button>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            {success && (
+              <div className="rounded-md border border-success/40 bg-success/5 p-3 text-sm">
+                <div className="font-medium text-success">{t("admin.upload.success")}</div>
+                <div className="mt-1 text-muted-foreground">
+                  {t("admin.upload.assignedTo")}{" "}
+                  <span className="font-mono text-foreground">{success.userCode}</span>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground font-mono break-all">
+                  {success.analysisId}
+                </div>
+              </div>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

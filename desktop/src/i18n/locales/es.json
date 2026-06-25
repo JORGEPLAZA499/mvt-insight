@@ -122,7 +122,21 @@
     "downloading": "Descargando…",
     "readyToInstall": "Actualización lista para instalar",
     "restart": "Reiniciar e instalar",
-    "error": "Error al comprobar actualizaciones:"
+    "error": "Error al comprobar actualizaciones:",
+    "gate": {
+      "title": {
+        "required": "Actualización obligatoria",
+        "ready": "Actualización lista para instalar"
+      },
+      "body": {
+        "downloading": "Estamos descargando la última versión de la app. No cierres esta ventana.",
+        "ready": "Pulsa el botón para reiniciar e instalar la nueva versión. La app no puede usarse hasta entonces."
+      },
+      "progress": "{{percent}}% descargado",
+      "preparing": "Preparando descarga…",
+      "installNow": "Reiniciar e instalar ahora",
+      "versionLabel": "Nueva versión: {{version}}"
+    }
   },
   "account": {
     "credits": "créditos",

@@ -503,6 +503,70 @@ export function App() {
     setLogs([]);
   };
 
+
+  // Actualización obligatoria: si hay versión nueva disponible, bloqueamos
+  // toda la app hasta que se descargue y el usuario pulse "Reiniciar e instalar".
+  const updateBlocking =
+    updateState.state === "available" ||
+    updateState.state === "downloading" ||
+    updateState.state === "downloaded";
+
+  if (updateBlocking) {
+    const isReady = updateState.state === "downloaded";
+    const percent = Math.max(0, Math.min(100, Math.round(updateState.percent ?? 0)));
+    return (
+      <div className="app" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80vh", gap: 18 }}>
+        <Logo size={140} />
+        <div className="card" style={{ maxWidth: 460, width: "100%", textAlign: "center" }}>
+          <h2 style={{ marginTop: 0 }}>
+            {isReady
+              ? tr("update.gate.title.ready", "Actualización lista para instalar")
+              : tr("update.gate.title.required", "Actualización obligatoria")}
+          </h2>
+          <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.5 }}>
+            {isReady
+              ? tr("update.gate.body.ready", "Pulsa el botón para reiniciar e instalar la nueva versión. La app no puede usarse hasta entonces.")
+              : tr("update.gate.body.downloading", "Estamos descargando la última versión de la app. No cierres esta ventana.")}
+          </p>
+          {updateState.version ? (
+            <p style={{ color: "var(--muted)", fontSize: 12, margin: "4px 0 12px" }}>
+              {tr("update.gate.versionLabel", "Nueva versión: {{version}}", { version: updateState.version })}
+            </p>
+          ) : null}
+          {!isReady ? (
+            <div style={{ margin: "12px 0" }}>
+              <div style={{ height: 8, background: "var(--border, #2a2f3a)", borderRadius: 4, overflow: "hidden" }}>
+                <div
+                  style={{
+                    width: `${percent}%`,
+                    height: "100%",
+                    background: "var(--primary, #6ea8ff)",
+                    transition: "width 0.3s ease",
+                  }}
+                />
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                {updateState.state === "downloading"
+                  ? tr("update.gate.progress", "{{percent}}% descargado", { percent })
+                  : tr("update.gate.preparing", "Preparando descarga…")}
+              </div>
+            </div>
+          ) : (
+            <button
+              className="btn btn-primary"
+              style={{ marginTop: 8 }}
+              onClick={restartAndInstall}
+            >
+              {tr("update.gate.installNow", "Reiniciar e instalar ahora")}
+            </button>
+          )}
+        </div>
+        <LanguageSelector />
+        {VersionCorner}
+      </div>
+    );
+  }
+
   if (!authChecked) {
     return (
       <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
@@ -511,6 +575,7 @@ export function App() {
       </div>
     );
   }
+
 
   if (screen === "link") {
     return (

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./components/LanguageSelector";
 import logoUrl from "./assets/logo.png";
 import { parseMvtEntries, parseMvtFiles } from "./lib/mvt-parser";
+import { humanizeRunError } from "./lib/error-humanizer";
 
 type Device = "android" | "ios";
 type Screen = "welcome" | "running" | "done" | "link" | "iosSetup";
@@ -41,7 +42,7 @@ function formatElapsed(ms: number): string {
 }
 
 export function App() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tr = (key: string, fallback: string, options?: Record<string, unknown>) => {
     const value = t(key, { defaultValue: fallback, ...(options || {}) });
     return value === key ? fallback : value;
@@ -877,21 +878,8 @@ export function App() {
                       {phaseStartedAt && (
                         <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>
                           ⏱ {formatElapsed(Date.now() - phaseStartedAt)}
-                          {(() => {
-                            const recent = logs
-                              .map((l) => l.replace(/\x1b\[[0-9;]*m/g, "").trim())
-                              .filter((l) => l && !/^[\s.·•]+$/.test(l))
-                              .slice(-3);
-                            if (!recent.length) return null;
-                            return (
-                              <div style={{ marginTop: 6, padding: "6px 8px", background: "rgba(255,255,255,0.04)", borderRadius: 6, fontFamily: "SF Mono, Menlo, monospace", fontSize: 11, lineHeight: 1.5, color: "var(--muted)", maxHeight: 64, overflow: "hidden", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                                {recent.map((line, idx) => (
-                                  <div key={idx} style={{ opacity: idx === recent.length - 1 ? 1 : 0.6 }}>{line.length > 140 ? line.slice(0, 140) + "…" : line}</div>
-                                ))}
-                              </div>
-                            );
-                          })()}
                           <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
+
                           {failedModules.length > 0 && (
                             <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(255, 200, 0, 0.08)", border: "1px solid rgba(255, 200, 0, 0.35)", borderRadius: 6, fontSize: 12, color: "#e6c200" }}>
                               <div style={{ fontWeight: 600 }}>
@@ -1052,16 +1040,14 @@ export function App() {
             </div>
           </div>
         ) : error && (
-          <div className="card" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
-            <strong>{tr("error.title", "Algo salió mal:")}</strong>
-            <div style={{ marginTop: 6, fontSize: 13 }}>{error}</div>
-            <div className="row">
-              <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-                {tr("error.back", "Volver al inicio")}
-              </button>
-            </div>
-          </div>
+          <RunErrorCard
+            rawError={error}
+            lang={i18n.language}
+            onBack={() => setScreen("welcome")}
+            tr={tr}
+          />
         )}
+
 
         {VersionCorner}
       </div>
@@ -1228,3 +1214,58 @@ export function App() {
     </div>
   );
 }
+
+interface RunErrorCardProps {
+  rawError: string;
+  lang: string;
+  onBack: () => void;
+  tr: (key: string, fallback: string, options?: Record<string, unknown>) => string;
+}
+
+function RunErrorCard({ rawError, lang, onBack, tr }: RunErrorCardProps) {
+  const [showDetail, setShowDetail] = useState(false);
+  const humanized = humanizeRunError(rawError, lang);
+  if (!humanized) return null;
+
+  const palette: Record<string, { border: string; bg: string; accent: string }> = {
+    info: { border: "rgba(80, 160, 255, 0.45)", bg: "rgba(80, 160, 255, 0.06)", accent: "#9ec5ff" },
+    warning: { border: "rgba(255, 200, 0, 0.45)", bg: "rgba(255, 200, 0, 0.06)", accent: "#e6c200" },
+    danger: { border: "var(--danger)", bg: "rgba(255, 80, 80, 0.06)", accent: "var(--danger)" },
+  };
+  const c = palette[humanized.severity] ?? palette.danger;
+
+  return (
+    <div className="card" style={{ borderColor: c.border, background: c.bg }}>
+      <div style={{ fontWeight: 700, fontSize: 15, color: c.accent }}>{humanized.title}</div>
+      <div style={{ marginTop: 8, fontSize: 13.5, lineHeight: 1.5 }}>{humanized.body}</div>
+      {humanized.action && (
+        <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", fontSize: 13, lineHeight: 1.5 }}>
+          <strong style={{ display: "block", marginBottom: 4, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--muted)" }}>
+            {tr("runErrors.action", "Qué puedes hacer")}
+          </strong>
+          {humanized.action}
+        </div>
+      )}
+      <div className="row" style={{ marginTop: 14, gap: 8, flexWrap: "wrap" }}>
+        <button className="btn btn-secondary" onClick={onBack}>
+          {tr("error.back", "Volver al inicio")}
+        </button>
+        <button
+          className="btn btn-secondary"
+          style={{ fontSize: 12 }}
+          onClick={() => setShowDetail((v) => !v)}
+        >
+          {showDetail
+            ? tr("runErrors.hideDetail", "Ocultar detalle técnico")
+            : tr("runErrors.showDetail", "Ver detalle técnico")}
+        </button>
+      </div>
+      {showDetail && (
+        <pre style={{ marginTop: 12, padding: 10, borderRadius: 6, background: "rgba(0,0,0,0.35)", color: "var(--muted)", fontSize: 11, fontFamily: "SF Mono, Menlo, monospace", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 220, overflow: "auto" }}>
+          {humanized.technical}
+        </pre>
+      )}
+    </div>
+  );
+}
+

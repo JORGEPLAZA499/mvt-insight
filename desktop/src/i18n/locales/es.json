@@ -203,6 +203,11 @@
     "fallbackBody": "Si la Microsoft Store no está disponible en tu equipo, puedes usar el instalador oficial de iTunes como alternativa.",
     "installItunes": "Descargar iTunes (apple.com)",
     "retry": "Ya lo he instalado — reintentar"
+  },
+  "runErrors": {
+    "action": "Qué puedes hacer",
+    "showDetail": "Ver detalle técnico",
+    "hideDetail": "Ocultar detalle técnico"
   }
 }
 

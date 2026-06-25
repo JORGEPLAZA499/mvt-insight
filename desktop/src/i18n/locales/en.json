@@ -122,7 +122,21 @@
     "downloading": "Downloading…",
     "readyToInstall": "Update ready to install",
     "restart": "Restart and install",
-    "error": "Error checking for updates:"
+    "error": "Error checking for updates:",
+    "gate": {
+      "title": {
+        "required": "Update required",
+        "ready": "Update ready to install"
+      },
+      "body": {
+        "downloading": "We're downloading the latest version of the app. Don't close this window.",
+        "ready": "Press the button to restart and install the new version. The app can't be used until then."
+      },
+      "progress": "{{percent}}% downloaded",
+      "preparing": "Preparing download…",
+      "installNow": "Restart and install now",
+      "versionLabel": "New version: {{version}}"
+    }
   },
   "account": {
     "credits": "credits",

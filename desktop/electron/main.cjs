@@ -177,7 +177,7 @@ autoUpdater.on("error", (err) => {
 
 app.whenReady().then(() => {
   createMainWindow();
-  if (!isDev) scheduleBackgroundUpdateCheck();
+  if (!isDev) runStartupUpdateCheck();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

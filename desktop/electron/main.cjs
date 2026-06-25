@@ -53,7 +53,7 @@ if (!gotLock) {
 /* ---------- Ventana principal ---------- */
 
 let mainWindow = null;
-let updatePromptShown = false;
+
 
 function createMainWindow() {
   const iconPath = path.join(__dirname, "..", "build", "icon.png");

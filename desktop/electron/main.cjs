@@ -31,7 +31,10 @@ autoUpdater.logger = {
   error: (m) => console.error("[updater]", m),
   debug: (m) => console.log("[updater:debug]", m),
 };
-autoUpdater.autoDownload = false;
+// Forzamos actualización obligatoria al arrancar: descargamos en cuanto se
+// detecta versión nueva y bloqueamos la UI desde el frontend hasta que el
+// usuario reinicie. Si la cierra antes, se instala al salir igualmente.
+autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
 /* ---------- Instancia única ---------- */
@@ -50,7 +53,7 @@ if (!gotLock) {
 /* ---------- Ventana principal ---------- */
 
 let mainWindow = null;
-let updatePromptShown = false;
+
 
 function createMainWindow() {
   const iconPath = path.join(__dirname, "..", "build", "icon.png");
@@ -111,16 +114,19 @@ function createMainWindow() {
   if (isDev) win.webContents.openDevTools({ mode: "detach" });
 }
 
-/* ---------- Actualización en background (no bloqueante) ---------- */
+/* ---------- Actualización obligatoria al arrancar ---------- */
 
-function scheduleBackgroundUpdateCheck() {
-  // 30s después de arrancar, comprobamos updates. Si no hay internet, el
-  // error se ignora silenciosamente y la app sigue funcionando.
-  setTimeout(() => {
+function runStartupUpdateCheck() {
+  // Comprobamos al instante. Si falla (sin internet o GitHub caído) reintentamos
+  // una vez en 60s y, si vuelve a fallar, dejamos que el usuario continúe — el
+  // frontend muestra un banner discreto y el siguiente arranque volverá a forzar.
+  const tryCheck = (attempt) => {
     autoUpdater.checkForUpdates().catch((err) => {
-      console.warn("[updater] check failed (ignored):", err?.message || err);
+      console.warn(`[updater] check attempt ${attempt} failed:`, err?.message || err);
+      if (attempt < 2) setTimeout(() => tryCheck(attempt + 1), 60_000);
     });
-  }, 30_000);
+  };
+  tryCheck(1);
 }
 
 function sendUpdaterStatus(payload) {
@@ -134,31 +140,9 @@ autoUpdater.on("checking-for-update", () => {
 });
 
 autoUpdater.on("update-available", (info) => {
+  // No mostramos diálogo nativo: la UI bloqueante vive en el frontend.
+  // autoDownload=true ya dispara la descarga automáticamente.
   sendUpdaterStatus({ state: "available", version: info.version });
-  if (updatePromptShown || !mainWindow || mainWindow.isDestroyed()) return;
-  updatePromptShown = true;
-  dialog
-    .showMessageBox(mainWindow, {
-      type: "info",
-      buttons: ["Instalar ahora", "Más tarde"],
-      defaultId: 0,
-      cancelId: 1,
-      title: "Actualización disponible",
-      message: `Hay una nueva versión disponible (${info.version}).`,
-      detail: "Puedes instalarla ahora o seguir trabajando y hacerlo más tarde.",
-    })
-    .then(({ response }) => {
-      if (response === 0) {
-        autoUpdater.downloadUpdate().catch((err) => {
-          console.error("[updater] downloadUpdate failed:", err);
-          dialog.showErrorBox(
-            "Error al descargar la actualización",
-            err?.message || String(err),
-          );
-        });
-      }
-    })
-    .catch(() => {});
 });
 
 autoUpdater.on("update-not-available", (info) => {
@@ -166,7 +150,7 @@ autoUpdater.on("update-not-available", (info) => {
 });
 
 autoUpdater.on("download-progress", (p) => {
-  sendUpdaterStatus({ state: "downloading", percent: p.percent || 0 });
+  sendUpdaterStatus({ state: "downloading", percent: p.percent || 0, version: p?.version });
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.setProgressBar(Math.max(0, Math.min(1, (p.percent || 0) / 100)));
   }
@@ -177,24 +161,11 @@ autoUpdater.on("update-downloaded", (info) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.setProgressBar(-1);
   }
+  // Sin diálogo nativo: el usuario pulsa "Reiniciar e instalar" en la UI
+  // bloqueante del frontend, que llama a quitAndInstall por IPC.
   if (!mainWindow || mainWindow.isDestroyed()) {
     autoUpdater.quitAndInstall(false, true);
-    return;
   }
-  dialog
-    .showMessageBox(mainWindow, {
-      type: "info",
-      buttons: ["Reiniciar e instalar", "Al cerrar la app"],
-      defaultId: 0,
-      cancelId: 1,
-      title: "Actualización lista",
-      message: "La actualización se ha descargado.",
-      detail: "Puedes reiniciar la app ahora para instalarla, o se instalará automáticamente al cerrarla.",
-    })
-    .then(({ response }) => {
-      if (response === 0) autoUpdater.quitAndInstall(false, true);
-    })
-    .catch(() => {});
 });
 
 autoUpdater.on("error", (err) => {
@@ -206,7 +177,7 @@ autoUpdater.on("error", (err) => {
 
 app.whenReady().then(() => {
   createMainWindow();
-  if (!isDev) scheduleBackgroundUpdateCheck();
+  if (!isDev) runStartupUpdateCheck();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

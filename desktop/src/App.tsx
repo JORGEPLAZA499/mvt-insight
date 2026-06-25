@@ -1040,16 +1040,14 @@ export function App() {
             </div>
           </div>
         ) : error && (
-          <div className="card" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
-            <strong>{tr("error.title", "Algo salió mal:")}</strong>
-            <div style={{ marginTop: 6, fontSize: 13 }}>{error}</div>
-            <div className="row">
-              <button className="btn btn-secondary" onClick={() => setScreen("welcome")}>
-                {tr("error.back", "Volver al inicio")}
-              </button>
-            </div>
-          </div>
+          <RunErrorCard
+            rawError={error}
+            lang={i18n.language}
+            onBack={() => setScreen("welcome")}
+            tr={tr}
+          />
         )}
+
 
         {VersionCorner}
       </div>

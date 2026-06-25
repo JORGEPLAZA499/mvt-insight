@@ -1,42 +1,101 @@
-## Problema
+# Plan: mejorar errores del análisis y eliminar la “ventana” interna
 
-AndroidQF aborta con:
+## Contexto
+El usuario reporta dos problemas en el flujo de análisis (app de escritorio,
+también accedida vía la web cuando se inicia el proceso desde el panel):
 
-> Error trying to connect over ADB: multiple devices connected, please stop AndroidQF and provide a serial number
+1. Los errores que se muestran son crudos (mensajes en inglés/español técnicos
+   provenientes de AndroidQF, mvt-ios, ADB, Windows Defender, node-pty, etc.).
+   Si Lovable no está delante para traducir, el usuario final no entiende qué
+   pasa ni qué hacer.
+2. Dentro del panel de análisis hay una **mini-ventana** con las últimas líneas
+   de log en monoespaciado (estilo terminal). Quiere quitarla y que toda la
+   información se vea “más maquillada” en el front.
 
-Esto ocurre cuando `adb devices` ve más de una entrada (móvil real + emulador, móvil + dispositivo "offline" colgado de un intento anterior, varios cables, Wi-Fi ADB, etc.). Hoy lanzamos `androidqf.exe` sin argumentos, así que no podemos desambiguar.
-
-## Solución (en `desktop/electron/main.cjs`)
-
-1. **Nueva función `listAdbDevices(adbBin)`** que devuelva `[{ serial, state }]` parseando `adb devices` (ya tenemos `adbDeviceState`, la ampliamos en vez de duplicar). `adbDeviceState` puede reescribirse encima de ella para no duplicar lógica.
-
-2. **En la espera de dispositivo** (bloque `phaseStatus.waitingDevice`, ~líneas 748-784): seguir esperando hasta que haya **al menos un** dispositivo en estado `device`. Guardar la lista de serials autorizados al salir del bucle.
-
-3. **Antes de `pty.spawn`**:
-   - Si hay **exactamente 1** serial autorizado → guardarlo en `selectedSerial`.
-   - Si hay **>1** serial autorizado → lanzar un error claro y traducible al usuario: "Hay varios dispositivos conectados (`<lista de serials>`). Desconecta los que no quieras analizar y reintenta." (Mantenemos esto simple; no añadimos UI de selección en esta iteración.)
-   - Sugerencia añadida: detectar y avisar de dispositivos en estado `offline`/`unauthorized` presentes a la vez, ya que también disparan el error.
-
-4. **Pasar el serial a AndroidQF**: cambiar
-   ```js
-   const child = pty.spawn(binPath, [], { ... });
-   ```
-   por
-   ```js
-   const args = selectedSerial ? ["--serial", selectedSerial] : [];
-   const child = pty.spawn(binPath, args, { ... });
-   ```
-   AndroidQF acepta `--serial <id>` (flag estándar de su CLI Go) y eso elimina la ambigüedad incluso si más adelante aparece otro dispositivo.
-
-5. **Log de diagnóstico** (sin datos sensibles): `🎯 Usando dispositivo <serial>` antes del spawn. El serial USB no es información sensible.
-
-6. **Sin bump de versión** en este turno (regla de memoria: solo bumpear cuando el usuario diga "publica"). Si el usuario quiere distribuirlo, en un turno posterior agrupamos el fix en una sola release nueva.
+## Alcance
+Solo frontend de la app de escritorio (`desktop/src/...`) más añadidos en
+locales (`es.json` / `en.json`). No se tocan los `main.cjs`/`ios-tools.cjs` —
+los errores se traducen en el cliente por patrón.
 
 ## Cambios
 
-- `desktop/electron/main.cjs` — único archivo tocado.
+### 1) Nuevo fichero `desktop/src/lib/error-humanizer.ts`
+Función `humanizeRunError(raw)` que devuelve
+`{ id, titleKey, titleFallback, bodyKey, bodyFallback, hintKey?, hintFallback?, severity, raw }`.
+Mapea por regex (insensible a mayúsculas) los siguientes casos comunes:
 
-## Verificación
+| id | patrón | título / qué hacer |
+|---|---|---|
+| `cancelled` | `^cancelled$` | Análisis cancelado |
+| `sessionExpired` | `NO_TOKEN`, `invalid-token`, `UNAUTHORIZED`, `Sesión caducada` | Sesión caducada — revincular |
+| `noCredits` | `INSUFFICIENT_CREDITS`, `No te quedan créditos` | Sin créditos — recarga |
+| `adbBlocked` | `tiene .*bloqueado`, `Windows Defender`, `antivirus`, `exclusiones` | Antivirus bloquea archivos |
+| `adbDownload` | `No se pudieron preparar las herramientas ADB`, `platform-tools`, `ENOENT.*platform-tools` | Falló preparar ADB |
+| `adbNotWorking` | `El ejecutable adb no funciona`, `adb version.*falla`, `failed to use the adb executable` | ADB no arranca (VC++ Redist) |
+| `multipleDevices` | `multiple devices connected`, `varios dispositivos conectados`, `provide a serial number` | Hay varios móviles conectados |
+| `deviceNotDetected` | `Dispositivo no detectado`, `No se detectó el iPhone`, `device not found` | No vemos el móvil |
+| `nodePty` | `node-pty`, `terminal interno`, `Visual C++ Redistributable` | Instalar VC++ Redist |
+| `androidqfExited` | `AndroidQF terminó con código`, `androidqf.*exit` | AndroidQF se cerró |
+| `iosDrivers` | `IOS_DRIVERS_MISSING` | Drivers Apple |
+| `iosBackupPassword` | `Contraseña del backup incorrecta`, `incorrect password` | Contraseña distinta |
+| `iosEncryption` | `No se pudo activar el cifrado` | Reset historial y privacidad |
+| `iosBackupFailed` | `idevicebackup2`, `backup.*falló` | Mantén iPhone desbloqueado |
+| `iosMvtDecrypt` | `decrypt-backup falló` | Contraseña correcta |
+| `iosCheckBackup` | `check-backup falló` | Reintenta |
+| `backupPasswordRequired` | `Se requiere una contraseña de backup` | Pon contraseña ≥ 4 chars |
+| `downloadFailed` | `Demasiados redirects`, `HTTP \d+ (en|al descargar)`, `Descarga inválida` | Comprueba red/VPN |
+| `memoryAllocation` | `Array buffer allocation failed`, `out of memory`, `ENOMEM` | Actualizar app |
+| `noResults` | `No se encontró ni ZIP ni carpeta` | Reintenta + espacio en disco |
+| `toolsMissing` | `Faltan binarios`, `Faltan DLLs` | Antivirus borró binarios |
+| `unsupportedPlatform` | `Plataforma no soportada` | SO no soportado |
+| `fileMissing` | `\bENOENT\b` | Falta archivo (antivirus) |
+| `permissionDenied` | `\bEACCES\b`, `permission denied` | Permisos |
+| `generic` | fallback | “El análisis no pudo completarse” + detalle técnico |
 
-- Releer el archivo modificado para confirmar sintaxis y que el `pty.spawn` recibe los args correctos.
-- No se puede probar el flujo USB en el sandbox; el cambio es contenido y revertible.
+### 2) `desktop/src/i18n/locales/{es,en}.json`
+Añadir bloque `runErrors.<id>.{title,body,hint}` con copy bilingüe para los 23
+casos anteriores (textos en castellano natural y traducciones al inglés).
+
+### 3) `desktop/src/App.tsx`
+
+**a) Quitar la mini-consola dentro de la fase activa.**
+Eliminar el bloque `recent = logs.slice(-3)` (≈ líneas 815-828) que pinta una
+caja monoespaciada negra con las últimas líneas crudas de log. En su lugar,
+mostrar solo el `phase.statusKey` traducido, el cronómetro y el aviso de
+inactividad ya existente — todo con el estilo del resto del panel.
+
+**b) Tarjeta de error “maquillada” reutilizable.**
+Crear `<RunErrorCard raw={...} onBack={...} onRetry={...} />` que:
+- Llama a `humanizeRunError(raw)`.
+- Renderiza un `card` con borde según `severity`, icono (⚠ / ⛔ / ℹ), título
+  grande, párrafo de causa, bloque destacado “Qué hacer” con el hint, y un
+  `<details>` colapsado titulado “Detalle técnico” con el `raw` original
+  monoespaciado por si el usuario quiere copiarlo para soporte.
+- Botones: «Reintentar» (si aplica) y «Volver al inicio».
+
+**c) Reemplazar usos de errores planos.**
+- `setError(result.error ?? ...)` (≈ L260): seguir guardando el string crudo.
+- En la pantalla `running` (≈ L989-999), cambiar el bloque `error && (...)` por
+  `<RunErrorCard raw={error} onBack={() => setScreen("welcome")} />` con caso
+  especial conservado para `IOS_DRIVERS_MISSING` (que ya tiene su propia UI).
+- En la pantalla `done` (≈ L1100-1118), reemplazar el `upload.state === "error"`
+  por `<RunErrorCard raw={upload.error} severity-aware onRetry={...} />`,
+  manteniendo el caso `INSUFFICIENT_CREDITS` ya gestionado.
+
+**d) Limpieza.**
+- El estado `logs` se sigue almacenando (lo usa la heurística de inactividad)
+  pero ya no se pinta para el usuario.
+- Sin cambios en `main.cjs`; los códigos especiales (`cancelled`,
+  `invalid-token`, `IOS_DRIVERS_MISSING`, etc.) ya viajan tal cual y casan con
+  los patrones del humanizador.
+
+## Resultado esperado
+- Mensajes de error en español/inglés con título, causa y solución concretos
+  según el idioma del sistema.
+- Detalle técnico siempre disponible bajo un desplegable para soporte.
+- Panel de análisis más limpio: desaparece la cajita tipo terminal, queda el
+  estado de la fase con buen estilo.
+
+## Sin cambios
+- Lógica de subida, créditos, vinculación, drivers iOS, bump de versión.
+- No se publica nueva release en este turno (el usuario no lo ha pedido).

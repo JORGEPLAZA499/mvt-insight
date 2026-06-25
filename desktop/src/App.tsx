@@ -1214,3 +1214,58 @@ export function App() {
     </div>
   );
 }
+
+interface RunErrorCardProps {
+  rawError: string;
+  lang: string;
+  onBack: () => void;
+  tr: (key: string, fallback: string, options?: Record<string, unknown>) => string;
+}
+
+function RunErrorCard({ rawError, lang, onBack, tr }: RunErrorCardProps) {
+  const [showDetail, setShowDetail] = useState(false);
+  const humanized = humanizeRunError(rawError, lang);
+  if (!humanized) return null;
+
+  const palette: Record<string, { border: string; bg: string; accent: string }> = {
+    info: { border: "rgba(80, 160, 255, 0.45)", bg: "rgba(80, 160, 255, 0.06)", accent: "#9ec5ff" },
+    warning: { border: "rgba(255, 200, 0, 0.45)", bg: "rgba(255, 200, 0, 0.06)", accent: "#e6c200" },
+    danger: { border: "var(--danger)", bg: "rgba(255, 80, 80, 0.06)", accent: "var(--danger)" },
+  };
+  const c = palette[humanized.severity] ?? palette.danger;
+
+  return (
+    <div className="card" style={{ borderColor: c.border, background: c.bg }}>
+      <div style={{ fontWeight: 700, fontSize: 15, color: c.accent }}>{humanized.title}</div>
+      <div style={{ marginTop: 8, fontSize: 13.5, lineHeight: 1.5 }}>{humanized.body}</div>
+      {humanized.action && (
+        <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", fontSize: 13, lineHeight: 1.5 }}>
+          <strong style={{ display: "block", marginBottom: 4, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--muted)" }}>
+            {tr("runErrors.action", "Qué puedes hacer")}
+          </strong>
+          {humanized.action}
+        </div>
+      )}
+      <div className="row" style={{ marginTop: 14, gap: 8, flexWrap: "wrap" }}>
+        <button className="btn btn-secondary" onClick={onBack}>
+          {tr("error.back", "Volver al inicio")}
+        </button>
+        <button
+          className="btn btn-secondary"
+          style={{ fontSize: 12 }}
+          onClick={() => setShowDetail((v) => !v)}
+        >
+          {showDetail
+            ? tr("runErrors.hideDetail", "Ocultar detalle técnico")
+            : tr("runErrors.showDetail", "Ver detalle técnico")}
+        </button>
+      </div>
+      {showDetail && (
+        <pre style={{ marginTop: 12, padding: 10, borderRadius: 6, background: "rgba(0,0,0,0.35)", color: "var(--muted)", fontSize: 11, fontFamily: "SF Mono, Menlo, monospace", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 220, overflow: "auto" }}>
+          {humanized.technical}
+        </pre>
+      )}
+    </div>
+  );
+}
+

@@ -42,7 +42,7 @@ function formatElapsed(ms: number): string {
 }
 
 export function App() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tr = (key: string, fallback: string, options?: Record<string, unknown>) => {
     const value = t(key, { defaultValue: fallback, ...(options || {}) });
     return value === key ? fallback : value;

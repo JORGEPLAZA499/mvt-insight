@@ -21,7 +21,8 @@ permissions:
 
 jobs:
   tag:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.read.outputs.version }}
@@ -32,12 +33,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read version from desktop/package.json
+      - name: Read version
         id: read
         run: |
-          VERSION=$(node -p "require('./desktop/package.json').version")
+          INPUT_TAG="${{ github.event.inputs.tag }}"
+          if [ -n "$INPUT_TAG" ]; then
+            VERSION="${INPUT_TAG#v}"
+          else
+            VERSION=$(node -p "require('./desktop/package.json').version")
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
 
       - name: Create tag if missing
         id: create

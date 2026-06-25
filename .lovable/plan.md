@@ -1,101 +1,105 @@
-# Plan: mejorar errores del análisis y eliminar la “ventana” interna
+# Actualización obligatoria al abrir la app de escritorio
 
-## Contexto
-El usuario reporta dos problemas en el flujo de análisis (app de escritorio,
-también accedida vía la web cuando se inicia el proceso desde el panel):
+## Comportamiento actual
+- En producción, el updater consulta GitHub **30 s después** de abrir la app
+  (`scheduleBackgroundUpdateCheck` en `desktop/electron/main.cjs`).
+- Si hay versión nueva muestra un diálogo nativo con dos botones:
+  «Instalar ahora» / «Más tarde». El usuario puede ignorarlo y seguir usando
+  una versión antigua indefinidamente.
+- Tras descargar la actualización, otro diálogo permite posponer la instalación
+  hasta el siguiente cierre.
 
-1. Los errores que se muestran son crudos (mensajes en inglés/español técnicos
-   provenientes de AndroidQF, mvt-ios, ADB, Windows Defender, node-pty, etc.).
-   Si Lovable no está delante para traducir, el usuario final no entiende qué
-   pasa ni qué hacer.
-2. Dentro del panel de análisis hay una **mini-ventana** con las últimas líneas
-   de log en monoespaciado (estilo terminal). Quiere quitarla y que toda la
-   información se vea “más maquillada” en el front.
-
-## Alcance
-Solo frontend de la app de escritorio (`desktop/src/...`) más añadidos en
-locales (`es.json` / `en.json`). No se tocan los `main.cjs`/`ios-tools.cjs` —
-los errores se traducen en el cliente por patrón.
+## Comportamiento deseado
+Al abrir la app:
+1. Comprobar inmediatamente si hay una versión nueva.
+2. Si la hay, **bloquear toda la interfaz** con una pantalla a pantalla
+   completa que descarga e instala la actualización.
+3. El usuario no puede analizar, vincular, ni cerrar el aviso: la única acción
+   posible cuando la descarga termina es «Reiniciar e instalar ahora».
+4. Si no hay internet (o GitHub está caído), no atrapamos al usuario: se
+   muestra un aviso discreto y la app continúa con normalidad — sin
+   conectividad no podríamos descargar de todas formas.
 
 ## Cambios
 
-### 1) Nuevo fichero `desktop/src/lib/error-humanizer.ts`
-Función `humanizeRunError(raw)` que devuelve
-`{ id, titleKey, titleFallback, bodyKey, bodyFallback, hintKey?, hintFallback?, severity, raw }`.
-Mapea por regex (insensible a mayúsculas) los siguientes casos comunes:
+### 1) `desktop/electron/main.cjs`
+- `autoUpdater.autoDownload = true` (ahora `false`). Descargar en cuanto se
+  detecta versión nueva, sin esperar al click del usuario.
+- Sustituir `scheduleBackgroundUpdateCheck()` por `runStartupUpdateCheck()`:
+  se ejecuta **al instante** al crear la ventana, justo después de
+  `createMainWindow()`. Reintenta en 60 s si la primera petición falla por
+  red.
+- Eliminar el diálogo nativo de `update-available` (ya no hay «Más tarde»).
+  El estado se sigue emitiendo por `updater:status` para que el frontend
+  pinte el bloqueo.
+- Eliminar el diálogo nativo de `update-downloaded`. Seguimos emitiendo
+  `{ state: "downloaded", version }`; la decisión de reiniciar la toma el
+  usuario desde la UI bloqueante del frontend.
+- Mantener `autoInstallOnAppQuit = true` por si el usuario cierra la
+  ventana sin pulsar el botón.
 
-| id | patrón | título / qué hacer |
-|---|---|---|
-| `cancelled` | `^cancelled$` | Análisis cancelado |
-| `sessionExpired` | `NO_TOKEN`, `invalid-token`, `UNAUTHORIZED`, `Sesión caducada` | Sesión caducada — revincular |
-| `noCredits` | `INSUFFICIENT_CREDITS`, `No te quedan créditos` | Sin créditos — recarga |
-| `adbBlocked` | `tiene .*bloqueado`, `Windows Defender`, `antivirus`, `exclusiones` | Antivirus bloquea archivos |
-| `adbDownload` | `No se pudieron preparar las herramientas ADB`, `platform-tools`, `ENOENT.*platform-tools` | Falló preparar ADB |
-| `adbNotWorking` | `El ejecutable adb no funciona`, `adb version.*falla`, `failed to use the adb executable` | ADB no arranca (VC++ Redist) |
-| `multipleDevices` | `multiple devices connected`, `varios dispositivos conectados`, `provide a serial number` | Hay varios móviles conectados |
-| `deviceNotDetected` | `Dispositivo no detectado`, `No se detectó el iPhone`, `device not found` | No vemos el móvil |
-| `nodePty` | `node-pty`, `terminal interno`, `Visual C++ Redistributable` | Instalar VC++ Redist |
-| `androidqfExited` | `AndroidQF terminó con código`, `androidqf.*exit` | AndroidQF se cerró |
-| `iosDrivers` | `IOS_DRIVERS_MISSING` | Drivers Apple |
-| `iosBackupPassword` | `Contraseña del backup incorrecta`, `incorrect password` | Contraseña distinta |
-| `iosEncryption` | `No se pudo activar el cifrado` | Reset historial y privacidad |
-| `iosBackupFailed` | `idevicebackup2`, `backup.*falló` | Mantén iPhone desbloqueado |
-| `iosMvtDecrypt` | `decrypt-backup falló` | Contraseña correcta |
-| `iosCheckBackup` | `check-backup falló` | Reintenta |
-| `backupPasswordRequired` | `Se requiere una contraseña de backup` | Pon contraseña ≥ 4 chars |
-| `downloadFailed` | `Demasiados redirects`, `HTTP \d+ (en|al descargar)`, `Descarga inválida` | Comprueba red/VPN |
-| `memoryAllocation` | `Array buffer allocation failed`, `out of memory`, `ENOMEM` | Actualizar app |
-| `noResults` | `No se encontró ni ZIP ni carpeta` | Reintenta + espacio en disco |
-| `toolsMissing` | `Faltan binarios`, `Faltan DLLs` | Antivirus borró binarios |
-| `unsupportedPlatform` | `Plataforma no soportada` | SO no soportado |
-| `fileMissing` | `\bENOENT\b` | Falta archivo (antivirus) |
-| `permissionDenied` | `\bEACCES\b`, `permission denied` | Permisos |
-| `generic` | fallback | “El análisis no pudo completarse” + detalle técnico |
+### 2) `desktop/src/App.tsx`
+- Nuevo componente `<MandatoryUpdateGate />` que se renderiza **antes** de
+  cualquier otra pantalla (welcome / running / link / done…) cuando
+  `updateState.state ∈ { "available", "downloading", "downloaded" }`.
+- Estilo coherente con el resto: card centrada, logo arriba, sin top-bar ni
+  selector de idioma para que el usuario no pueda navegar a ninguna parte.
+- Contenido según el estado:
+  - `available` / `downloading`: título «Actualización obligatoria», cuerpo
+    explicando que se está descargando, barra de progreso con `percent`,
+    spinner si aún no llegó el primer evento.
+  - `downloaded`: título «Actualización lista», cuerpo «Debes reiniciar la
+    app para usar la última versión», único botón «Reiniciar e instalar
+    ahora» → `window.mvt.quitAndInstall()`.
+- Sin botón cerrar, sin enlace para saltarse. El selector de idioma global
+  sigue visible solo en este gate para poder cambiar la traducción del
+  propio mensaje.
+- Mientras dura el `state === "checking"` inicial (primer arranque, antes de
+  saber si hay versión), mostrar la misma pantalla de carga que se usa
+  cuando `!authChecked` para evitar parpadeos.
+- Si el updater responde `error`, NO bloqueamos: se muestra un banner
+  discreto («No se pudo comprobar actualizaciones — comprueba tu conexión»)
+  en la pantalla normal y la app sigue funcionando.
 
-### 2) `desktop/src/i18n/locales/{es,en}.json`
-Añadir bloque `runErrors.<id>.{title,body,hint}` con copy bilingüe para los 23
-casos anteriores (textos en castellano natural y traducciones al inglés).
+### 3) i18n (`desktop/src/i18n/locales/{es,en}.json`)
+Nuevas claves bajo `update.gate.*`:
+- `title.required` — «Actualización obligatoria»
+- `title.ready` — «Actualización lista para instalar»
+- `body.downloading` — «Estamos descargando la última versión de la app. No cierres esta ventana.»
+- `body.ready` — «Pulsa el botón para reiniciar e instalar la nueva versión. La app no puede usarse hasta entonces.»
+- `progress` — «{{percent}}% descargado»
+- `installNow` — «Reiniciar e instalar ahora»
+- `versionLabel` — «Nueva versión: {{version}}»
+- `offlineBanner` — «No se pudo comprobar si hay actualizaciones. Revisa tu conexión a Internet.»
 
-### 3) `desktop/src/App.tsx`
+## Detalles técnicos
 
-**a) Quitar la mini-consola dentro de la fase activa.**
-Eliminar el bloque `recent = logs.slice(-3)` (≈ líneas 815-828) que pinta una
-caja monoespaciada negra con las últimas líneas crudas de log. En su lugar,
-mostrar solo el `phase.statusKey` traducido, el cronómetro y el aviso de
-inactividad ya existente — todo con el estilo del resto del panel.
+```text
++----------------------------+        +----------------------------+
+| App abre (createMainWindow)| -----> | runStartupUpdateCheck()    |
++----------------------------+        |  autoUpdater.checkForUpdates|
+                                      +-------------+--------------+
+                                                    |
+                              update-available      | (autoDownload=true)
+                                                    v
++----------------------------+        +----------------------------+
+| MandatoryUpdateGate        | <----- | autoUpdater.downloadUpdate |
+|   - spinner / progress     |        +-------------+--------------+
+|   - sin botón "más tarde"  |                      | download-progress
++----------------------------+ <--------------------+
+              ^                                     | update-downloaded
+              |                                     v
+              |                       +----------------------------+
+              +---------------------- | botón: quitAndInstall      |
+                                      +----------------------------+
+```
 
-**b) Tarjeta de error “maquillada” reutilizable.**
-Crear `<RunErrorCard raw={...} onBack={...} onRetry={...} />` que:
-- Llama a `humanizeRunError(raw)`.
-- Renderiza un `card` con borde según `severity`, icono (⚠ / ⛔ / ℹ), título
-  grande, párrafo de causa, bloque destacado “Qué hacer” con el hint, y un
-  `<details>` colapsado titulado “Detalle técnico” con el `raw` original
-  monoespaciado por si el usuario quiere copiarlo para soporte.
-- Botones: «Reintentar» (si aplica) y «Volver al inicio».
+- Sin cambios en la lógica de análisis ni de subida.
+- Sin bump de versión en este turno (no lo has pedido).
 
-**c) Reemplazar usos de errores planos.**
-- `setError(result.error ?? ...)` (≈ L260): seguir guardando el string crudo.
-- En la pantalla `running` (≈ L989-999), cambiar el bloque `error && (...)` por
-  `<RunErrorCard raw={error} onBack={() => setScreen("welcome")} />` con caso
-  especial conservado para `IOS_DRIVERS_MISSING` (que ya tiene su propia UI).
-- En la pantalla `done` (≈ L1100-1118), reemplazar el `upload.state === "error"`
-  por `<RunErrorCard raw={upload.error} severity-aware onRetry={...} />`,
-  manteniendo el caso `INSUFFICIENT_CREDITS` ya gestionado.
-
-**d) Limpieza.**
-- El estado `logs` se sigue almacenando (lo usa la heurística de inactividad)
-  pero ya no se pinta para el usuario.
-- Sin cambios en `main.cjs`; los códigos especiales (`cancelled`,
-  `invalid-token`, `IOS_DRIVERS_MISSING`, etc.) ya viajan tal cual y casan con
-  los patrones del humanizador.
-
-## Resultado esperado
-- Mensajes de error en español/inglés con título, causa y solución concretos
-  según el idioma del sistema.
-- Detalle técnico siempre disponible bajo un desplegable para soporte.
-- Panel de análisis más limpio: desaparece la cajita tipo terminal, queda el
-  estado de la fase con buen estilo.
-
-## Sin cambios
-- Lógica de subida, créditos, vinculación, drivers iOS, bump de versión.
-- No se publica nueva release en este turno (el usuario no lo ha pedido).
+## Riesgo / consideraciones
+- Un usuario sin internet al abrir verá el banner pero podrá seguir
+  trabajando localmente; cuando recupere conexión, el siguiente arranque
+  forzará la actualización.
+- `electron-updater` requiere que la app esté firmada/empacada (no aplica en
+  `npm run dev`); ya estamos así en producción vía GitHub Actions.

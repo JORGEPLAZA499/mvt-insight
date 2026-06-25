@@ -31,7 +31,10 @@ autoUpdater.logger = {
   error: (m) => console.error("[updater]", m),
   debug: (m) => console.log("[updater:debug]", m),
 };
-autoUpdater.autoDownload = false;
+// Forzamos actualización obligatoria al arrancar: descargamos en cuanto se
+// detecta versión nueva y bloqueamos la UI desde el frontend hasta que el
+// usuario reinicie. Si la cierra antes, se instala al salir igualmente.
+autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
 /* ---------- Instancia única ---------- */

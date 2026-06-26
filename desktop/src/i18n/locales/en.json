@@ -103,6 +103,7 @@
     "titleFailed": "⚠ Analysis complete, but the report could not be uploaded",
     "subtitleFailed": "The file was saved to Downloads. You can retry the upload below.",
     "filename": "Generated file:",
+    "modulesUnavailable": "Note: {{count}} module(s) unavailable on this device ({{modules}}). This is normal on MIUI, EMUI or One UI due to manufacturer restrictions.",
     "upload": "Upload to report →",
     "openFolder": "Open folder",
     "new": "New analysis"

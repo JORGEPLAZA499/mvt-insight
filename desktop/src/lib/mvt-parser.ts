@@ -147,6 +147,53 @@ function summarize(obj: any): string {
   } catch { return "(evidencia)"; }
 }
 
+// El informe que subimos al panel debe ser pequeño y estable. Algunos módulos
+// de MVT/AndroidQF adjuntan objetos enormes en cada detección; guardar ese
+// `raw` completo puede convertir una subida normal en un JSON de decenas de MB.
+// Conservamos sólo las claves forenses útiles para UI/heurísticas y recortamos
+// textos largos. El ZIP/carpeta local sigue teniendo la evidencia completa.
+const RAW_KEEP_KEYS = new Set([
+  "package_name", "package", "bundle_id", "matched_indicator", "indicator",
+  "name", "process", "service", "domain", "url", "path", "value",
+  "permission", "app_name", "message", "description", "isodate",
+  "timestamp", "date", "created", "modified", "time", "datetime",
+  "executable", "pid", "uid",
+]);
+
+function compactRawEvidence(value: any, depth = 0): any {
+  if (value == null) return value;
+  if (typeof value === "string") return value.length > 600 ? `${value.slice(0, 600)}…` : value;
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (depth >= 2) return undefined;
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 8).map((v) => compactRawEvidence(v, depth + 1)).filter((v) => v !== undefined);
+  }
+
+  if (typeof value === "object") {
+    const out: Record<string, any> = {};
+    const entries = Object.entries(value);
+    for (const [k, v] of entries) {
+      if (!RAW_KEEP_KEYS.has(k)) continue;
+      const compact = compactRawEvidence(v, depth + 1);
+      if (compact !== undefined) out[k] = compact;
+    }
+    // Si el objeto no tenía ninguna clave conocida, guardamos una muestra
+    // mínima de campos primitivos para facilitar auditoría sin inflar la BD.
+    if (Object.keys(out).length === 0) {
+      for (const [k, v] of entries.slice(0, 12)) {
+        if (v == null || ["string", "number", "boolean"].includes(typeof v)) {
+          const compact = compactRawEvidence(v, depth + 1);
+          if (compact !== undefined) out[k] = compact;
+        }
+      }
+    }
+    return Object.keys(out).length ? out : undefined;
+  }
+
+  return undefined;
+}
+
 function pickLevel(obj: any, fallback: RiskLevel): RiskLevel {
   const v = obj && typeof obj === "object" ? obj.level ?? obj.severity : undefined;
   if (typeof v === "string") {
@@ -439,7 +486,7 @@ export function parseMvtEntries(entries: { name: string; text: string }[], sourc
         const ts = pickTimestamp(it);
         const summary = summarize(it);
         const level = pickLevel(it, "high");
-        detections.push({ module: meta.key, timestamp: ts, summary, level, raw: it });
+        detections.push({ module: meta.key, timestamp: ts, summary, level, raw: compactRawEvidence(it) });
         if (ts) timeline.push({ timestamp: ts, module: existing.label, summary, severity: level });
       }
     } else {

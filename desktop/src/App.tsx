@@ -1073,6 +1073,20 @@ export function App() {
           {zipPath}
         </div>
 
+        {packageWarning && (
+          <div style={{ marginTop: 12, padding: 12, borderRadius: 8, border: "1px solid rgba(255, 200, 0, 0.35)", background: "rgba(255, 200, 0, 0.08)", fontSize: 13, lineHeight: 1.5 }}>
+            <strong style={{ color: "#e6c200" }}>
+              {tr("done.packageWarningTitle", "El informe se guardó como carpeta")}
+            </strong>
+            <div style={{ marginTop: 6, color: "var(--muted)" }}>
+              {tr(
+                "done.packageWarningBody",
+                "La compresión ZIP falló, pero el análisis no se perdió: usaremos la carpeta de resultados directamente para generar y subir el informe. Si necesitas enviarlo manualmente, abre la carpeta y comprímela desde Windows."
+              )}
+            </div>
+          </div>
+        )}
+
         {failedModules.length > 0 && (
           <div style={{ marginTop: 12, fontSize: 12, color: "var(--muted)" }}>
             {tr(

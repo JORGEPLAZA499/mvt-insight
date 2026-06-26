@@ -1,7 +1,7 @@
 // TEMP — used once to seed pg_cron. Delete immediately after use.
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/api/internal/__cron-secret-once")({
+export const Route = createFileRoute("/api/internal/cron-secret-once")({
   server: {
     handlers: {
       GET: async () => {

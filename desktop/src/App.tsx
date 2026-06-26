@@ -880,102 +880,43 @@ export function App() {
                           <span /><span /><span />
                         </span>
                       </div>
-                      {phaseStartedAt && (
-                        <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>
-                          ⏱ {formatElapsed(Date.now() - phaseStartedAt)}
-                          <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
+                      {phaseStartedAt && (() => {
+                        const fmtMB = (b: number) => {
+                          if (b < 1024 * 1024) return `${Math.max(1, Math.round(b / 1024))} KB`;
+                          if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+                          return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+                        };
+                        const lastActivityAt = Math.max(lastLogAt ?? 0, activity?.lastChangeAt ?? 0);
+                        const sinceActivityMs = lastActivityAt ? Date.now() - lastActivityAt : 0;
+                        const sinceActivityMin = Math.floor(sinceActivityMs / 60000);
 
-                          {failedModules.length > 0 && (
-                            <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(255, 200, 0, 0.08)", border: "1px solid rgba(255, 200, 0, 0.35)", borderRadius: 6, fontSize: 12, color: "#e6c200" }}>
-                              <div style={{ fontWeight: 600 }}>
-                                {tr("running.moduleFailed.title", "Algunos módulos no están disponibles en este dispositivo")}
-                              </div>
-                              <div style={{ marginTop: 4, opacity: 0.9 }}>
-                                {tr(
-                                  "running.moduleFailed.description",
-                                  `El módulo ${failedModules.map((m) => m.module).join(", ")} no se pudo ejecutar. Suele ocurrir en MIUI, EMUI o One UI por restricciones del fabricante. El análisis continúa con normalidad.`,
-                                  { modules: failedModules.map((m) => m.module).join(", ") }
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          {(() => {
+                        // Sufijo discreto con bytes recolectados (solo cuando hay datos reales).
+                        const bytesSuffix = activity && activity.bytes > 0
+                          ? ` · ${tr("running.subline.bytes", `${fmtMB(activity.bytes)} recolectados`, { size: fmtMB(activity.bytes) })}`
+                          : "";
 
-                            if (!lastLogAt) return null;
-                            // Algunas fases trabajan en bloque sin emitir logs ni
-                            // tocar archivos visibles para el watcher (compresión
-                            // del ZIP, parsing del ZIP en el main process, subida
-                            // del informe, etc.). Durante esas fases NO mostramos
-                            // el aviso de "sin actividad", porque sería mentira:
-                            // el sistema sí está trabajando.
-                            const blockingStatuses = new Set([
-                              "phaseStatus.compressing",
-                              "phaseStatus.done",
-                              "phaseStatus.downloadingBinary",
-                              "phaseStatus.iosEnablingEncryption",
-                            ]);
-                            if (phase.statusKey && blockingStatuses.has(phase.statusKey)) return null;
-                            if (upload.state === "uploading") return null;
-                            const lastActivityAt = Math.max(lastLogAt, activity?.lastChangeAt ?? 0);
-                            const sinceActivityMs = Date.now() - lastActivityAt;
-                            const sinceLogMin = Math.floor((Date.now() - lastLogAt) / 60000);
-                            const sinceActivityMin = Math.floor(sinceActivityMs / 60000);
-                            const fmtMB = (b: number) => {
-                              if (b < 1024 * 1024) return `${Math.max(1, Math.round(b / 1024))} KB`;
-                              if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
-                              return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-                            };
-                            const fmtAgo = (ms: number) => {
-                              const s = Math.max(0, Math.floor(ms / 1000));
-                              if (s < 60) return `${s}s`;
-                              return `${Math.floor(s / 60)} min`;
-                            };
+                        // Estado honesto cuando llevamos mucho rato sin señales.
+                        const stalled = sinceActivityMin >= 15;
+                        const longPhase = !stalled && sinceActivityMin >= 8;
 
-                            // Caso 1: el disco SÍ se está moviendo aunque androidqf no imprima.
-                            // Mostramos info azul tranquilizadora desde el primer minuto sin logs.
-                            if (activity && activity.bytes > 0 && sinceActivityMs < 90_000 && sinceLogMin >= 1) {
-                              return (
-                                <div style={{ marginTop: 8, padding: "6px 8px", background: "rgba(80, 160, 255, 0.08)", border: "1px solid rgba(80, 160, 255, 0.35)", borderRadius: 6, fontSize: 12, color: "#9ec5ff" }}>
-                                  {tr(
-                                    "running.activity.collecting",
-                                    `Recolectando archivos del dispositivo… ${fmtMB(activity.bytes)} transferidos (último cambio hace ${fmtAgo(sinceActivityMs)}).`,
-                                    { size: fmtMB(activity.bytes), ago: fmtAgo(sinceActivityMs) }
-                                  )}
-                                </div>
-                              );
-                            }
-
-                            const threshold = device === "ios" ? 5 : 8;
-                            if (sinceActivityMin < threshold) return null;
-
-                            // Caso 2: >15 min sin nada (ni logs ni disco) → casi seguro colgado.
-                            if (sinceActivityMin >= 15) {
-                              return (
-                                <div style={{ marginTop: 8, padding: "6px 8px", background: "rgba(255, 80, 80, 0.10)", border: "1px solid rgba(255, 80, 80, 0.45)", borderRadius: 6, fontSize: 12, color: "#ff9b9b" }}>
-                                  <div>{tr("running.activity.frozen", `⚠ Llevamos ${sinceActivityMin} min sin detectar cambios. Puede que el proceso siga trabajando en segundo plano (operaciones largas como compresión o backup) o que esté bloqueado.`, { min: sinceActivityMin })}</div>
-                                  <div style={{ marginTop: 4, opacity: 0.85 }}>
-                                    {tr("running.activity.frozenHint", "Espera unos minutos más. Solo si NO ves el indicador de actividad de tu disco duro moverse, pulsa Cancelar y reintenta.")}
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            // Caso 3: entre threshold y 15 min sin actividad → ámbar.
-                            const msgKey = device === "ios" ? "running.idleWarning.ios" : "running.idleWarning.android";
-                            const fallback = device === "ios"
-                              ? `⚠ Sin actividad de mvt-ios desde hace ${sinceActivityMin} min.`
-                              : `⚠ Sin actividad de androidqf desde hace ${sinceActivityMin} min.`;
-                            return (
-                              <div style={{ marginTop: 8, padding: "6px 8px", background: "rgba(255, 200, 0, 0.08)", border: "1px solid rgba(255, 200, 0, 0.35)", borderRadius: 6, fontSize: 12, color: "#e6c200" }}>
-                                <div>{tr(msgKey, fallback, { min: sinceActivityMin })}</div>
-                                <div style={{ marginTop: 4, opacity: 0.85 }}>
-                                  {tr("running.idleWarning.hint", "Esto suele ser normal mientras se recolectan apps o se crea el backup. Si supera 15 min, pulsa Cancelar y reintenta.")}
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
+                        return (
+                          <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>
+                            ⏱ {formatElapsed(Date.now() - phaseStartedAt)}
+                            <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
+                            {bytesSuffix}
+                            {longPhase && (
+                              <span style={{ marginLeft: 8, opacity: 0.85 }}>
+                                · {tr("running.subline.longPhase", "Procesando… esta fase puede tardar varios minutos")}
+                              </span>
+                            )}
+                            {stalled && (
+                              <span style={{ marginLeft: 8, color: "var(--danger, #ff7a7a)" }}>
+                                · {tr("running.subline.stalled", `Sin cambios desde hace ${sinceActivityMin} min — puedes cancelar si tu disco no muestra actividad`, { min: sinceActivityMin })}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </>
 
                   )}

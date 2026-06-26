@@ -1180,7 +1180,7 @@ export function App() {
         })()}
       </div>
       <div className="card">
-        <div style={{ fontSize: 13, color: "var(--muted)" }}>{tr("done.filename", "Archivo generado:")}</div>
+        <div style={{ fontSize: 13, color: "var(--muted)" }}>{tr("done.filename", "Ruta de resultados:")}</div>
         <div style={{
           fontFamily: "SF Mono, Menlo, monospace",
           fontSize: 12,

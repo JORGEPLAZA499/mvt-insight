@@ -1634,7 +1634,7 @@ ipcMain.handle("mvt:parseZipEntries", async (_e, zipPath) => {
         zip.readEntry();
       });
     });
-    return { ok: true, entries, fileSize: stat.size };
+    return { ok: true, entries, fileSize: stat.size, sourceType: "zip" };
   } catch (err) {
     return { ok: false, error: err?.message || String(err) };
   }

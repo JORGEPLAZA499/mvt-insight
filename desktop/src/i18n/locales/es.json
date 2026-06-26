@@ -113,7 +113,8 @@
     "packageWarningBody": "La app usará la carpeta de resultados directamente para generar y subir el informe. No es necesario crear un ZIP; la evidencia completa queda guardada localmente.",
     "upload": "Subir al informe →",
     "openFolder": "Abrir carpeta",
-    "new": "Nuevo análisis"
+    "new": "Nuevo análisis",
+    "accept": "Aceptar"
   },
   "update": {
     "check": "Buscar actualizaciones",

@@ -875,8 +875,12 @@ export function App() {
                 <div className="phase-num" style={failedHere ? { background: "var(--danger)", color: "#fff" } : undefined}>
                   {done ? "✓" : failedHere ? "✗" : active ? <span className="phase-spinner" /> : num}
                 </div>
-                <div className="phase-body">
-                  <div className="phase-label">{label}</div>
+                <div className="phase-body" style={failedHere ? { color: "var(--danger)" } : undefined}>
+                  <div className="phase-label">
+                    {failedHere
+                      ? tr("phases.failedAt", `${label} — falló`, { phase: label })
+                      : label}
+                  </div>
                   {active && !error && (
                     <>
                       <div className="phase-sub">
@@ -931,7 +935,7 @@ export function App() {
               </div>
             );
           })}
-          <div className="scanline" aria-hidden="true" />
+          {!error && <div className="scanline" aria-hidden="true" />}
           {error ? (
             <InlineRunError
               rawError={error}

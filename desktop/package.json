@@ -76,7 +76,7 @@
           ]
         }
       ],
-      "artifactName": "MvtInsight-Setup-${version}.${ext}"
+      "artifactName": "MvtInsight-Setup.${ext}"
     },
     "nsis": {
       "oneClick": true,

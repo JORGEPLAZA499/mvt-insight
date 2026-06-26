@@ -39,19 +39,10 @@
     "working": "Analyzing",
     "cancel": "Cancel",
     "cancelConfirm": "Cancel the running analysis?",
-    "idleWarning": {
-      "ios": "ℹ No new mvt-ios messages for {{min}} min.",
-      "android": "ℹ No new androidqf messages for {{min}} min.",
-      "hint": "This is normal: during backup, app downloads or module analysis the process can stay quiet for a while. Wait before cancelling."
-    },
-    "activity": {
-      "collecting": "Collecting files from the device… {{size}} transferred (last change {{ago}} ago).",
-      "frozen": "⚠ No changes detected for {{min}} min. The process may still be working in the background (compression, backup) or it may be stuck.",
-      "frozenHint": "Wait a few more minutes. Only click Cancel if you do NOT see any disk activity."
-    },
-    "moduleFailed": {
-      "title": "Some modules are not available on this device",
-      "description": "The {{modules}} module could not run. This often happens on MIUI, EMUI or One UI devices due to manufacturer restrictions. The analysis is continuing normally."
+    "subline": {
+      "bytes": "{{size}} collected",
+      "longPhase": "Processing… this phase may take several minutes",
+      "stalled": "No changes for {{min}} min — you may cancel if your disk shows no activity"
     }
   },
 

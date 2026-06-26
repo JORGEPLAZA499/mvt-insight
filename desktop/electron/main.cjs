@@ -1447,6 +1447,14 @@ ipcMain.handle("mvt:openExternal", async (_e, url) => {
   shell.openExternal(url);
 });
 
+ipcMain.handle("mvt:isDirectory", async (_e, p) => {
+  try {
+    return typeof p === "string" && fs.existsSync(p) && fs.statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+});
+
 ipcMain.handle("app:getVersion", () => app.getVersion());
 
 ipcMain.handle("updater:check", async () => {

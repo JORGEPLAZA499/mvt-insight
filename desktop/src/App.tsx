@@ -881,9 +881,6 @@ export function App() {
                       ? tr("phases.failedAt", `${label} — falló`, { phase: label })
                       : label}
                   </div>
-                </div>
-                <div className="phase-body">
-                  <div className="phase-label">{label}</div>
                   {active && !error && (
                     <>
                       <div className="phase-sub">

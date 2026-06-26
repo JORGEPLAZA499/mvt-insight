@@ -937,6 +937,12 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       let inSurvey = false;
       let collectionStarted = false;
       const failedModules = new Set();
+      // Contador real de APKs procesados durante la fase "analizando aplicaciones".
+      // Sólo se emite si AndroidQF imprime el total o nombres de paquete.
+      let appsTotal = 0;
+      let appsDone = 0;
+      const seenPackages = new Set();
+
 
       child.onData((data) => {
         const text = data.toString();
@@ -979,10 +985,40 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         if (/(getprop|processes|services|dumpsys|SMS|settings|logcat)/i.test(clean))
           markCollect("phaseStatus.collectingSystemInfo", "Recolectando información del sistema", 0.8);
 
+        // Contador real de aplicaciones: total + nombres de paquete vistos en stdout.
+        const totalMatch = clean.match(/Found\s+(\d+)\s+(?:installed\s+)?(?:packages|apps|applications)/i);
+        if (totalMatch) {
+          const n = parseInt(totalMatch[1], 10);
+          if (Number.isFinite(n) && n > appsTotal) appsTotal = n;
+        }
+        const pkgRegex = /\b([a-z][a-z0-9_]*(?:\.[a-z0-9_]+){2,})\b/gi;
+        let pkgMatch;
+        let newPkg = false;
+        while ((pkgMatch = pkgRegex.exec(clean)) !== null) {
+          const pkg = pkgMatch[1].toLowerCase();
+          // Filtra rutas de paquetes Go que aparecen en errores/tracebacks de androidqf.
+          if (pkg.startsWith("github.com") || pkg.startsWith("golang.org") || pkg.startsWith("google.golang")) continue;
+          if (!seenPackages.has(pkg)) {
+            seenPackages.add(pkg);
+            appsDone += 1;
+            newPkg = true;
+          }
+        }
+        if (newPkg && collectionStarted) {
+          send("mvt:phase", {
+            phase: 3,
+            statusKey: "phaseStatus.analyzingAppsCount",
+            label: `Analizando aplicaciones (${appsDone}${appsTotal ? `/${appsTotal}` : ""})`,
+            data: { current: appsDone, total: appsTotal || null, totalSuffix: appsTotal ? `/${appsTotal}` : "" },
+            progress: appsTotal ? Math.min(0.95, 0.6 + 0.35 * (appsDone / appsTotal)) : 0.6,
+          });
+        }
+
         // Esperamos 300 ms sin nuevos datos antes de responder, para no
         // contestar a un prompt que aún se está renderizando.
         if (stableTimer) clearTimeout(stableTimer);
         stableTimer = setTimeout(tryAnswerPrompt, 300);
+
       });
 
 

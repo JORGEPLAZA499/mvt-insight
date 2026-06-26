@@ -80,6 +80,8 @@
     "backup": "Creating device backup…",
     "downloadingApks": "Downloading installed apps…",
     "analyzingApps": "Analyzing installed apps…",
+    "analyzingAppsCount": "Analyzing installed apps… {{current}}{{totalSuffix}}",
+
     "collectingSystemInfo": "Collecting system info…",
     "compressing": "Compressing results…",
     "compressingProgress": "Compressing results… {{processed}}/{{total}} files ({{mb}} MB written)",

@@ -1129,8 +1129,6 @@ export function App() {
   }
 
   // screen === "done"
-  const reportUrl = upload.state === "done" ? `${WEB_BASE_URL}/analysis/${upload.analysisId}` : null;
-
   return (
     <div className="app">
       {TopBarWithLogo}

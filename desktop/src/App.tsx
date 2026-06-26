@@ -1270,29 +1270,21 @@ export function App() {
           </div>
         )}
 
-        <div className="row" style={{ marginTop: 16 }}>
-          {reportUrl ? (
-            <button className="btn" onClick={() => window.mvt?.openExternal(reportUrl)}>
-              {tr("done.viewReport", "Ver informe →")}
-            </button>
-          ) : !account ? (
-            <button className="btn" onClick={() => window.mvt?.openExternal(`${WEB_BASE_URL}/upload`)}>
-              {tr("done.upload", "Subir al informe →")}
-            </button>
-          ) : null}
-          <button className="btn btn-secondary" onClick={() => zipPath && window.mvt?.openFolder(zipPath)}>
-            {tr("done.openFolder", "Abrir carpeta")}
-          </button>
+        <div className="row" style={{ marginTop: 16, justifyContent: "center" }}>
           <button
-            className="btn btn-secondary"
+            className="btn"
             onClick={() => {
               setScreen("welcome");
               setUpload({ state: "idle" });
               setZipPath(null);
               setPackageWarning(null);
+              setError(null);
+              setFailedModules([]);
+              setActivity(null);
+              setPhase({ num: 0, label: "", progress: 0 });
             }}
           >
-            {tr("done.new", "Nuevo análisis")}
+            {tr("done.accept", "Aceptar")}
           </button>
         </div>
 

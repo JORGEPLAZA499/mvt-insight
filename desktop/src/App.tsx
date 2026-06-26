@@ -985,7 +985,9 @@ export function App() {
             <button className="btn btn-secondary" onClick={handleCancel}>
               {tr("running.cancel", "Cancelar")}
             </button>
-          </div>
+        </div>
+        )}
+
         </div>
 
 

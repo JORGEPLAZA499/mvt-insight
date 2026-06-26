@@ -1,19 +1,14 @@
-# Rotar credencial Admin y limpiar migración
+# Proteger el endpoint cron de purga con un secreto server-only
 
 ## Problema
-La migración `supabase/migrations/20260602043809_b5726ae1-db21-4ccd-88dc-6f250faa901b.sql` contiene la contraseña en claro `Junior88322512.` del usuario admin (`e56a6a80-3e6e-43a7-9907-052e8be73d6f`). Cualquiera con acceso al repo la ve.
+`src/routes/api/public/cron/purge-inactive.ts` valida con el anon key, que está publicado en el bundle del navegador. Cualquiera puede invocarlo y borrar todas las cuentas inactivas >10 días.
 
 ## Pasos
 
-1. **Rotar la contraseña en la base de datos** mediante una nueva migración que use un valor aleatorio fuerte generado al vuelo (`gen_random_bytes` + `encode`) y lo descarte. La nueva contraseña no quedará registrada en ningún sitio — tendrás que restablecerla desde la app con "Olvidé mi contraseña" o pedirme que te genere una nueva conocida vía `secrets`.
-   
-   Alternativa si prefieres seguir entrando con una contraseña conocida: la genero con `generate_secret` (queda guardada como secret server-only, nunca en el repo) y la aplico en la migración leyéndola desde una variable temporal. Dime cuál opción prefieres.
+1. Generar un secreto aleatorio `CRON_SECRET` (64 chars), server-only.
+2. Modificar `purge-inactive.ts`: leer `process.env.CRON_SECRET` dentro del handler y comparar contra el header `x-cron-secret` con `timingSafeEqual`. Si falta o no coincide → 401.
+3. Reprogramar el job de `pg_cron` (unschedule + schedule) para enviar `x-cron-secret: <valor>` en lugar de `apikey`.
+4. Marcar el finding como resuelto y actualizar `@security-memory`.
 
-2. **Neutralizar la migración antigua**: editar `supabase/migrations/20260602043809_*.sql` para eliminar la línea con la contraseña en claro, sustituyéndola por un comentario `-- password rotated on 2026-06-26, see migration <new>`. No se puede borrar el archivo (rompería el historial), pero sí vaciar el contenido sensible.
-
-3. **Marcar el finding como resuelto** en el escáner con explicación.
-
-4. **Actualizar `@security-memory`** con la regla: nunca incluir contraseñas en migraciones; usar Auth Admin API o secrets.
-
-## Pregunta para ti
-¿Opción A (contraseña aleatoria descartada, recuperas vía email reset) u opción B (te genero una contraseña nueva conocida vía secret y te la entrego)?
+## Sin impacto al usuario
+Cambio puramente interno. Si la reprogramación fallara, en el peor caso el cron devuelve 401 y la purga no corre hasta arreglarlo — nadie pierde datos de usuario.

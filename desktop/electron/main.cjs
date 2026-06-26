@@ -64,7 +64,7 @@ function sendMainLog(message) {
 
 
 function createMainWindow() {
-  const iconPath = path.join(__dirname, "..", "build", "icon.png");
+  const iconPath = path.join(__dirname, "..", "build-resources", "icon.png");
   const opts = {
     width: 1400,
     height: 900,

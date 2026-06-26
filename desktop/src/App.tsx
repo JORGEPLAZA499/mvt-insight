@@ -91,9 +91,20 @@ export function App() {
     : [
         tr("phases.download", "Descargando AndroidQF"),
         tr("phases.connect", "Conectando con el dispositivo"),
-        tr("phases.collect", "Recolectando datos"),
+        tr("phases.collect", "Analizando dispositivo"),
         tr("phases.package", "Empaquetando informe"),
       ];
+
+  const getActivePhaseLabel = (fallback: string) => {
+    if (device !== "android" || phase.num !== 3) return fallback;
+    if (phase.statusKey === "phaseStatus.downloadingApks") return tr("phases.android.downloadingApps", "Descargando aplicaciones instaladas");
+    if (phase.statusKey === "phaseStatus.analyzingApps" || phase.statusKey === "phaseStatus.analyzingAppsCount") {
+      return tr("phases.android.analyzingApps", "Analizando aplicaciones instaladas");
+    }
+    if (phase.statusKey === "phaseStatus.collectingSystemInfo") return tr("phases.android.systemInfo", "Recolectando información del sistema");
+    if (phase.statusKey === "phaseStatus.backup") return tr("phases.android.backup", "Creando copia de seguridad");
+    return fallback;
+  };
 
 
   useEffect(() => {
@@ -114,9 +125,9 @@ export function App() {
       });
     });
     const onAct = (window.mvt as any).onActivity as
-      | ((cb: (p: { bytes: number; lastChangeAt: number; alive: boolean }) => void) => () => void)
+      | ((cb: (p: { bytes: number; files?: number; lastChangeAt: number; alive: boolean }) => void) => () => void)
       | undefined;
-    const offActivity = onAct ? onAct((p) => setActivity({ bytes: p.bytes, lastChangeAt: p.lastChangeAt })) : () => {};
+    const offActivity = onAct ? onAct((p) => setActivity({ bytes: p.bytes, files: p.files ?? 0, lastChangeAt: p.lastChangeAt })) : () => {};
     const onModFailed = (window.mvt as any).onModuleFailed as
       | ((cb: (p: { module: string; detail: string }) => void) => () => void)
       | undefined;
@@ -132,7 +143,7 @@ export function App() {
   // para que el usuario vea que el proceso sigue vivo aunque mvt-ios tarde.
   const [phaseStartedAt, setPhaseStartedAt] = useState<number | null>(null);
   const [lastLogAt, setLastLogAt] = useState<number | null>(null);
-  const [activity, setActivity] = useState<{ bytes: number; lastChangeAt: number } | null>(null);
+  const [activity, setActivity] = useState<{ bytes: number; files?: number; lastChangeAt: number } | null>(null);
   const [failedModules, setFailedModules] = useState<Array<{ module: string; detail: string }>>([]);
   const [nowTick, setNowTick] = useState(0);
 
@@ -870,6 +881,14 @@ export function App() {
             const active = phase.num === num;
             const done = phase.num > num;
             const failedHere = active && !!error;
+            const displayLabel = active ? getActivePhaseLabel(label) : label;
+            const phaseStatusText = phase.statusKey
+              ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"), phase.data)
+              : (phase.label || tr("running.working", "Analizando"));
+            const hasRealCounter = !!phase.data && (
+              typeof phase.data.current === "number" ||
+              typeof phase.data.processed === "number"
+            );
             return (
               <div key={num} className={`phase ${active ? "active" : ""} ${done ? "done" : ""} ${failedHere ? "failed" : ""}`}>
                 <div className="phase-num" style={failedHere ? { background: "var(--danger)", color: "#fff" } : undefined}>
@@ -878,18 +897,16 @@ export function App() {
                 <div className="phase-body" style={failedHere ? { color: "var(--danger)" } : undefined}>
                   <div className="phase-label">
                     {failedHere
-                      ? tr("phases.failedAt", `${label} — falló`, { phase: label })
-                      : label}
+                      ? tr("phases.failedAt", `${displayLabel} — falló`, { phase: displayLabel })
+                      : displayLabel}
                   </div>
                   {active && !error && (
                     <>
                       <div className="phase-sub">
-                        {phase.statusKey
-                          ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"), phase.data)
-                          : (phase.label || tr("running.working", "Analizando"))}
-                        <span className="dot-pulse">
+                        {phaseStatusText}
+                        {!hasRealCounter && <span className="dot-pulse">
                           <span /><span /><span />
-                        </span>
+                        </span>}
                       </div>
                       {phaseStartedAt && (() => {
                         const fmtMB = (b: number) => {
@@ -905,6 +922,9 @@ export function App() {
                         const bytesSuffix = activity && activity.bytes > 0
                           ? ` · ${tr("running.subline.bytes", `${fmtMB(activity.bytes)} recolectados`, { size: fmtMB(activity.bytes) })}`
                           : "";
+                        const filesSuffix = activity && activity.files && activity.files > 0
+                          ? ` · ${tr("running.subline.files", "{{count}} archivos generados", { count: activity.files })}`
+                          : "";
 
                         // Estado honesto cuando llevamos mucho rato sin señales.
                         const stalled = sinceActivityMin >= 15;
@@ -915,6 +935,7 @@ export function App() {
                             ⏱ {formatElapsed(Date.now() - phaseStartedAt)}
                             <span aria-hidden style={{ display: "none" }}>{nowTick}</span>
                             {bytesSuffix}
+                            {filesSuffix}
                             {longPhase && (
                               <span style={{ marginLeft: 8, opacity: 0.85 }}>
                                 · {tr("running.subline.longPhase", "Procesando… esta fase puede tardar varios minutos")}
@@ -935,7 +956,6 @@ export function App() {
               </div>
             );
           })}
-          {!error && <div className="scanline" aria-hidden="true" />}
           {error ? (
             <InlineRunError
               rawError={error}

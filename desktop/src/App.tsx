@@ -604,7 +604,7 @@ export function App() {
         <img
           src={logoUrl}
           alt="Spyware Forensic Analyzer"
-          style={{ height: 80, objectFit: "contain", background: "transparent" }}
+          style={{ height: 180, objectFit: "contain", background: "transparent" }}
         />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

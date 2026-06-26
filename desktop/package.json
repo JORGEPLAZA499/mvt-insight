@@ -99,7 +99,7 @@
           ]
         }
       ],
-      "artifactName": "MvtInsight-${version}-${arch}.${ext}",
+      "artifactName": "MvtInsight-mac-${arch}.${ext}",
       "category": "public.app-category.utilities"
     },
     "linux": {

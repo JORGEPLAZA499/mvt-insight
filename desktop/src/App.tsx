@@ -885,10 +885,6 @@ export function App() {
             const phaseStatusText = phase.statusKey
               ? tr(phase.statusKey, phase.label || tr("running.working", "Analizando"), phase.data)
               : (phase.label || tr("running.working", "Analizando"));
-            const hasRealCounter = !!phase.data && (
-              typeof phase.data.current === "number" ||
-              typeof phase.data.processed === "number"
-            );
             return (
               <div key={num} className={`phase ${active ? "active" : ""} ${done ? "done" : ""} ${failedHere ? "failed" : ""}`}>
                 <div className="phase-num" style={failedHere ? { background: "var(--danger)", color: "#fff" } : undefined}>
@@ -904,9 +900,6 @@ export function App() {
                     <>
                       <div className="phase-sub">
                         {phaseStatusText}
-                        {!hasRealCounter && <span className="dot-pulse">
-                          <span /><span /><span />
-                        </span>}
                       </div>
                       {phaseStartedAt && (() => {
                         const fmtMB = (b: number) => {

@@ -16,7 +16,15 @@ import {
   Settings,
   Usb,
   Apple,
+  ExternalLink,
 } from "lucide-react";
+
+const RELEASES_BASE = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest";
+const DOWNLOADS: Array<{ os: "windows" | "macos" | "linux"; label: string; href: string; icon: typeof Monitor }> = [
+  { os: "windows", label: "Windows", href: RELEASES_BASE, icon: Monitor },
+  { os: "macos", label: "macOS", href: RELEASES_BASE, icon: Apple },
+  { os: "linux", label: "Linux", href: RELEASES_BASE, icon: Download },
+];
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),
@@ -234,13 +242,32 @@ function Wizard({
             )}
 
             {key === "step1" && (
-              <Link
-                to="/settings/desktop"
-                className="inline-flex items-center gap-2 mt-5 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-semibold hover:opacity-90 transition"
-              >
-                <Download className="h-4 w-4" />
-                {t("upload.desktopOnly.cta", "Descargar y vincular")}
-              </Link>
+              <div className="mt-5 space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {DOWNLOADS.map((d) => {
+                    const DIcon = d.icon;
+                    return (
+                      <a
+                        key={d.os}
+                        href={d.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-semibold hover:opacity-90 transition"
+                      >
+                        <DIcon className="h-4 w-4" />
+                        {t(`upload.desktopOnly.download.${d.os}`, `Descargar para ${d.label}`)}
+                        <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                      </a>
+                    );
+                  })}
+                </div>
+                <Link
+                  to="/settings/desktop"
+                  className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  {t("upload.desktopOnly.pairLink", "Ya tengo la app instalada — ir a vincular")}
+                </Link>
+              </div>
             )}
           </div>
         </div>

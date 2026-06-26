@@ -1066,6 +1066,17 @@ export function App() {
           {zipPath}
         </div>
 
+        {failedModules.length > 0 && (
+          <div style={{ marginTop: 12, fontSize: 12, color: "var(--muted)" }}>
+            {tr(
+              "done.modulesUnavailable",
+              `Nota: ${failedModules.length} módulo(s) no disponibles en este dispositivo (${failedModules.map((m) => m.module).join(", ")}). Es normal en MIUI, EMUI o One UI por restricciones del fabricante.`,
+              { count: failedModules.length, modules: failedModules.map((m) => m.module).join(", ") }
+            )}
+          </div>
+        )}
+
+
         {/* Estado de subida (manual) */}
         {account && (
           <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: "var(--bg-soft, #1a1a22)", border: "1px solid var(--border, #333)" }}>

@@ -1410,6 +1410,12 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
 });
 
 ipcMain.handle("mvt:openFolder", async (_e, p) => {
+  try {
+    if (typeof p === "string" && fs.existsSync(p) && fs.statSync(p).isDirectory()) {
+      await shell.openPath(p);
+      return;
+    }
+  } catch {}
   shell.showItemInFolder(p);
 });
 

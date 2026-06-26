@@ -77,6 +77,7 @@
     "collectingSystemInfo": "Recolectando información del sistema…",
     "compressing": "Comprimiendo resultados…",
     "compressingProgress": "Comprimiendo resultados… {{processed}}/{{total}} archivos ({{mb}} MB escritos)",
+    "compressingNative": "Comprimiendo con el sistema… {{mb}} MB escritos",
     "done": "Análisis finalizado",
     "iosPairing": "Comprobando confianza con el iPhone…",
     "iosTrust": "Acepta «Confiar en este ordenador» en el iPhone.",

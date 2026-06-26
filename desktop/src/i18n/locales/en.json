@@ -78,6 +78,7 @@
     "compressing": "Compressing results…",
     "compressingProgress": "Compressing results… {{processed}}/{{total}} files ({{mb}} MB written)",
     "compressingNative": "Compressing with the system… {{mb}} MB written",
+    "packageUsingFolder": "Compression unavailable; using results folder…",
     "done": "Analysis complete",
     "iosPairing": "Checking trust with the iPhone…",
     "iosTrust": "Tap «Trust this computer» on the iPhone.",
@@ -105,6 +106,8 @@
     "subtitleFailed": "The file was saved to Downloads. You can retry the upload below.",
     "filename": "Generated file:",
     "modulesUnavailable": "Note: {{count}} module(s) unavailable on this device ({{modules}}). This is normal on MIUI, EMUI or One UI due to manufacturer restrictions.",
+    "packageWarningTitle": "The report was saved as a folder",
+    "packageWarningBody": "ZIP compression failed, but the analysis was not lost: we will use the results folder directly to generate and upload the report. If you need to send it manually, open the folder and compress it from Windows.",
     "upload": "Upload to report →",
     "openFolder": "Open folder",
     "new": "New analysis"

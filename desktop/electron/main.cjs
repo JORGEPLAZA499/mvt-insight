@@ -1249,29 +1249,18 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         .filter((e) => e.isDir)
         .sort((a, b) => b.mtime - a.mtime)[0];
 
-      // Preferimos re-comprimir desde la carpeta cuando existe: así garantizamos
-      // un ZIP estándar y evitamos ZIPs truncados o con formatos que el backend
-      // (yauzl) no consigue leer ("End of central directory record signature not found").
+      // Auditoría 2026-06:
+      // Ya NO comprimimos la carpeta final en el flujo normal. La compresión no
+      // aporta nada a la subida automática, porque el parser sólo necesita leer
+      // los .json/.txt generados por AndroidQF. En móviles grandes, intentar
+      // crear un ZIP de varios GB añade otro punto de fallo y mensajes confusos.
+      // Por eso, cuando AndroidQF deja una carpeta de resultados, la usamos
+      // directamente como fuente canónica del informe.
       let packageWarning = null;
       if (freshDir) {
-        zipPath = path.join(dir, `${freshDir.name}.zip`);
-        send("mvt:log", `📦 Comprimiendo carpeta de resultados "${freshDir.name}" → ${path.basename(zipPath)}`);
-        send("mvt:phase", { phase: 4, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.1 });
-        const packaged = await packageResultsFolder(freshDir.full, zipPath, send, (p) => {
-          const pct = p.total ? p.processed / p.total : 0;
-          const mb = (p.bytes / (1024 * 1024)).toFixed(1);
-          send("mvt:phase", {
-            phase: 4,
-            statusKey: p.method === "windows" ? "phaseStatus.compressingNative" : "phaseStatus.compressingProgress",
-            label: p.method === "windows"
-              ? `Compressing with Windows (${mb} MB written)`
-              : `Compressing ${p.processed}/${p.total} files (${mb} MB written)`,
-            progress: p.method === "windows" ? 0.5 : 0.1 + pct * 0.85,
-            data: { processed: p.processed, total: p.total, mb },
-          });
-        });
-        zipPath = packaged.path;
-        packageWarning = packaged.warning;
+        zipPath = freshDir.full;
+        send("mvt:log", `📁 Carpeta de resultados lista: ${freshDir.name}`);
+        send("mvt:phase", { phase: 4, statusKey: "phaseStatus.preparingReport", label: "Preparando informe", progress: 1 });
       } else if (freshZip) {
         zipPath = freshZip.full;
         send("mvt:log", `📦 ZIP detectado: ${freshZip.name}`);
@@ -1415,28 +1404,17 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         stopActivityWatcher();
       }
 
-      // 6. Comprimir resultados para mantener la misma UX que Android
-      const zipPath = path.join(dir, `ios-results-${Date.now()}.zip`);
-      send("mvt:phase", { phase: 4, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.1 });
-      const packaged = await packageResultsFolder(resultsDir, zipPath, send, (p) => {
-        const pct = p.total ? p.processed / p.total : 0;
-        const mb = (p.bytes / (1024 * 1024)).toFixed(1);
-        send("mvt:phase", {
-          phase: 4,
-          statusKey: p.method === "windows" ? "phaseStatus.compressingNative" : "phaseStatus.compressingProgress",
-          label: p.method === "windows"
-            ? `Compressing with Windows (${mb} MB written)`
-            : `Compressing ${p.processed}/${p.total} files (${mb} MB written)`,
-          progress: p.method === "windows" ? 0.5 : 0.1 + pct * 0.85,
-          data: { processed: p.processed, total: p.total, mb },
-        });
-      });
+      // 6. Preparar informe.
+      // Igual que en Android, evitamos comprimir: el parser lee directamente
+      // los artefactos .json/.txt desde la carpeta de resultados.
+      const zipPath = resultsDir;
+      send("mvt:phase", { phase: 4, statusKey: "phaseStatus.preparingReport", label: "Preparando informe", progress: 1 });
       send("mvt:phase", { phase: 4, statusKey: "phaseStatus.done", label: "Listo", progress: 1 });
 
       // Limpieza: borramos el backup (es enorme) pero conservamos los resultados.
       try { fs.rmSync(backupDir, { recursive: true, force: true }); } catch {}
 
-      return { ok: true, zipPath: packaged.path, packageWarning: packaged.warning };
+      return { ok: true, zipPath, packageWarning: null };
     }
 
     throw new Error(`Dispositivo no soportado: ${device}`);

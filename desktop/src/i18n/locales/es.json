@@ -59,6 +59,7 @@
     "download": "Descargando AndroidQF",
     "connect": "Conectando con el dispositivo",
     "collect": "Recolectando datos",
+    "package": "Empaquetando informe",
     "ios": {
       "tools": "Preparando herramientas iOS",
       "connect": "Conectando con el iPhone",

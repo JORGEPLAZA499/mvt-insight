@@ -85,11 +85,13 @@ export function App() {
         tr("phases.ios.tools", "Preparando herramientas iOS"),
         tr("phases.ios.connect", "Conectando con el iPhone"),
         tr("phases.ios.analyze", "Analizando backup"),
+        tr("phases.package", "Empaquetando informe"),
       ]
     : [
         tr("phases.download", "Descargando AndroidQF"),
         tr("phases.connect", "Conectando con el dispositivo"),
         tr("phases.collect", "Recolectando datos"),
+        tr("phases.package", "Empaquetando informe"),
       ];
 
 

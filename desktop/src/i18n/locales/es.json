@@ -39,19 +39,10 @@
     "working": "Analizando",
     "cancel": "Cancelar",
     "cancelConfirm": "¿Cancelar el análisis en curso?",
-    "idleWarning": {
-      "ios": "ℹ Sin nuevos mensajes de mvt-ios desde hace {{min}} min.",
-      "android": "ℹ Sin nuevos mensajes de androidqf desde hace {{min}} min.",
-      "hint": "Es normal: durante el backup, descarga de apps o análisis de módulos puede pasar mucho rato sin imprimir nada. Espera antes de cancelar."
-    },
-    "activity": {
-      "collecting": "Recolectando archivos del dispositivo… {{size}} transferidos (último cambio hace {{ago}}).",
-      "frozen": "⚠ Llevamos {{min}} min sin detectar cambios. Puede que el proceso siga trabajando en segundo plano (compresión, backup) o que esté bloqueado.",
-      "frozenHint": "Espera unos minutos más. Solo si NO ves actividad del disco duro, pulsa Cancelar y reintenta."
-    },
-    "moduleFailed": {
-      "title": "Algunos módulos no están disponibles en este dispositivo",
-      "description": "El módulo {{modules}} no se pudo ejecutar. Suele ocurrir en MIUI, EMUI o One UI por restricciones del fabricante. El análisis continúa con normalidad."
+    "subline": {
+      "bytes": "{{size}} recolectados",
+      "longPhase": "Procesando… esta fase puede tardar varios minutos",
+      "stalled": "Sin cambios desde hace {{min}} min — puedes cancelar si tu disco no muestra actividad"
     }
   },
 

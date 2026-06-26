@@ -1537,6 +1537,34 @@ ipcMain.handle("mvt:readZip", async (_e, zipPath) => {
   }
 });
 
+function collectParserEntriesFromFolder(rootDir, maxEntryBytes) {
+  const out = [];
+  let totalSize = 0;
+  const walk = (absDir, relBase) => {
+    const items = fs.readdirSync(absDir, { withFileTypes: true });
+    for (const item of items) {
+      const abs = path.join(absDir, item.name);
+      const rel = relBase ? `${relBase}/${item.name}` : item.name;
+      if (item.isDirectory()) {
+        walk(abs, rel);
+        continue;
+      }
+      if (!item.isFile()) continue;
+      const lower = item.name.toLowerCase();
+      let st;
+      try { st = fs.statSync(abs); } catch { continue; }
+      totalSize += st.size;
+      if (!lower.endsWith(".json") && !lower.endsWith(".txt")) continue;
+      if (st.size > maxEntryBytes) continue;
+      try {
+        out.push({ name: rel, text: fs.readFileSync(abs, "utf8") });
+      } catch {}
+    }
+  };
+  walk(rootDir, "");
+  return { entries: out, fileSize: totalSize };
+}
+
 // Streaming parser para ZIPs grandes.
 //
 // `mvt:readZip` carga el ZIP entero en RAM y eso se rompe con ZIPs de varios GB
@@ -1553,9 +1581,18 @@ ipcMain.handle("mvt:parseZipEntries", async (_e, zipPath) => {
       return { ok: false, error: "not-found" };
     }
     const stat = fs.statSync(zipPath);
-    const yauzl = require("yauzl");
     // Tope blando por entrada para no agotar memoria si un .json es enorme.
     const MAX_ENTRY_BYTES = 64 * 1024 * 1024; // 64 MB
+
+    // Si la compresión falla, la app puede continuar usando directamente la
+    // carpeta de resultados. El parser lee sólo .json/.txt; no carga fotos,
+    // backups ni binarios grandes.
+    if (stat.isDirectory()) {
+      const { entries, fileSize } = collectParserEntriesFromFolder(zipPath, MAX_ENTRY_BYTES);
+      return { ok: true, entries, fileSize, sourceType: "folder" };
+    }
+
+    const yauzl = require("yauzl");
     const entries = await new Promise((resolve, reject) => {
       yauzl.open(zipPath, { lazyEntries: true, autoClose: true }, (err, zip) => {
         if (err) return reject(err);

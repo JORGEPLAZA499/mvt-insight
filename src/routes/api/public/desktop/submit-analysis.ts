@@ -72,6 +72,17 @@ export const Route = createFileRoute("/api/public/desktop/submit-analysis")({
         );
         if (rpcErr) {
           const msg = rpcErr.message || "";
+          console.error("desktop submit-analysis RPC failed", {
+            code: rpcErr.code,
+            message: rpcErr.message,
+            details: rpcErr.details,
+            hint: rpcErr.hint,
+            userId: row.user_id,
+            device: parsed.data.device,
+            fileName: parsed.data.fileName,
+            fileSize: parsed.data.fileSize,
+            contentLength: request.headers.get("content-length"),
+          });
           if (msg.includes("INSUFFICIENT_CREDITS")) {
             return new Response(JSON.stringify({ ok: false, error: "INSUFFICIENT_CREDITS" }), {
               status: 402, headers: { "content-type": "application/json" },

@@ -32,7 +32,6 @@ declare global {
       };
       readZip: (zipPath: string) => Promise<{ ok: boolean; data?: Uint8Array; size?: number; error?: string }>;
       parseZipEntries: (zipPath: string) => Promise<{ ok: boolean; entries?: { name: string; text: string }[]; fileSize?: number; sourceType?: "zip" | "folder"; error?: string }>;
-      isDirectory: (p: string) => Promise<boolean>;
     };
   }
 }

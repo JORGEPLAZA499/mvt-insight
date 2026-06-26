@@ -532,6 +532,27 @@ async function zipFolder(srcDir, destZip, onProgress) {
   );
 }
 
+async function packageResultsFolder(srcDir, destZip, send, onProgress) {
+  try {
+    await zipFolder(srcDir, destZip, onProgress);
+    return { path: destZip, packaged: true, warning: null };
+  } catch (err) {
+    const detail = err?.message || String(err);
+    send("mvt:log", `⚠️ No se pudo crear el ZIP final, pero la carpeta de resultados sigue intacta y se usará directamente. Detalle: ${detail}`);
+    send("mvt:phase", {
+      phase: 4,
+      statusKey: "phaseStatus.packageUsingFolder",
+      label: "Resultados guardados en carpeta",
+      progress: 1,
+    });
+    return {
+      path: srcDir,
+      packaged: false,
+      warning: `No se pudo crear el ZIP final. El análisis se completó y se usará la carpeta de resultados directamente. Detalle técnico: ${detail}`,
+    };
+  }
+}
+
 async function resolveAndroidqfUrl() {
   const rel = await fetchJson("https://api.github.com/repos/mvt-project/androidqf/releases/latest");
   const assets = rel.assets || [];

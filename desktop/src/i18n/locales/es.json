@@ -78,6 +78,7 @@
     "compressing": "Comprimiendo resultados…",
     "compressingProgress": "Comprimiendo resultados… {{processed}}/{{total}} archivos ({{mb}} MB escritos)",
     "compressingNative": "Comprimiendo con el sistema… {{mb}} MB escritos",
+    "packageUsingFolder": "Compresión no disponible; usando carpeta de resultados…",
     "done": "Análisis finalizado",
     "iosPairing": "Comprobando confianza con el iPhone…",
     "iosTrust": "Acepta «Confiar en este ordenador» en el iPhone.",
@@ -105,6 +106,8 @@
     "subtitleFailed": "El archivo se ha guardado en Descargas. Puedes reintentar la subida más abajo.",
     "filename": "Archivo generado:",
     "modulesUnavailable": "Nota: {{count}} módulo(s) no disponibles en este dispositivo ({{modules}}). Es normal en MIUI, EMUI o One UI por restricciones del fabricante.",
+    "packageWarningTitle": "El informe se guardó como carpeta",
+    "packageWarningBody": "La compresión ZIP falló, pero el análisis no se perdió: usaremos la carpeta de resultados directamente para generar y subir el informe. Si necesitas enviarlo manualmente, abre la carpeta y comprímela desde Windows.",
     "upload": "Subir al informe →",
     "openFolder": "Abrir carpeta",
     "new": "Nuevo análisis"

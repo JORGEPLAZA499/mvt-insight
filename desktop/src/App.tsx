@@ -52,6 +52,7 @@ export function App() {
   const [phase, setPhase] = useState<PhaseState>({ num: 0, label: "", progress: 0 });
   const [logs, setLogs] = useState<string[]>([]);
   const [zipPath, setZipPath] = useState<string | null>(null);
+  const [packageWarning, setPackageWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [appVersion, setAppVersion] = useState<string>("");
   const [updateState, setUpdateState] = useState<{
@@ -243,6 +244,7 @@ export function App() {
     setScreen("running");
     setLogs([]);
     setError(null);
+    setPackageWarning(null);
     setUpload({ state: "idle" });
     setActivity(null);
     setFailedModules([]);
@@ -258,6 +260,7 @@ export function App() {
     if (cancelledRef.current) return;
     if (result.ok && result.zipPath) {
       setZipPath(result.zipPath);
+      setPackageWarning(result.packageWarning ?? null);
       setScreen("done");
     } else {
       setError(result.error ?? tr("error.unknown", "Error desconocido"));
@@ -306,9 +309,10 @@ export function App() {
       const { token } = (await window.mvt!.auth.get()) ?? { token: null };
       if (!token) throw new Error("NO_TOKEN");
 
-      const fileName = path.split(/[\\/]/).pop() || "android-qf.zip";
+      const pathName = path.split(/[\\/]/).pop() || "android-qf";
       let fileSize = 0;
       let result: unknown;
+      let sourceName = pathName;
 
       // Preferimos el parseo en streaming (main process) para no cargar el ZIP
       // entero en RAM. Permite analizar móviles con miles de fotos/vídeos sin
@@ -318,14 +322,17 @@ export function App() {
         const r = await window.mvt!.parseZipEntries(path);
         if (!r.ok || !r.entries) throw new Error(r.error || "PARSE_FAILED");
         fileSize = r.fileSize ?? 0;
-        result = parseMvtEntries(r.entries, fileName);
+        sourceName = r.sourceType === "folder" ? `${pathName}/` : pathName;
+        result = parseMvtEntries(r.entries, sourceName);
       } else {
+        const fileName = pathName.toLowerCase().endsWith(".zip") ? pathName : `${pathName}.zip`;
         const zip = await window.mvt!.readZip(path);
         if (!zip.ok || !zip.data) throw new Error(zip.error || "READ_FAILED");
         const bytes = zip.data instanceof Uint8Array ? zip.data : new Uint8Array(zip.data);
         fileSize = bytes.length;
         const file = new File([bytes], fileName, { type: "application/zip" });
         result = await parseMvtFiles([file], fileName);
+        sourceName = fileName;
       }
 
       const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/submit-analysis`, {
@@ -336,7 +343,7 @@ export function App() {
         },
         body: JSON.stringify({
           device: dev,
-          fileName,
+          fileName: sourceName,
           fileSize,
           result,
         }),
@@ -1066,6 +1073,20 @@ export function App() {
           {zipPath}
         </div>
 
+        {packageWarning && (
+          <div style={{ marginTop: 12, padding: 12, borderRadius: 8, border: "1px solid rgba(255, 200, 0, 0.35)", background: "rgba(255, 200, 0, 0.08)", fontSize: 13, lineHeight: 1.5 }}>
+            <strong style={{ color: "#e6c200" }}>
+              {tr("done.packageWarningTitle", "El informe se guardó como carpeta")}
+            </strong>
+            <div style={{ marginTop: 6, color: "var(--muted)" }}>
+              {tr(
+                "done.packageWarningBody",
+                "La compresión ZIP falló, pero el análisis no se perdió: usaremos la carpeta de resultados directamente para generar y subir el informe. Si necesitas enviarlo manualmente, abre la carpeta y comprímela desde Windows."
+              )}
+            </div>
+          </div>
+        )}
+
         {failedModules.length > 0 && (
           <div style={{ marginTop: 12, fontSize: 12, color: "var(--muted)" }}>
             {tr(
@@ -1151,6 +1172,7 @@ export function App() {
               setScreen("welcome");
               setUpload({ state: "idle" });
               setZipPath(null);
+              setPackageWarning(null);
             }}
           >
             {tr("done.new", "Nuevo análisis")}

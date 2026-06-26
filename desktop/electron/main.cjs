@@ -54,6 +54,14 @@ if (!gotLock) {
 
 let mainWindow = null;
 
+function sendMainLog(message) {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("mvt:log", message);
+    }
+  } catch {}
+}
+
 
 function createMainWindow() {
   const iconPath = path.join(__dirname, "..", "build", "icon.png");
@@ -1214,9 +1222,11 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
           const mb = (p.bytes / (1024 * 1024)).toFixed(1);
           send("mvt:phase", {
             phase: 4,
-            statusKey: "phaseStatus.compressingProgress",
-            label: `Compressing ${p.processed}/${p.total} files (${mb} MB written)`,
-            progress: 0.1 + pct * 0.85,
+            statusKey: p.method === "windows" ? "phaseStatus.compressingNative" : "phaseStatus.compressingProgress",
+            label: p.method === "windows"
+              ? `Compressing with Windows (${mb} MB written)`
+              : `Compressing ${p.processed}/${p.total} files (${mb} MB written)`,
+            progress: p.method === "windows" ? 0.5 : 0.1 + pct * 0.85,
             data: { processed: p.processed, total: p.total, mb },
           });
         });
@@ -1371,9 +1381,11 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         const mb = (p.bytes / (1024 * 1024)).toFixed(1);
         send("mvt:phase", {
           phase: 4,
-          statusKey: "phaseStatus.compressingProgress",
-          label: `Compressing ${p.processed}/${p.total} files (${mb} MB written)`,
-          progress: 0.1 + pct * 0.85,
+          statusKey: p.method === "windows" ? "phaseStatus.compressingNative" : "phaseStatus.compressingProgress",
+          label: p.method === "windows"
+            ? `Compressing with Windows (${mb} MB written)`
+            : `Compressing ${p.processed}/${p.total} files (${mb} MB written)`,
+          progress: p.method === "windows" ? 0.5 : 0.1 + pct * 0.85,
           data: { processed: p.processed, total: p.total, mb },
         });
       });

@@ -19,11 +19,11 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-const RELEASES_BASE = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest";
+const RELEASES_BASE = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest/download";
 const DOWNLOADS: Array<{ os: "windows" | "macos" | "linux"; label: string; href: string; icon: typeof Monitor }> = [
-  { os: "windows", label: "Windows", href: RELEASES_BASE, icon: Monitor },
-  { os: "macos", label: "macOS", href: RELEASES_BASE, icon: Apple },
-  { os: "linux", label: "Linux", href: RELEASES_BASE, icon: Download },
+  { os: "windows", label: "Windows", href: `${RELEASES_BASE}/MvtInsight-Setup.exe`, icon: Monitor },
+  { os: "macos", label: "macOS (Apple Silicon)", href: `${RELEASES_BASE}/MvtInsight-mac-arm64.dmg`, icon: Apple },
+  { os: "linux", label: "Linux (AppImage)", href: `${RELEASES_BASE}/MvtInsight.AppImage`, icon: Download },
 ];
 
 export const Route = createFileRoute("/upload")({

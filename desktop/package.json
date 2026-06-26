@@ -112,7 +112,7 @@
           ]
         }
       ],
-      "artifactName": "MvtInsight-${version}.${ext}",
+      "artifactName": "MvtInsight.${ext}",
       "category": "Utility"
     }
   }

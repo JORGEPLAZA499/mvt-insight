@@ -1009,7 +1009,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
             phase: 3,
             statusKey: "phaseStatus.analyzingAppsCount",
             label: `Analizando aplicaciones (${appsDone}${appsTotal ? `/${appsTotal}` : ""})`,
-            data: { current: appsDone, total: appsTotal || null },
+            data: { current: appsDone, total: appsTotal || null, totalSuffix: appsTotal ? `/${appsTotal}` : "" },
             progress: appsTotal ? Math.min(0.95, 0.6 + 0.35 * (appsDone / appsTotal)) : 0.6,
           });
         }

@@ -982,18 +982,27 @@ export function App() {
             );
           })}
           <div className="scanline" aria-hidden="true" />
-          <div className="row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
-            <button className="btn btn-secondary" onClick={handleCancel}>
-              {tr("running.cancel", "Cancelar")}
-            </button>
+          {error ? (
+            <InlineRunError
+              rawError={error}
+              lang={i18n.language}
+              onBack={() => setScreen("welcome")}
+              tr={tr}
+            />
+          ) : (
+            <div className="row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
+              <button className="btn btn-secondary" onClick={handleCancel}>
+                {tr("running.cancel", "Cancelar")}
+              </button>
+            </div>
+          )}
+
         </div>
         )}
 
-        </div>
 
 
-
-        {error === "IOS_DRIVERS_MISSING" ? (
+        {error === "IOS_DRIVERS_MISSING" && (
           <div className="card" style={{ borderColor: "var(--primary, #6ea8ff)" }}>
             <strong>{tr("iosDrivers.title", "Faltan los drivers de Apple en este Windows")}</strong>
             <div style={{ marginTop: 8, fontSize: 13, color: "var(--muted)" }}>
@@ -1044,13 +1053,6 @@ export function App() {
               </div>
             </div>
           </div>
-        ) : error && (
-          <RunErrorCard
-            rawError={error}
-            lang={i18n.language}
-            onBack={() => setScreen("welcome")}
-            tr={tr}
-          />
         )}
 
 

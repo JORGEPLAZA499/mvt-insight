@@ -306,22 +306,171 @@ async function fetchJson(url) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-// Comprime una carpeta en un .zip usando `archiver`, escribiendo en streaming
-// directo a disco. Antes usábamos JSZip cargando todo en memoria, lo que
-// provocaba "Array buffer allocation failed" en carpetas de análisis de varios
-// GB (V8 corta los buffers en torno a 2 GiB). archiver lee cada archivo como
-// stream y lo va deflatando al fichero destino, manteniendo el uso de RAM bajo
-// y produciendo un ZIP estándar perfectamente legible por yauzl.
-async function zipFolder(srcDir, destZip, onProgress) {
+function formatBytes(bytes) {
+  const n = Number(bytes) || 0;
+  if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function getFreeDiskBytes(targetPath) {
+  try {
+    if (typeof fs.statfsSync === "function") {
+      const stat = fs.statfsSync(path.dirname(targetPath));
+      return Number(stat.bavail) * Number(stat.bsize);
+    }
+  } catch {}
+  return null;
+}
+
+async function assertReadableFolder(srcDir) {
+  await fs.promises.access(srcDir, fs.constants.R_OK);
+  const st = await fs.promises.stat(srcDir);
+  if (!st.isDirectory()) throw new Error(`La ruta de resultados no es una carpeta: ${srcDir}`);
+}
+
+async function validateZipFile(zipPath) {
+  const yauzl = require("yauzl");
+  await new Promise((resolve, reject) => {
+    yauzl.open(zipPath, { lazyEntries: true, autoClose: true, validateEntrySizes: false }, (err, zip) => {
+      if (err) return reject(err);
+      let entries = 0;
+      zip.on("error", reject);
+      zip.on("end", () => {
+        if (entries < 1) reject(new Error("El ZIP se creó vacío o ilegible."));
+        else resolve();
+      });
+      zip.on("entry", () => {
+        entries += 1;
+        zip.readEntry();
+      });
+      zip.readEntry();
+    });
+  });
+}
+
+function removePartialZip(zipPath) {
+  try {
+    if (zipPath && fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+  } catch {}
+}
+
+async function zipFolderWithPowershell(srcDir, destZip, onProgress, meta) {
+  if (process.platform !== "win32") throw new Error("PowerShell ZIP sólo está disponible en Windows.");
+  const psScript = [
+    "$ErrorActionPreference = 'Stop'",
+    "$source = $args[0]",
+    "$dest = $args[1]",
+    "if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Force }",
+    "Add-Type -AssemblyName System.IO.Compression.FileSystem",
+    "[System.IO.Compression.ZipFile]::CreateFromDirectory($source, $dest, [System.IO.Compression.CompressionLevel]::Optimal, $false)",
+  ].join("; ");
+
+  const executable = process.env.SystemRoot
+    ? path.join(process.env.SystemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+    : "powershell.exe";
+
+  let watcher = null;
+  try {
+    watcher = setInterval(() => {
+      if (!onProgress) return;
+      try {
+        const written = fs.existsSync(destZip) ? fs.statSync(destZip).size : 0;
+        onProgress({
+          processed: 0,
+          total: meta.totalFiles,
+          bytes: written,
+          totalBytes: meta.totalBytes,
+          currentFile: null,
+          method: "windows",
+        });
+      } catch {}
+    }, 1000);
+
+    await new Promise((resolve, reject) => {
+      const child = spawn(executable, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript, srcDir, destZip], {
+        windowsHide: true,
+      });
+      let stderr = "";
+      child.stderr?.on("data", (d) => { stderr += d.toString(); });
+      child.on("error", reject);
+      child.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`Compresión nativa de Windows falló con código ${code}${stderr ? `: ${stderr.trim().slice(0, 800)}` : ""}`));
+      });
+    });
+  } finally {
+    if (watcher) clearInterval(watcher);
+  }
+}
+
+async function zipFolderWithArchiver(srcDir, destZip, onProgress, meta) {
   const archiver = require("archiver");
 
+  await new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(destZip);
+    const archive = archiver("zip", {
+      forceZip64: true,
+      statConcurrency: 2,
+      zlib: { level: 1 },
+    });
+    let lastReport = 0;
+    let processed = 0;
+    let settled = false;
+
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      try { archive.abort(); } catch {}
+      reject(err);
+    };
+
+    output.on("close", () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    });
+    output.on("error", fail);
+    archive.on("warning", fail);
+    archive.on("error", fail);
+    archive.on("entry", (entry) => {
+      processed += 1;
+      const now = Date.now();
+      // Reportar cada 500 ms para no saturar el IPC con archivos pequeños.
+      if (onProgress && (now - lastReport > 500 || processed === meta.totalFiles)) {
+        lastReport = now;
+        try {
+          onProgress({
+            processed,
+            total: meta.totalFiles,
+            bytes: archive.pointer(),
+            totalBytes: meta.totalBytes,
+            currentFile: entry?.name,
+            method: "archiver",
+          });
+        } catch {}
+      }
+    });
+
+    archive.pipe(output);
+    archive.directory(srcDir, false);
+    archive.finalize().catch(fail);
+  });
+}
+
+// Comprime una carpeta en un .zip escribiendo en streaming directo a disco.
+// Auditoría 2026-06: además de evitar JSZip/Buffer, validamos disco, ZIP64,
+// permisos y el ZIP final. En Windows, si la librería JS falla, usamos el
+// compresor nativo del sistema como respaldo para no perder análisis largos.
+async function zipFolder(srcDir, destZip, onProgress) {
   // 1) Recolectar lista de archivos para poder reportar progreso real
   //    (archivos procesados / total y bytes leídos).
+  await assertReadableFolder(srcDir);
   const files = [];
   const walk = (absDir, relBase) => {
     let entries;
     try { entries = fs.readdirSync(absDir, { withFileTypes: true }); }
-    catch { return; }
+    catch (err) { throw new Error(`No se pudo leer la carpeta durante la compresión: ${absDir} (${err.message})`); }
     for (const e of entries) {
       const abs = path.join(absDir, e.name);
       const rel = relBase ? `${relBase}/${e.name}` : e.name;
@@ -329,51 +478,50 @@ async function zipFolder(srcDir, destZip, onProgress) {
         walk(abs, rel);
       } else if (e.isFile()) {
         let size = 0;
-        try { size = fs.statSync(abs).size; } catch {}
+        try { size = fs.statSync(abs).size; }
+        catch (err) { throw new Error(`No se pudo leer el tamaño de ${abs}: ${err.message}`); }
         files.push({ abs, rel, size });
       }
     }
   };
   walk(srcDir, "");
   const totalBytes = files.reduce((a, f) => a + f.size, 0);
+  const meta = { totalFiles: files.length, totalBytes };
+  if (files.length === 0) throw new Error(`La carpeta de resultados está vacía: ${srcDir}`);
 
-  await new Promise((resolve, reject) => {
-    const output = fs.createWriteStream(destZip);
-    const archive = archiver("zip", { zlib: { level: 6 } });
-    let lastReport = 0;
-    let processed = 0;
+  const freeBytes = getFreeDiskBytes(destZip);
+  if (freeBytes !== null && freeBytes < Math.max(512 * 1024 * 1024, totalBytes * 0.15)) {
+    throw new Error(`No hay espacio suficiente para empaquetar el informe. Libre: ${formatBytes(freeBytes)}; resultados: ${formatBytes(totalBytes)}.`);
+  }
 
-    output.on("close", () => resolve());
-    output.on("error", reject);
-    archive.on("warning", (err) => {
-      if (err.code === "ENOENT") return;
-      reject(err);
-    });
-    archive.on("error", reject);
-    archive.on("entry", (entry) => {
-      processed++;
-      const now = Date.now();
-      // Reportar cada 500 ms para no saturar el IPC con archivos pequeños.
-      if (onProgress && (now - lastReport > 500 || processed === files.length)) {
-        lastReport = now;
-        try {
-          onProgress({
-            processed,
-            total: files.length,
-            bytes: archive.pointer(),
-            totalBytes,
-            currentFile: entry?.name,
-          });
-        } catch {}
+  removePartialZip(destZip);
+
+  const attempts = [
+    { name: "archiver", run: () => zipFolderWithArchiver(srcDir, destZip, onProgress, meta) },
+  ];
+  if (process.platform === "win32") {
+    attempts.push({ name: "windows-native", run: () => zipFolderWithPowershell(srcDir, destZip, onProgress, meta) });
+  }
+
+  const errors = [];
+  for (const attempt of attempts) {
+    try {
+      removePartialZip(destZip);
+      await attempt.run();
+      await validateZipFile(destZip);
+      return;
+    } catch (err) {
+      removePartialZip(destZip);
+      errors.push(`${attempt.name}: ${err?.message || String(err)}`);
+      if (attempt.name === "archiver" && process.platform === "win32") {
+        sendMainLog(`⚠️ Compresión JS falló; intentando compresión nativa de Windows. Detalle: ${err?.message || err}`);
       }
-    });
-
-    archive.pipe(output);
-    for (const f of files) {
-      archive.file(f.abs, { name: f.rel });
     }
-    archive.finalize().catch(reject);
-  });
+  }
+
+  throw new Error(
+    `ZIP_COMPRESSION_FAILED | carpeta=${srcDir} | destino=${destZip} | archivos=${files.length} | tamaño=${formatBytes(totalBytes)} | ${errors.join(" | ")}`
+  );
 }
 
 async function resolveAndroidqfUrl() {

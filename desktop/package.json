@@ -76,7 +76,7 @@
           ]
         }
       ],
-      "artifactName": "MvtInsight-Setup-${version}.${ext}"
+      "artifactName": "MvtInsight-Setup.${ext}"
     },
     "nsis": {
       "oneClick": true,
@@ -99,7 +99,7 @@
           ]
         }
       ],
-      "artifactName": "MvtInsight-${version}-${arch}.${ext}",
+      "artifactName": "MvtInsight-mac-${arch}.${ext}",
       "category": "public.app-category.utilities"
     },
     "linux": {
@@ -112,7 +112,7 @@
           ]
         }
       ],
-      "artifactName": "MvtInsight-${version}.${ext}",
+      "artifactName": "MvtInsight.${ext}",
       "category": "Utility"
     }
   }

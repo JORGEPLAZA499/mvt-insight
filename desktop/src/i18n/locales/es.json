@@ -40,7 +40,8 @@
     "cancel": "Cancelar",
     "cancelConfirm": "¿Cancelar el análisis en curso?",
     "subline": {
-      "bytes": "{{size}} recolectados",
+      "bytes": "{{size}} de resultados generados",
+      "files": "{{count}} archivos generados",
       "longPhase": "Procesando… esta fase puede tardar varios minutos",
       "stalled": "Sin cambios desde hace {{min}} min — puedes cancelar si tu disco no muestra actividad"
     }
@@ -49,8 +50,14 @@
   "phases": {
     "download": "Descargando AndroidQF",
     "connect": "Conectando con el dispositivo",
-    "collect": "Recolectando datos",
+    "collect": "Analizando dispositivo",
     "package": "Empaquetando informe",
+    "android": {
+      "backup": "Creando copia de seguridad",
+      "downloadingApps": "Descargando aplicaciones instaladas",
+      "analyzingApps": "Analizando aplicaciones instaladas",
+      "systemInfo": "Recolectando información del sistema"
+    },
     "ios": {
       "tools": "Preparando herramientas iOS",
       "connect": "Conectando con el iPhone",

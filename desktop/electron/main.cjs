@@ -224,6 +224,7 @@ function workDir() {
  */
 function startActivityWatcher(rootDir, startMs, send) {
   let lastBytes = 0;
+  let lastFiles = 0;
   let lastChangeAt = Date.now();
   const SKIP_NAMES = new Set([
     "androidqf", "androidqf.exe",
@@ -234,6 +235,7 @@ function startActivityWatcher(rootDir, startMs, send) {
 
   const measure = () => {
     let total = 0;
+    let files = 0;
     let scanned = 0;
     let earlyExit = false;
     const walk = (dir, depth) => {
@@ -253,23 +255,25 @@ function startActivityWatcher(rootDir, startMs, send) {
         let st;
         try { st = fs.statSync(full); } catch { continue; }
         if (st.mtimeMs < startMs - 5000) continue;
+        files += 1;
         total += st.size;
-        // Cortocircuito: si ya superamos la marca anterior, sabemos que crece.
-        if (total > lastBytes) { earlyExit = true; return; }
+        // Cortocircuito: si ya superamos la marca anterior, sabemos que hay actividad.
+        if (total > lastBytes && files > lastFiles) { earlyExit = true; return; }
       }
     };
     walk(rootDir, 0);
-    return total;
+    return { total, files };
   };
 
   const tick = () => {
     try {
       const current = measure();
-      if (current > lastBytes) {
+      if (current.total > lastBytes || current.files > lastFiles) {
         lastChangeAt = Date.now();
-        lastBytes = current;
+        lastBytes = Math.max(lastBytes, current.total);
+        lastFiles = Math.max(lastFiles, current.files);
       }
-      send("mvt:activity", { bytes: lastBytes, lastChangeAt, alive: true });
+      send("mvt:activity", { bytes: lastBytes, files: lastFiles, lastChangeAt, alive: true });
     } catch (e) {
       console.warn("[activity] tick error", e?.message);
     }
@@ -1113,6 +1117,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       // cuando vemos un marcador real de recolección.
       let inSurvey = false;
       let collectionStarted = false;
+      let collectionStage = "idle";
       const failedModules = new Set();
       // Contador real de APKs procesados durante la fase "analizando aplicaciones".
       // Sólo se emite si AndroidQF imprime el total o nombres de paquete.
@@ -1151,22 +1156,35 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         }
 
         // Heurística de progreso por sección detectada → marca inicio real de fase 3.
-        const markCollect = (statusKey, label, progress) => {
+        const markCollect = (statusKey, label, progress, stage = "collect") => {
           collectionStarted = true;
+          collectionStage = stage;
           send("mvt:phase", { phase: 3, statusKey, label, progress });
         };
-        if (/backup/i.test(clean)) markCollect("phaseStatus.backup", "Backup", 0.2);
-        if (/Downloading APKs/i.test(clean)) markCollect("phaseStatus.downloadingApks", "Descargando APKs", 0.4);
+        if (/(?:creating|starting|performing|running).{0,40}backup|backup.{0,40}(?:started|created|complete)/i.test(clean))
+          markCollect("phaseStatus.backup", "Backup", 0.2, "backup");
+        if (/Downloading APKs/i.test(clean)) markCollect("phaseStatus.downloadingApks", "Descargando APKs", 0.4, "downloadApps");
         if (/Collecting information on installed apps/i.test(clean))
-          markCollect("phaseStatus.analyzingApps", "Analizando apps", 0.6);
-        if (/(getprop|processes|services|dumpsys|SMS|settings|logcat)/i.test(clean))
-          markCollect("phaseStatus.collectingSystemInfo", "Recolectando información del sistema", 0.8);
+          markCollect("phaseStatus.analyzingApps", "Analizando apps", 0.6, "apps");
+        if (/\b(getprop|processes|services|dumpsys|sms|logcat)\b/i.test(clean))
+          markCollect("phaseStatus.collectingSystemInfo", "Recolectando información del sistema", 0.8, "systemInfo");
 
         // Contador real de aplicaciones: total + nombres de paquete vistos en stdout.
         const totalMatch = clean.match(/Found\s+(\d+)\s+(?:installed\s+)?(?:packages|apps|applications)/i);
         if (totalMatch) {
           const n = parseInt(totalMatch[1], 10);
-          if (Number.isFinite(n) && n > appsTotal) appsTotal = n;
+          if (Number.isFinite(n) && n > appsTotal) {
+            appsTotal = n;
+            collectionStarted = true;
+            collectionStage = "apps";
+            send("mvt:phase", {
+              phase: 3,
+              statusKey: "phaseStatus.analyzingAppsCount",
+              label: `Analizando aplicaciones (${appsDone}/${appsTotal})`,
+              data: { current: appsDone, total: appsTotal, totalSuffix: `/${appsTotal}` },
+              progress: 0.6,
+            });
+          }
         }
         const pkgRegex = /\b([a-z][a-z0-9_]*(?:\.[a-z0-9_]+){2,})\b/gi;
         let pkgMatch;
@@ -1181,7 +1199,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
             newPkg = true;
           }
         }
-        if (newPkg && collectionStarted) {
+        if (newPkg && collectionStage === "apps") {
           send("mvt:phase", {
             phase: 3,
             statusKey: "phaseStatus.analyzingAppsCount",

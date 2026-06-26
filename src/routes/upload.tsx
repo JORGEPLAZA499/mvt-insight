@@ -16,7 +16,15 @@ import {
   Settings,
   Usb,
   Apple,
+  ExternalLink,
 } from "lucide-react";
+
+const RELEASES_BASE = "https://github.com/JORGEPLAZA499/mvt-insight/releases/latest";
+const DOWNLOADS: Array<{ os: "windows" | "macos" | "linux"; label: string; href: string; icon: typeof Monitor }> = [
+  { os: "windows", label: "Windows", href: RELEASES_BASE, icon: Monitor },
+  { os: "macos", label: "macOS", href: RELEASES_BASE, icon: Apple },
+  { os: "linux", label: "Linux", href: RELEASES_BASE, icon: Download },
+];
 
 export const Route = createFileRoute("/upload")({
   head: () => ({ meta: [{ title: "Nuevo análisis — Spyware Forensic Analyzer" }] }),

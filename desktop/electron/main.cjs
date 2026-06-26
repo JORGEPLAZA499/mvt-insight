@@ -1172,7 +1172,18 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         const totalMatch = clean.match(/Found\s+(\d+)\s+(?:installed\s+)?(?:packages|apps|applications)/i);
         if (totalMatch) {
           const n = parseInt(totalMatch[1], 10);
-          if (Number.isFinite(n) && n > appsTotal) appsTotal = n;
+          if (Number.isFinite(n) && n > appsTotal) {
+            appsTotal = n;
+            collectionStarted = true;
+            collectionStage = "apps";
+            send("mvt:phase", {
+              phase: 3,
+              statusKey: "phaseStatus.analyzingAppsCount",
+              label: `Analizando aplicaciones (${appsDone}/${appsTotal})`,
+              data: { current: appsDone, total: appsTotal, totalSuffix: `/${appsTotal}` },
+              progress: 0.6,
+            });
+          }
         }
         const pkgRegex = /\b([a-z][a-z0-9_]*(?:\.[a-z0-9_]+){2,})\b/gi;
         let pkgMatch;

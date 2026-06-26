@@ -1060,15 +1060,15 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       if (freshDir) {
         zipPath = path.join(dir, `${freshDir.name}.zip`);
         send("mvt:log", `📦 Comprimiendo carpeta de resultados "${freshDir.name}" → ${path.basename(zipPath)}`);
-        send("mvt:phase", { phase: 3, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.9 });
+        send("mvt:phase", { phase: 4, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.1 });
         await zipFolder(freshDir.full, zipPath, (p) => {
           const pct = p.total ? p.processed / p.total : 0;
           const mb = (p.bytes / (1024 * 1024)).toFixed(1);
           send("mvt:phase", {
-            phase: 3,
+            phase: 4,
             statusKey: "phaseStatus.compressingProgress",
             label: `Compressing ${p.processed}/${p.total} files (${mb} MB written)`,
-            progress: 0.9 + pct * 0.09,
+            progress: 0.1 + pct * 0.85,
             data: { processed: p.processed, total: p.total, mb },
           });
         });
@@ -1082,7 +1082,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
         );
       }
 
-      send("mvt:phase", { phase: 3, statusKey: "phaseStatus.done", label: "Listo", progress: 1 });
+      send("mvt:phase", { phase: 4, statusKey: "phaseStatus.done", label: "Listo", progress: 1 });
       return { ok: true, zipPath };
     }
 

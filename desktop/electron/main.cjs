@@ -1234,11 +1234,12 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       // Preferimos re-comprimir desde la carpeta cuando existe: así garantizamos
       // un ZIP estándar y evitamos ZIPs truncados o con formatos que el backend
       // (yauzl) no consigue leer ("End of central directory record signature not found").
+      let packageWarning = null;
       if (freshDir) {
         zipPath = path.join(dir, `${freshDir.name}.zip`);
         send("mvt:log", `📦 Comprimiendo carpeta de resultados "${freshDir.name}" → ${path.basename(zipPath)}`);
         send("mvt:phase", { phase: 4, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.1 });
-        await zipFolder(freshDir.full, zipPath, (p) => {
+        const packaged = await packageResultsFolder(freshDir.full, zipPath, send, (p) => {
           const pct = p.total ? p.processed / p.total : 0;
           const mb = (p.bytes / (1024 * 1024)).toFixed(1);
           send("mvt:phase", {
@@ -1251,6 +1252,8 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
             data: { processed: p.processed, total: p.total, mb },
           });
         });
+        zipPath = packaged.path;
+        packageWarning = packaged.warning;
       } else if (freshZip) {
         zipPath = freshZip.full;
         send("mvt:log", `📦 ZIP detectado: ${freshZip.name}`);
@@ -1262,7 +1265,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       }
 
       send("mvt:phase", { phase: 4, statusKey: "phaseStatus.done", label: "Listo", progress: 1 });
-      return { ok: true, zipPath };
+      return { ok: true, zipPath, packageWarning };
     }
 
     if (device === "ios") {
@@ -1397,7 +1400,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       // 6. Comprimir resultados para mantener la misma UX que Android
       const zipPath = path.join(dir, `ios-results-${Date.now()}.zip`);
       send("mvt:phase", { phase: 4, statusKey: "phaseStatus.compressing", label: "Comprimiendo resultados", progress: 0.1 });
-      await zipFolder(resultsDir, zipPath, (p) => {
+      const packaged = await packageResultsFolder(resultsDir, zipPath, send, (p) => {
         const pct = p.total ? p.processed / p.total : 0;
         const mb = (p.bytes / (1024 * 1024)).toFixed(1);
         send("mvt:phase", {
@@ -1415,7 +1418,7 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       // Limpieza: borramos el backup (es enorme) pero conservamos los resultados.
       try { fs.rmSync(backupDir, { recursive: true, force: true }); } catch {}
 
-      return { ok: true, zipPath };
+      return { ok: true, zipPath: packaged.path, packageWarning: packaged.warning };
     }
 
     throw new Error(`Dispositivo no soportado: ${device}`);

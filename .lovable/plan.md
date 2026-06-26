@@ -1,105 +1,19 @@
-# Actualización obligatoria al abrir la app de escritorio
+# Rotar credencial Admin y limpiar migración
 
-## Comportamiento actual
-- En producción, el updater consulta GitHub **30 s después** de abrir la app
-  (`scheduleBackgroundUpdateCheck` en `desktop/electron/main.cjs`).
-- Si hay versión nueva muestra un diálogo nativo con dos botones:
-  «Instalar ahora» / «Más tarde». El usuario puede ignorarlo y seguir usando
-  una versión antigua indefinidamente.
-- Tras descargar la actualización, otro diálogo permite posponer la instalación
-  hasta el siguiente cierre.
+## Problema
+La migración `supabase/migrations/20260602043809_b5726ae1-db21-4ccd-88dc-6f250faa901b.sql` contiene la contraseña en claro `Junior88322512.` del usuario admin (`e56a6a80-3e6e-43a7-9907-052e8be73d6f`). Cualquiera con acceso al repo la ve.
 
-## Comportamiento deseado
-Al abrir la app:
-1. Comprobar inmediatamente si hay una versión nueva.
-2. Si la hay, **bloquear toda la interfaz** con una pantalla a pantalla
-   completa que descarga e instala la actualización.
-3. El usuario no puede analizar, vincular, ni cerrar el aviso: la única acción
-   posible cuando la descarga termina es «Reiniciar e instalar ahora».
-4. Si no hay internet (o GitHub está caído), no atrapamos al usuario: se
-   muestra un aviso discreto y la app continúa con normalidad — sin
-   conectividad no podríamos descargar de todas formas.
+## Pasos
 
-## Cambios
+1. **Rotar la contraseña en la base de datos** mediante una nueva migración que use un valor aleatorio fuerte generado al vuelo (`gen_random_bytes` + `encode`) y lo descarte. La nueva contraseña no quedará registrada en ningún sitio — tendrás que restablecerla desde la app con "Olvidé mi contraseña" o pedirme que te genere una nueva conocida vía `secrets`.
+   
+   Alternativa si prefieres seguir entrando con una contraseña conocida: la genero con `generate_secret` (queda guardada como secret server-only, nunca en el repo) y la aplico en la migración leyéndola desde una variable temporal. Dime cuál opción prefieres.
 
-### 1) `desktop/electron/main.cjs`
-- `autoUpdater.autoDownload = true` (ahora `false`). Descargar en cuanto se
-  detecta versión nueva, sin esperar al click del usuario.
-- Sustituir `scheduleBackgroundUpdateCheck()` por `runStartupUpdateCheck()`:
-  se ejecuta **al instante** al crear la ventana, justo después de
-  `createMainWindow()`. Reintenta en 60 s si la primera petición falla por
-  red.
-- Eliminar el diálogo nativo de `update-available` (ya no hay «Más tarde»).
-  El estado se sigue emitiendo por `updater:status` para que el frontend
-  pinte el bloqueo.
-- Eliminar el diálogo nativo de `update-downloaded`. Seguimos emitiendo
-  `{ state: "downloaded", version }`; la decisión de reiniciar la toma el
-  usuario desde la UI bloqueante del frontend.
-- Mantener `autoInstallOnAppQuit = true` por si el usuario cierra la
-  ventana sin pulsar el botón.
+2. **Neutralizar la migración antigua**: editar `supabase/migrations/20260602043809_*.sql` para eliminar la línea con la contraseña en claro, sustituyéndola por un comentario `-- password rotated on 2026-06-26, see migration <new>`. No se puede borrar el archivo (rompería el historial), pero sí vaciar el contenido sensible.
 
-### 2) `desktop/src/App.tsx`
-- Nuevo componente `<MandatoryUpdateGate />` que se renderiza **antes** de
-  cualquier otra pantalla (welcome / running / link / done…) cuando
-  `updateState.state ∈ { "available", "downloading", "downloaded" }`.
-- Estilo coherente con el resto: card centrada, logo arriba, sin top-bar ni
-  selector de idioma para que el usuario no pueda navegar a ninguna parte.
-- Contenido según el estado:
-  - `available` / `downloading`: título «Actualización obligatoria», cuerpo
-    explicando que se está descargando, barra de progreso con `percent`,
-    spinner si aún no llegó el primer evento.
-  - `downloaded`: título «Actualización lista», cuerpo «Debes reiniciar la
-    app para usar la última versión», único botón «Reiniciar e instalar
-    ahora» → `window.mvt.quitAndInstall()`.
-- Sin botón cerrar, sin enlace para saltarse. El selector de idioma global
-  sigue visible solo en este gate para poder cambiar la traducción del
-  propio mensaje.
-- Mientras dura el `state === "checking"` inicial (primer arranque, antes de
-  saber si hay versión), mostrar la misma pantalla de carga que se usa
-  cuando `!authChecked` para evitar parpadeos.
-- Si el updater responde `error`, NO bloqueamos: se muestra un banner
-  discreto («No se pudo comprobar actualizaciones — comprueba tu conexión»)
-  en la pantalla normal y la app sigue funcionando.
+3. **Marcar el finding como resuelto** en el escáner con explicación.
 
-### 3) i18n (`desktop/src/i18n/locales/{es,en}.json`)
-Nuevas claves bajo `update.gate.*`:
-- `title.required` — «Actualización obligatoria»
-- `title.ready` — «Actualización lista para instalar»
-- `body.downloading` — «Estamos descargando la última versión de la app. No cierres esta ventana.»
-- `body.ready` — «Pulsa el botón para reiniciar e instalar la nueva versión. La app no puede usarse hasta entonces.»
-- `progress` — «{{percent}}% descargado»
-- `installNow` — «Reiniciar e instalar ahora»
-- `versionLabel` — «Nueva versión: {{version}}»
-- `offlineBanner` — «No se pudo comprobar si hay actualizaciones. Revisa tu conexión a Internet.»
+4. **Actualizar `@security-memory`** con la regla: nunca incluir contraseñas en migraciones; usar Auth Admin API o secrets.
 
-## Detalles técnicos
-
-```text
-+----------------------------+        +----------------------------+
-| App abre (createMainWindow)| -----> | runStartupUpdateCheck()    |
-+----------------------------+        |  autoUpdater.checkForUpdates|
-                                      +-------------+--------------+
-                                                    |
-                              update-available      | (autoDownload=true)
-                                                    v
-+----------------------------+        +----------------------------+
-| MandatoryUpdateGate        | <----- | autoUpdater.downloadUpdate |
-|   - spinner / progress     |        +-------------+--------------+
-|   - sin botón "más tarde"  |                      | download-progress
-+----------------------------+ <--------------------+
-              ^                                     | update-downloaded
-              |                                     v
-              |                       +----------------------------+
-              +---------------------- | botón: quitAndInstall      |
-                                      +----------------------------+
-```
-
-- Sin cambios en la lógica de análisis ni de subida.
-- Sin bump de versión en este turno (no lo has pedido).
-
-## Riesgo / consideraciones
-- Un usuario sin internet al abrir verá el banner pero podrá seguir
-  trabajando localmente; cuando recupere conexión, el siguiente arranque
-  forzará la actualización.
-- `electron-updater` requiere que la app esté firmada/empacada (no aplica en
-  `npm run dev`); ya estamos así en producción vía GitHub Actions.
+## Pregunta para ti
+¿Opción A (contraseña aleatoria descartada, recuperas vía email reset) u opción B (te genero una contraseña nueva conocida vía secret y te la entrego)?

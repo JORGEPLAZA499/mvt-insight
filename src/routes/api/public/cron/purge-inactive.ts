@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/public/cron/purge-inactive")({
     handlers: {
       POST: async ({ request }) => {
         const provided = request.headers.get("x-cron-secret") ?? "";
-        const expected = process.env.CRON_SECRET ?? "";
+        const expected = process.env.CRON_SHARED_SECRET ?? "";
         if (!expected) {
           return new Response("Server misconfigured", { status: 500 });
         }

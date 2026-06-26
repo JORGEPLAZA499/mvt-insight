@@ -853,17 +853,18 @@ export function App() {
           <p>{device === "android" ? tr("running.subtitle.android", "No cierres esta ventana. Tarda entre 5 y 15 minutos.") : tr("running.subtitle.ios", "No cierres esta ventana. Puede tardar entre 15 y 40 minutos según el tamaño del backup.")}</p>
         </div>
 
-        {!error && (
+        {error === "IOS_DRIVERS_MISSING" ? null : (
         <div className="card">
 
           {PHASES.map((label, i) => {
             const num = i + 1;
             const active = phase.num === num;
             const done = phase.num > num;
+            const failedHere = active && !!error;
             return (
-              <div key={num} className={`phase ${active ? "active" : ""} ${done ? "done" : ""}`}>
-                <div className="phase-num">
-                  {done ? "✓" : active ? <span className="phase-spinner" /> : num}
+              <div key={num} className={`phase ${active ? "active" : ""} ${done ? "done" : ""} ${failedHere ? "failed" : ""}`}>
+                <div className="phase-num" style={failedHere ? { background: "var(--danger)", color: "#fff" } : undefined}>
+                  {done ? "✓" : failedHere ? "✗" : active ? <span className="phase-spinner" /> : num}
                 </div>
                 <div className="phase-body">
                   <div className="phase-label">{label}</div>

@@ -853,21 +853,22 @@ export function App() {
           <p>{device === "android" ? tr("running.subtitle.android", "No cierres esta ventana. Tarda entre 5 y 15 minutos.") : tr("running.subtitle.ios", "No cierres esta ventana. Puede tardar entre 15 y 40 minutos según el tamaño del backup.")}</p>
         </div>
 
-        {!error && (
+        {error === "IOS_DRIVERS_MISSING" ? null : (
         <div className="card">
 
           {PHASES.map((label, i) => {
             const num = i + 1;
             const active = phase.num === num;
             const done = phase.num > num;
+            const failedHere = active && !!error;
             return (
-              <div key={num} className={`phase ${active ? "active" : ""} ${done ? "done" : ""}`}>
-                <div className="phase-num">
-                  {done ? "✓" : active ? <span className="phase-spinner" /> : num}
+              <div key={num} className={`phase ${active ? "active" : ""} ${done ? "done" : ""} ${failedHere ? "failed" : ""}`}>
+                <div className="phase-num" style={failedHere ? { background: "var(--danger)", color: "#fff" } : undefined}>
+                  {done ? "✓" : failedHere ? "✗" : active ? <span className="phase-spinner" /> : num}
                 </div>
                 <div className="phase-body">
                   <div className="phase-label">{label}</div>
-                  {active && (
+                  {active && !error && (
                     <>
                       <div className="phase-sub">
                         {phase.statusKey
@@ -981,18 +982,27 @@ export function App() {
             );
           })}
           <div className="scanline" aria-hidden="true" />
-          <div className="row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
-            <button className="btn btn-secondary" onClick={handleCancel}>
-              {tr("running.cancel", "Cancelar")}
-            </button>
+          {error ? (
+            <InlineRunError
+              rawError={error}
+              lang={i18n.language}
+              onBack={() => setScreen("welcome")}
+              tr={tr}
+            />
+          ) : (
+            <div className="row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
+              <button className="btn btn-secondary" onClick={handleCancel}>
+                {tr("running.cancel", "Cancelar")}
+              </button>
+            </div>
+          )}
+
         </div>
         )}
 
-        </div>
 
 
-
-        {error === "IOS_DRIVERS_MISSING" ? (
+        {error === "IOS_DRIVERS_MISSING" && (
           <div className="card" style={{ borderColor: "var(--primary, #6ea8ff)" }}>
             <strong>{tr("iosDrivers.title", "Faltan los drivers de Apple en este Windows")}</strong>
             <div style={{ marginTop: 8, fontSize: 13, color: "var(--muted)" }}>
@@ -1043,13 +1053,6 @@ export function App() {
               </div>
             </div>
           </div>
-        ) : error && (
-          <RunErrorCard
-            rawError={error}
-            lang={i18n.language}
-            onBack={() => setScreen("welcome")}
-            tr={tr}
-          />
         )}
 
 
@@ -1219,27 +1222,27 @@ export function App() {
   );
 }
 
-interface RunErrorCardProps {
+interface InlineRunErrorProps {
   rawError: string;
   lang: string;
   onBack: () => void;
   tr: (key: string, fallback: string, options?: Record<string, unknown>) => string;
 }
 
-function RunErrorCard({ rawError, lang, onBack, tr }: RunErrorCardProps) {
+function InlineRunError({ rawError, lang, onBack, tr }: InlineRunErrorProps) {
   const [showDetail, setShowDetail] = useState(false);
   const humanized = humanizeRunError(rawError, lang);
   if (!humanized) return null;
 
   const palette: Record<string, { border: string; bg: string; accent: string }> = {
-    info: { border: "rgba(80, 160, 255, 0.45)", bg: "rgba(80, 160, 255, 0.06)", accent: "#9ec5ff" },
-    warning: { border: "rgba(255, 200, 0, 0.45)", bg: "rgba(255, 200, 0, 0.06)", accent: "#e6c200" },
-    danger: { border: "var(--danger)", bg: "rgba(255, 80, 80, 0.06)", accent: "var(--danger)" },
+    info: { border: "rgba(80, 160, 255, 0.45)", bg: "rgba(80, 160, 255, 0.08)", accent: "#9ec5ff" },
+    warning: { border: "rgba(255, 200, 0, 0.45)", bg: "rgba(255, 200, 0, 0.08)", accent: "#e6c200" },
+    danger: { border: "var(--danger)", bg: "rgba(255, 80, 80, 0.08)", accent: "var(--danger)" },
   };
   const c = palette[humanized.severity] ?? palette.danger;
 
   return (
-    <div className="card" style={{ borderColor: c.border, background: c.bg }}>
+    <div style={{ marginTop: 16, padding: 14, borderRadius: 10, border: `1px solid ${c.border}`, background: c.bg }}>
       <div style={{ fontWeight: 700, fontSize: 15, color: c.accent }}>{humanized.title}</div>
       <div style={{ marginTop: 8, fontSize: 13.5, lineHeight: 1.5 }}>{humanized.body}</div>
       {humanized.action && (
@@ -1250,10 +1253,7 @@ function RunErrorCard({ rawError, lang, onBack, tr }: RunErrorCardProps) {
           {humanized.action}
         </div>
       )}
-      <div className="row" style={{ marginTop: 14, gap: 8, flexWrap: "wrap" }}>
-        <button className="btn btn-secondary" onClick={onBack}>
-          {tr("error.back", "Volver al inicio")}
-        </button>
+      <div className="row" style={{ marginTop: 14, gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
         <button
           className="btn btn-secondary"
           style={{ fontSize: 12 }}
@@ -1262,6 +1262,9 @@ function RunErrorCard({ rawError, lang, onBack, tr }: RunErrorCardProps) {
           {showDetail
             ? tr("runErrors.hideDetail", "Ocultar detalle técnico")
             : tr("runErrors.showDetail", "Ver detalle técnico")}
+        </button>
+        <button className="btn btn-secondary" onClick={onBack}>
+          {tr("error.back", "Volver al inicio")}
         </button>
       </div>
       {showDetail && (

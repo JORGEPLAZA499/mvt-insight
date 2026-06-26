@@ -113,7 +113,8 @@
     "packageWarningBody": "The app will use the results folder directly to generate and upload the report. Creating a ZIP is not required; the complete evidence remains saved locally.",
     "upload": "Upload to report →",
     "openFolder": "Open folder",
-    "new": "New analysis"
+    "new": "New analysis",
+    "accept": "Accept"
   },
   "update": {
     "check": "Check for updates",

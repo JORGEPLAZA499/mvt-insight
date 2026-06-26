@@ -103,6 +103,7 @@
     "titleFailed": "⚠ Análisis completado, pero no se pudo subir el informe",
     "subtitleFailed": "El archivo se ha guardado en Descargas. Puedes reintentar la subida más abajo.",
     "filename": "Archivo generado:",
+    "modulesUnavailable": "Nota: {{count}} módulo(s) no disponibles en este dispositivo ({{modules}}). Es normal en MIUI, EMUI o One UI por restricciones del fabricante.",
     "upload": "Subir al informe →",
     "openFolder": "Abrir carpeta",
     "new": "Nuevo análisis"

@@ -41,6 +41,111 @@ function formatElapsed(ms: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
+const MAX_UPLOAD_JSON_BYTES = 4 * 1024 * 1024;
+const UPLOAD_RAW_KEEP_KEYS = new Set([
+  "package_name", "package", "bundle_id", "matched_indicator", "indicator",
+  "name", "process", "service", "domain", "url", "path", "value",
+  "permission", "app_name", "message", "description", "isodate",
+  "timestamp", "date", "created", "modified", "time", "datetime",
+  "executable", "pid", "uid",
+]);
+
+function jsonByteLength(value: string): number {
+  return new TextEncoder().encode(value).length;
+}
+
+function trimText(value: unknown, max = 700): unknown {
+  return typeof value === "string" && value.length > max ? `${value.slice(0, max)}…` : value;
+}
+
+function compactRawForUpload(value: any, depth = 0): any {
+  if (value == null) return value;
+  if (typeof value === "string") return trimText(value, 600);
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (depth >= 2) return undefined;
+  if (Array.isArray(value)) {
+    return value.slice(0, 8).map((v) => compactRawForUpload(v, depth + 1)).filter((v) => v !== undefined);
+  }
+  if (typeof value === "object") {
+    const out: Record<string, any> = {};
+    const entries = Object.entries(value);
+    for (const [k, v] of entries) {
+      if (!UPLOAD_RAW_KEEP_KEYS.has(k)) continue;
+      const compact = compactRawForUpload(v, depth + 1);
+      if (compact !== undefined) out[k] = compact;
+    }
+    if (Object.keys(out).length === 0) {
+      for (const [k, v] of entries.slice(0, 10)) {
+        if (v == null || ["string", "number", "boolean"].includes(typeof v)) {
+          const compact = compactRawForUpload(v, depth + 1);
+          if (compact !== undefined) out[k] = compact;
+        }
+      }
+    }
+    return Object.keys(out).length ? out : undefined;
+  }
+  return undefined;
+}
+
+function compactResultForUpload(result: unknown, options: { keepRaw: boolean; detectionLimit: number; timelineLimit: number }): unknown {
+  if (!result || typeof result !== "object") return result;
+  const r = result as Record<string, any>;
+  const detections = Array.isArray(r.detections)
+    ? r.detections.slice(0, options.detectionLimit).map((d: any) => ({
+        module: trimText(d?.module, 120),
+        timestamp: trimText(d?.timestamp, 80),
+        summary: trimText(d?.summary, 900),
+        level: d?.level,
+        ...(options.keepRaw ? { raw: compactRawForUpload(d?.raw) } : {}),
+      }))
+    : r.detections;
+  const timeline = Array.isArray(r.timeline)
+    ? r.timeline.slice(0, options.timelineLimit).map((e: any) => ({
+        timestamp: trimText(e?.timestamp, 80),
+        module: trimText(e?.module, 160),
+        summary: trimText(e?.summary, 700),
+        severity: e?.severity,
+      }))
+    : r.timeline;
+  return {
+    ...r,
+    detections,
+    timeline,
+    sourceName: trimText(r.sourceName, 512),
+  };
+}
+
+function buildUploadBody(device: Device, fileName: string, fileSize: number, result: unknown): string {
+  const variants = [
+    { keepRaw: true, detectionLimit: 400, timelineLimit: 200 },
+    { keepRaw: false, detectionLimit: 250, timelineLimit: 120 },
+    { keepRaw: false, detectionLimit: 80, timelineLimit: 40 },
+  ];
+
+  for (const variant of variants) {
+    const body = JSON.stringify({
+      device,
+      fileName,
+      fileSize,
+      result: compactResultForUpload(result, variant),
+    });
+    if (jsonByteLength(body) <= MAX_UPLOAD_JSON_BYTES) return body;
+  }
+
+  const r = result && typeof result === "object" ? (result as Record<string, any>) : {};
+  return JSON.stringify({
+    device,
+    fileName,
+    fileSize,
+    result: {
+      ...r,
+      detections: [],
+      timeline: [],
+      uploadNote: "Informe compactado automáticamente para evitar exceder el límite de subida. La evidencia completa queda en la carpeta local.",
+    },
+  });
+}
+
 export function App() {
   const { t, i18n } = useTranslation();
   const tr = (key: string, fallback: string, options?: Record<string, unknown>) => {
@@ -86,13 +191,13 @@ export function App() {
         tr("phases.ios.tools", "Preparando herramientas iOS"),
         tr("phases.ios.connect", "Conectando con el iPhone"),
         tr("phases.ios.analyze", "Analizando backup"),
-        tr("phases.package", "Empaquetando informe"),
+        tr("phases.package", "Preparando informe"),
       ]
     : [
         tr("phases.download", "Descargando AndroidQF"),
         tr("phases.connect", "Conectando con el dispositivo"),
         tr("phases.collect", "Analizando dispositivo"),
-        tr("phases.package", "Empaquetando informe"),
+        tr("phases.package", "Preparando informe"),
       ];
 
   const getActivePhaseLabel = (fallback: string) => {
@@ -346,18 +451,14 @@ export function App() {
         sourceName = fileName;
       }
 
+      const body = buildUploadBody(dev, sourceName, fileSize, result);
       const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/submit-analysis`, {
         method: "POST",
         headers: {
           "content-type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          device: dev,
-          fileName: sourceName,
-          fileSize,
-          result,
-        }),
+        body,
       });
       const data = await r.json().catch(() => ({}));
       if (r.status === 401) {
@@ -1079,7 +1180,7 @@ export function App() {
         })()}
       </div>
       <div className="card">
-        <div style={{ fontSize: 13, color: "var(--muted)" }}>{tr("done.filename", "Archivo generado:")}</div>
+        <div style={{ fontSize: 13, color: "var(--muted)" }}>{tr("done.filename", "Ruta de resultados:")}</div>
         <div style={{
           fontFamily: "SF Mono, Menlo, monospace",
           fontSize: 12,
@@ -1097,7 +1198,7 @@ export function App() {
             <div style={{ marginTop: 6, color: "var(--muted)" }}>
               {tr(
                 "done.packageWarningBody",
-                "La compresión ZIP falló, pero el análisis no se perdió: usaremos la carpeta de resultados directamente para generar y subir el informe. Si necesitas enviarlo manualmente, abre la carpeta y comprímela desde Windows."
+                "La app usará la carpeta de resultados directamente para generar y subir el informe. No es necesario crear un ZIP; la evidencia completa queda guardada localmente."
               )}
             </div>
           </div>

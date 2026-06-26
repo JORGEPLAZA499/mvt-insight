@@ -913,7 +913,7 @@ export function App() {
 
                         // Sufijo discreto con bytes recolectados (solo cuando hay datos reales).
                         const bytesSuffix = activity && activity.bytes > 0
-                          ? ` · ${tr("running.subline.bytes", `${fmtMB(activity.bytes)} recolectados`, { size: fmtMB(activity.bytes) })}`
+                          ? ` · ${tr("running.subline.bytes", `${fmtMB(activity.bytes)} de resultados generados`, { size: fmtMB(activity.bytes) })}`
                           : "";
                         const filesSuffix = activity && activity.files && activity.files > 0
                           ? ` · ${tr("running.subline.files", "{{count}} archivos generados", { count: activity.files })}`

@@ -40,7 +40,7 @@
     "cancel": "Cancelar",
     "cancelConfirm": "¿Cancelar el análisis en curso?",
     "subline": {
-      "bytes": "{{size}} recolectados",
+      "bytes": "{{size}} de resultados generados",
       "files": "{{count}} archivos generados",
       "longPhase": "Procesando… esta fase puede tardar varios minutos",
       "stalled": "Sin cambios desde hace {{min}} min — puedes cancelar si tu disco no muestra actividad"

@@ -40,7 +40,7 @@
     "cancel": "Cancel",
     "cancelConfirm": "Cancel the running analysis?",
     "subline": {
-      "bytes": "{{size}} collected",
+      "bytes": "{{size}} of generated results",
       "files": "{{count}} generated files",
       "longPhase": "Processing… this phase may take several minutes",
       "stalled": "No changes for {{min}} min — you may cancel if your disk shows no activity"

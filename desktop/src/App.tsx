@@ -1198,7 +1198,7 @@ export function App() {
             <div style={{ marginTop: 6, color: "var(--muted)" }}>
               {tr(
                 "done.packageWarningBody",
-                "La compresión ZIP falló, pero el análisis no se perdió: usaremos la carpeta de resultados directamente para generar y subir el informe. Si necesitas enviarlo manualmente, abre la carpeta y comprímela desde Windows."
+                "La app usará la carpeta de resultados directamente para generar y subir el informe. No es necesario crear un ZIP; la evidencia completa queda guardada localmente."
               )}
             </div>
           </div>

@@ -937,6 +937,12 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
       let inSurvey = false;
       let collectionStarted = false;
       const failedModules = new Set();
+      // Contador real de APKs procesados durante la fase "analizando aplicaciones".
+      // Sólo se emite si AndroidQF imprime el total o nombres de paquete.
+      let appsTotal = 0;
+      let appsDone = 0;
+      const seenPackages = new Set();
+
 
       child.onData((data) => {
         const text = data.toString();

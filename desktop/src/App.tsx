@@ -853,7 +853,9 @@ export function App() {
           <p>{device === "android" ? tr("running.subtitle.android", "No cierres esta ventana. Tarda entre 5 y 15 minutos.") : tr("running.subtitle.ios", "No cierres esta ventana. Puede tardar entre 15 y 40 minutos según el tamaño del backup.")}</p>
         </div>
 
+        {!error && (
         <div className="card">
+
           {PHASES.map((label, i) => {
             const num = i + 1;
             const active = phase.num === num;
@@ -983,7 +985,9 @@ export function App() {
             <button className="btn btn-secondary" onClick={handleCancel}>
               {tr("running.cancel", "Cancelar")}
             </button>
-          </div>
+        </div>
+        )}
+
         </div>
 
 

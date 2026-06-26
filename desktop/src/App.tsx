@@ -935,7 +935,7 @@ export function App() {
               </div>
             );
           })}
-          <div className="scanline" aria-hidden="true" />
+          {!error && <div className="scanline" aria-hidden="true" />}
           {error ? (
             <InlineRunError
               rawError={error}

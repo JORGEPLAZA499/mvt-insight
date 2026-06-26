@@ -43,5 +43,4 @@ contextBridge.exposeInMainWorld("mvt", {
   },
   readZip: (zipPath) => ipcRenderer.invoke("mvt:readZip", zipPath),
   parseZipEntries: (zipPath) => ipcRenderer.invoke("mvt:parseZipEntries", zipPath),
-  isDirectory: (p) => ipcRenderer.invoke("mvt:isDirectory", p),
 });

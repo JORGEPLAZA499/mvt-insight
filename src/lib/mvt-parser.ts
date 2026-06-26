@@ -656,6 +656,10 @@ function normalizeEmbeddedParsedResult(result: MvtParsedResult, sourceName: stri
     ...result,
     sourceName: result.sourceName || sourceName,
     parsedAt: result.parsedAt || new Date().toISOString(),
+    detections: Array.isArray(result.detections)
+      ? result.detections.map((d) => ({ ...d, raw: compactRawEvidence(d.raw) }))
+      : result.detections,
+    timeline: Array.isArray(result.timeline) ? result.timeline.slice(0, 200) : result.timeline,
   };
 }
 

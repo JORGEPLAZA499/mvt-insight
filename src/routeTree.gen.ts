@@ -21,7 +21,6 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsDesktopRouteImport } from './routes/settings.desktop'
 import { Route as AnalysisIdRouteImport } from './routes/analysis.$id'
-import { Route as ApiInternalCronSecretOnceRouteImport } from './routes/api/internal/cron-secret-once'
 import { Route as ApiPublicScriptsFileRouteImport } from './routes/api/public/scripts/$file'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicPaymentsPlisioWebhookRouteImport } from './routes/api/public/payments/plisio-webhook'
@@ -90,12 +89,6 @@ const AnalysisIdRoute = AnalysisIdRouteImport.update({
   path: '/analysis/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiInternalCronSecretOnceRoute =
-  ApiInternalCronSecretOnceRouteImport.update({
-    id: '/api/internal/cron-secret-once',
-    path: '/api/internal/cron-secret-once',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicScriptsFileRoute = ApiPublicScriptsFileRouteImport.update({
   id: '/api/public/scripts/$file',
   path: '/api/public/scripts/$file',
@@ -149,7 +142,6 @@ export interface FileRoutesByFullPath {
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
   '/settings/desktop': typeof SettingsDesktopRoute
-  '/api/internal/cron-secret-once': typeof ApiInternalCronSecretOnceRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
   '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
   '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
@@ -171,7 +163,6 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
   '/settings/desktop': typeof SettingsDesktopRoute
-  '/api/internal/cron-secret-once': typeof ApiInternalCronSecretOnceRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
   '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
   '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
@@ -194,7 +185,6 @@ export interface FileRoutesById {
   '/upload': typeof UploadRoute
   '/analysis/$id': typeof AnalysisIdRoute
   '/settings/desktop': typeof SettingsDesktopRoute
-  '/api/internal/cron-secret-once': typeof ApiInternalCronSecretOnceRoute
   '/api/public/cron/purge-inactive': typeof ApiPublicCronPurgeInactiveRoute
   '/api/public/desktop/pair': typeof ApiPublicDesktopPairRoute
   '/api/public/desktop/submit-analysis': typeof ApiPublicDesktopSubmitAnalysisRoute
@@ -218,7 +208,6 @@ export interface FileRouteTypes {
     | '/upload'
     | '/analysis/$id'
     | '/settings/desktop'
-    | '/api/internal/cron-secret-once'
     | '/api/public/cron/purge-inactive'
     | '/api/public/desktop/pair'
     | '/api/public/desktop/submit-analysis'
@@ -240,7 +229,6 @@ export interface FileRouteTypes {
     | '/upload'
     | '/analysis/$id'
     | '/settings/desktop'
-    | '/api/internal/cron-secret-once'
     | '/api/public/cron/purge-inactive'
     | '/api/public/desktop/pair'
     | '/api/public/desktop/submit-analysis'
@@ -262,7 +250,6 @@ export interface FileRouteTypes {
     | '/upload'
     | '/analysis/$id'
     | '/settings/desktop'
-    | '/api/internal/cron-secret-once'
     | '/api/public/cron/purge-inactive'
     | '/api/public/desktop/pair'
     | '/api/public/desktop/submit-analysis'
@@ -285,7 +272,6 @@ export interface RootRouteChildren {
   UploadRoute: typeof UploadRoute
   AnalysisIdRoute: typeof AnalysisIdRoute
   SettingsDesktopRoute: typeof SettingsDesktopRoute
-  ApiInternalCronSecretOnceRoute: typeof ApiInternalCronSecretOnceRoute
   ApiPublicCronPurgeInactiveRoute: typeof ApiPublicCronPurgeInactiveRoute
   ApiPublicDesktopPairRoute: typeof ApiPublicDesktopPairRoute
   ApiPublicDesktopSubmitAnalysisRoute: typeof ApiPublicDesktopSubmitAnalysisRoute
@@ -381,13 +367,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalysisIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/internal/cron-secret-once': {
-      id: '/api/internal/cron-secret-once'
-      path: '/api/internal/cron-secret-once'
-      fullPath: '/api/internal/cron-secret-once'
-      preLoaderRoute: typeof ApiInternalCronSecretOnceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/scripts/$file': {
       id: '/api/public/scripts/$file'
       path: '/api/public/scripts/$file'
@@ -453,7 +432,6 @@ const rootRouteChildren: RootRouteChildren = {
   UploadRoute: UploadRoute,
   AnalysisIdRoute: AnalysisIdRoute,
   SettingsDesktopRoute: SettingsDesktopRoute,
-  ApiInternalCronSecretOnceRoute: ApiInternalCronSecretOnceRoute,
   ApiPublicCronPurgeInactiveRoute: ApiPublicCronPurgeInactiveRoute,
   ApiPublicDesktopPairRoute: ApiPublicDesktopPairRoute,
   ApiPublicDesktopSubmitAnalysisRoute: ApiPublicDesktopSubmitAnalysisRoute,

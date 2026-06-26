@@ -1161,11 +1161,12 @@ ipcMain.handle("mvt:start", async (event, { device, password } = {}) => {
           collectionStage = stage;
           send("mvt:phase", { phase: 3, statusKey, label, progress });
         };
-        if (/backup/i.test(clean)) markCollect("phaseStatus.backup", "Backup", 0.2, "backup");
+        if (/(?:creating|starting|performing|running).{0,40}backup|backup.{0,40}(?:started|created|complete)/i.test(clean))
+          markCollect("phaseStatus.backup", "Backup", 0.2, "backup");
         if (/Downloading APKs/i.test(clean)) markCollect("phaseStatus.downloadingApks", "Descargando APKs", 0.4, "downloadApps");
         if (/Collecting information on installed apps/i.test(clean))
           markCollect("phaseStatus.analyzingApps", "Analizando apps", 0.6, "apps");
-        if (/(getprop|processes|services|dumpsys|SMS|settings|logcat)/i.test(clean))
+        if (/\b(getprop|processes|services|dumpsys|sms|logcat)\b/i.test(clean))
           markCollect("phaseStatus.collectingSystemInfo", "Recolectando información del sistema", 0.8, "systemInfo");
 
         // Contador real de aplicaciones: total + nombres de paquete vistos en stdout.

@@ -868,7 +868,7 @@ export function App() {
                 </div>
                 <div className="phase-body">
                   <div className="phase-label">{label}</div>
-                  {active && (
+                  {active && !error && (
                     <>
                       <div className="phase-sub">
                         {phase.statusKey

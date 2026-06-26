@@ -1,16 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { timingSafeEqual } from "node:crypto";
 
 // Borra cuentas inactivas (>10 días sin login).
-// Llamado por pg_cron con header `apikey` = SUPABASE_ANON_KEY.
+// Llamado por pg_cron con header `x-cron-secret` = process.env.CRON_SECRET (server-only).
 export const Route = createFileRoute("/api/public/cron/purge-inactive")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get("apikey");
-        const expected =
-          process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
-        if (!apiKey || !expected || apiKey !== expected) {
+        const provided = request.headers.get("x-cron-secret") ?? "";
+        const expected = process.env.CRON_SHARED_SECRET ?? "";
+        if (!expected) {
+          return new Response("Server misconfigured", { status: 500 });
+        }
+        const a = Buffer.from(provided);
+        const b = Buffer.from(expected);
+        if (a.length !== b.length || !timingSafeEqual(a, b)) {
           return new Response("Unauthorized", { status: 401 });
         }
 

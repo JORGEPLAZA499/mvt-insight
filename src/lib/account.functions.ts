@@ -91,11 +91,11 @@ export const resolveLoginEmail = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!row) {
-      throw new Error("Código o contraseña incorrectos.");
+      return { email: null, userCode: null };
     }
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(row.id);
     if (authError || !authUser.user?.email) {
-      throw new Error("Código o contraseña incorrectos.");
+      return { email: null, userCode: null };
     }
     return { email: authUser.user.email, userCode: row.user_code };
   });

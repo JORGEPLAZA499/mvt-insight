@@ -74,7 +74,7 @@ export const registerAccount = createServerFn({ method: "POST" })
 
 export const resolveLoginEmail = createServerFn({ method: "POST" })
   .inputValidator((input: { code: string }) => {
-    const normalized = input.code.trim();
+    const normalized = input.code.trim().replace(/\s+/g, "");
     const isWord = /^[A-Za-z]{2,20}$/.test(normalized);
     if (!isWord && !CODE_REGEX.test(normalized.toUpperCase())) {
       throw new Error("Formato de código inválido.");
@@ -82,10 +82,12 @@ export const resolveLoginEmail = createServerFn({ method: "POST" })
     return { code: isWord ? normalized : normalized.toUpperCase() };
   })
   .handler(async ({ data }) => {
+    const normalizedCode = data.code.trim().replace(/\s+/g, "");
     const { data: row, error } = await supabaseAdmin
       .from("accounts")
       .select("id, user_code")
-      .ilike("user_code", data.code)
+      .ilike("user_code", normalizedCode)
+      .limit(1)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!row) {

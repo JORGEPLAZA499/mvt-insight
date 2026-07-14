@@ -111,6 +111,9 @@ function Login() {
     setBusy(true);
     try {
       const { email, userCode } = await resolveEmail({ data: { code: normalized } });
+      if (!email || !userCode) {
+        throw new Error(t("loginExt.errors.bad"));
+      }
       const { data, error: signErr } = await supabase.auth.signInWithPassword({
         email,
         password,

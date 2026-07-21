@@ -87,9 +87,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Sentinel Scan — Mobile Spyware Forensic Analysis" },
       { property: "og:description", content: "Sentinel Scan is a web platform for analyzing mobile device forensic data for potential spyware indicators." },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://spyware-rpjsoftware-com.lovable.app/__l5e/assets-v1/22302e09-5e94-49d0-b74c-29895aedd9ab/og-image.png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:type", content: "image/png" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Sentinel Scan — Mobile Spyware Forensic Analysis" },
       { name: "twitter:description", content: "Sentinel Scan is a web platform for analyzing mobile device forensic data for potential spyware indicators." },
+      { name: "twitter:image", content: "https://spyware-rpjsoftware-com.lovable.app/__l5e/assets-v1/22302e09-5e94-49d0-b74c-29895aedd9ab/og-image.png" },
     ],
     scripts: [
       {

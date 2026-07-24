@@ -40,6 +40,8 @@ function Dashboard() {
   const navigate = Route.useNavigate();
   const [items, setItems] = useState<Analysis[]>([]);
   const [credits, setCredits] = useState<number>(0);
+  const [userCode, setUserCode] = useState<string | null>(null);
+  const isAdmin = userCode === "Admin";
   const [successOpen, setSuccessOpen] = useState(false);
   const fetchAnalyses = useServerFn(listMyAnalyses);
 
@@ -61,10 +63,13 @@ function Dashboard() {
       if (!user || !alive) return;
       const { data: acc } = await supabase
         .from("accounts")
-        .select("credits")
+        .select("credits, user_code")
         .eq("id", user.id)
         .maybeSingle();
-      if (alive) setCredits(acc?.credits ?? 0);
+      if (alive) {
+        setCredits(acc?.credits ?? 0);
+        setUserCode(acc?.user_code ?? null);
+      }
     })();
     return () => { alive = false; };
   }, []);
@@ -136,15 +141,17 @@ function Dashboard() {
               cta={t("dashboard.shortcuts.desktop.cta")}
               tone="accent"
             />
-            <ActionCard
-              onClick={() => openPurchaseCard()}
-              icon={Coins}
-              title={t("dashboard.shortcuts.credits.title")}
-              desc={t("dashboard.shortcuts.credits.desc")}
-              cta={t("dashboard.shortcuts.credits.cta")}
-              tone="warning"
-              badge={String(credits)}
-            />
+            {!isAdmin && (
+              <ActionCard
+                onClick={() => openPurchaseCard()}
+                icon={Coins}
+                title={t("dashboard.shortcuts.credits.title")}
+                desc={t("dashboard.shortcuts.credits.desc")}
+                cta={t("dashboard.shortcuts.credits.cta")}
+                tone="warning"
+                badge={String(credits)}
+              />
+            )}
             <ActionCard
               href="https://www.rpjsoftware.com/help#contacto"
               icon={Headset}
@@ -161,7 +168,9 @@ function Dashboard() {
           <StatTile icon={Activity} label={t("dashboard.stats.total")} value={stats.total} tone="primary" />
           <StatTile icon={ShieldCheck} label={t("dashboard.stats.completed")} value={stats.completed} tone="success" />
           <StatTile icon={AlertTriangle} label={t("dashboard.stats.highRisk")} value={stats.highRisk} tone="destructive" />
-          <StatTile icon={Sparkles} label={t("dashboard.stats.credits")} value={credits} tone="warning" />
+          {!isAdmin && (
+            <StatTile icon={Sparkles} label={t("dashboard.stats.credits")} value={credits} tone="warning" />
+          )}
         </section>
 
       </div>

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 
 const Body = z.object({
   code: z
@@ -7,6 +8,7 @@ const Body = z.object({
     .trim()
     .transform((s) => s.toUpperCase())
     .pipe(z.string().regex(/^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/)),
+  password: z.string().min(1).max(256),
 });
 
 function generateToken(): string {
@@ -33,10 +35,11 @@ export const Route = createFileRoute("/api/public/desktop/pair")({
         }
         const parsed = Body.safeParse(body);
         if (!parsed.success) {
-          return new Response(JSON.stringify({ ok: false, error: "INVALID_CODE" }), {
-            status: 400,
-            headers: { "content-type": "application/json" },
-          });
+          const missingPassword = !!(body && typeof body === "object" && !("password" in (body as object)));
+          return new Response(
+            JSON.stringify({ ok: false, error: missingPassword ? "PASSWORD_REQUIRED" : "INVALID_CODE" }),
+            { status: 400, headers: { "content-type": "application/json" } },
+          );
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -54,11 +57,43 @@ export const Route = createFileRoute("/api/public/desktop/pair")({
           });
         }
         if (!account) {
-          return new Response(JSON.stringify({ ok: false, error: "USER_CODE_NOT_FOUND" }), {
-            status: 404,
+          return new Response(JSON.stringify({ ok: false, error: "INVALID_CREDENTIALS" }), {
+            status: 401,
             headers: { "content-type": "application/json" },
           });
         }
+
+        // Obtener el email interno del usuario para verificar la contraseña
+        let email: string | null = null;
+        try {
+          const { data: u } = await supabaseAdmin.auth.admin.getUserById(account.id);
+          email = u?.user?.email ?? null;
+        } catch {}
+        if (!email) {
+          return new Response(JSON.stringify({ ok: false, error: "INVALID_CREDENTIALS" }), {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          });
+        }
+
+        // Verificar contraseña con un cliente stateless (sin persistir sesión)
+        const SUPABASE_URL = process.env.SUPABASE_URL!;
+        const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY!;
+        const verifier = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
+        });
+        const { data: signIn, error: signErr } = await verifier.auth.signInWithPassword({
+          email,
+          password: parsed.data.password,
+        });
+        if (signErr || !signIn?.user || signIn.user.id !== account.id) {
+          return new Response(JSON.stringify({ ok: false, error: "INVALID_CREDENTIALS" }), {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        // Cerrar la sesión emitida por la verificación para no dejar refresh tokens vivos
+        try { await verifier.auth.signOut(); } catch {}
 
         const token = generateToken();
         const { error: insErr } = await supabaseAdmin
@@ -70,13 +105,6 @@ export const Route = createFileRoute("/api/public/desktop/pair")({
             headers: { "content-type": "application/json" },
           });
         }
-
-        // Email del usuario (best-effort).
-        let email: string | null = null;
-        try {
-          const { data: u } = await supabaseAdmin.auth.admin.getUserById(account.id);
-          email = u?.user?.email ?? null;
-        } catch {}
 
         return new Response(
           JSON.stringify({ ok: true, token, email, label: "Desktop", userCode: account.user_code }),

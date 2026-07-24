@@ -159,7 +159,8 @@
     "step1": "Abre",
     "step1b": "(inicia sesión si hace falta).",
     "step2": "Copia tu código de usuario.",
-    "step3": "Pégalo aquí (formato XXX-XXX-XXX):",
+    "step3": "Pégalo aquí junto con la contraseña de tu cuenta:",
+    "passwordPlaceholder": "Contraseña de tu cuenta",
     "action": "Vincular",
     "linking": "Vinculando…",
     "cancel": "Cancelar",
@@ -167,6 +168,8 @@
     "errors": {
       "format": "El código debe tener el formato XXX-XXX-XXX.",
       "invalid": "Código de usuario no válido.",
+      "credentials": "Código o contraseña incorrectos.",
+      "passwordRequired": "Introduce tu contraseña.",
       "generic": "No se pudo vincular."
     }
   },

@@ -121,7 +121,7 @@ function Login() {
       if (signErr || !data.user) {
         throw new Error(t("loginExt.errors.bad"));
       }
-      await touch({ data: { userId: data.user.id } });
+      await touch();
       pwdBuf.current.clear();
       setPassword("");
       navigate({ to: userCode === "Admin" ? "/admin" : "/dashboard", replace: true });

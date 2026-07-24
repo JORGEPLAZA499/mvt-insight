@@ -172,6 +172,7 @@ export function App() {
   const [account, setAccount] = useState<Account | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [linkCode, setLinkCode] = useState("");
+  const [linkPassword, setLinkPassword] = useState("");
   const [linkBusy, setLinkBusy] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   // Upload state for the "done" screen
@@ -495,17 +496,25 @@ export function App() {
       setLinkError(tr("link.errors.format", "El código debe tener el formato XXX-XXX-XXX."));
       return;
     }
+    if (!linkPassword) {
+      setLinkError(tr("link.errors.passwordRequired", "Introduce tu contraseña."));
+      return;
+    }
     setLinkBusy(true);
     try {
       const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/pair`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, password: linkPassword }),
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data?.ok) {
         setLinkError(
-          data?.error === "USER_CODE_NOT_FOUND" || data?.error === "INVALID_CODE"
+          data?.error === "INVALID_CREDENTIALS"
+            ? tr("link.errors.credentials", "Código o contraseña incorrectos.")
+            : data?.error === "PASSWORD_REQUIRED"
+            ? tr("link.errors.passwordRequired", "Introduce tu contraseña.")
+            : data?.error === "INVALID_CODE"
             ? tr("link.errors.invalid", "Código de usuario no válido.")
             : tr("link.errors.generic", "No se pudo vincular."),
         );
@@ -524,6 +533,7 @@ export function App() {
         }
       } catch {}
       setLinkCode("");
+      setLinkPassword("");
       setScreen("welcome");
     } catch (e: any) {
       setLinkError(e?.message || tr("link.errors.generic", "No se pudo vincular."));
@@ -531,6 +541,7 @@ export function App() {
       setLinkBusy(false);
     }
   };
+
 
   const formatUserCode = (raw: string) => {
     const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 9);
@@ -745,11 +756,26 @@ export function App() {
                 color: "var(--fg, #fff)",
               }}
             />
+            <input
+              type="password"
+              value={linkPassword}
+              onChange={(e) => setLinkPassword(e.target.value)}
+              placeholder={tr("link.passwordPlaceholder", "Contraseña de tu cuenta")}
+              autoComplete="current-password"
+              style={{
+                fontSize: 15,
+                padding: "12px 16px",
+                borderRadius: 8,
+                border: "1px solid var(--border, #333)",
+                background: "var(--bg-soft, #1a1a22)",
+                color: "var(--fg, #fff)",
+              }}
+            />
             {linkError && (
               <div style={{ color: "var(--danger)", fontSize: 13 }}>{linkError}</div>
             )}
             <div className="row">
-              <button className="btn" onClick={handleLink} disabled={linkBusy || linkCode.length !== 11}>
+              <button className="btn" onClick={handleLink} disabled={linkBusy || linkCode.length !== 11 || !linkPassword}>
                 {linkBusy ? tr("link.linking", "Vinculando…") : tr("link.action", "Vincular")}
               </button>
               {account && (
@@ -757,6 +783,7 @@ export function App() {
                   {tr("link.cancel", "Cancelar")}
                 </button>
               )}
+
 
               <button
                 className="btn btn-secondary"

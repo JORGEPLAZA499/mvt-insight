@@ -159,7 +159,8 @@
     "step1": "Open",
     "step1b": "(sign in if needed).",
     "step2": "Copy your user code.",
-    "step3": "Paste it here (format XXX-XXX-XXX):",
+    "step3": "Paste it here along with your account password:",
+    "passwordPlaceholder": "Your account password",
     "action": "Link",
     "linking": "Linking…",
     "cancel": "Cancel",
@@ -167,6 +168,8 @@
     "errors": {
       "format": "The code must have the format XXX-XXX-XXX.",
       "invalid": "Invalid user code.",
+      "credentials": "Invalid code or password.",
+      "passwordRequired": "Enter your password.",
       "generic": "Couldn't link the app."
     }
   },

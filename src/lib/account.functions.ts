@@ -21,21 +21,21 @@ function codeToEmail(code: string): string {
   return `${code.replace(/-/g, "").toLowerCase()}@mvt-accounts.local`;
 }
 
-const passwordSchema = z
-  .string()
-  .min(8, "La contraseña debe tener al menos 8 caracteres")
-  .max(128)
-  .regex(/[a-z]/, "Debe incluir una minúscula")
-  .regex(/[A-Z]/, "Debe incluir una mayúscula")
-  .regex(/[0-9]/, "Debe incluir un número")
-  .refine((p) => scorePassword(p).level !== "low", {
-    message: "La contraseña es demasiado débil",
-  });
-
 export const registerAccount = createServerFn({ method: "POST" })
-  .inputValidator((input: { password: string }) =>
-    z.object({ password: passwordSchema }).parse(input),
-  )
+  .inputValidator((input: { password: string }) => {
+    const passwordSchema = z
+      .string()
+      .min(8, "La contraseña debe tener al menos 8 caracteres")
+      .max(128)
+      .regex(/[a-z]/, "Debe incluir una minúscula")
+      .regex(/[A-Z]/, "Debe incluir una mayúscula")
+      .regex(/[0-9]/, "Debe incluir un número")
+      .refine((p) => scorePassword(p).level !== "low", {
+        message: "La contraseña es demasiado débil",
+      });
+    return z.object({ password: passwordSchema }).parse(input);
+  })
+
   .handler(async ({ data }) => {
     // Generar código único (reintenta hasta 5 veces si colisiona)
     let code = "";

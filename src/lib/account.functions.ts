@@ -21,22 +21,32 @@ function codeToEmail(code: string): string {
   return `${code.replace(/-/g, "").toLowerCase()}@mvt-accounts.local`;
 }
 
-const passwordSchema = z
-  .string()
-  .min(8, "La contraseña debe tener al menos 8 caracteres")
-  .max(128)
-  .regex(/[a-z]/, "Debe incluir una minúscula")
-  .regex(/[A-Z]/, "Debe incluir una mayúscula")
-  .regex(/[0-9]/, "Debe incluir un número")
-  .refine((p) => scorePassword(p).level !== "low", {
-    message: "La contraseña es demasiado débil",
-  });
-
 export const registerAccount = createServerFn({ method: "POST" })
-  .inputValidator((input: { password: string }) =>
-    z.object({ password: passwordSchema }).parse(input),
-  )
+  .inputValidator((input: { password: string }) => {
+    const passwordSchema = z
+      .string()
+      .min(8, "La contraseña debe tener al menos 8 caracteres")
+      .max(128)
+      .regex(/[a-z]/, "Debe incluir una minúscula")
+      .regex(/[A-Z]/, "Debe incluir una mayúscula")
+      .regex(/[0-9]/, "Debe incluir un número")
+      .refine((p) => scorePassword(p).level !== "low", {
+        message: "La contraseña es demasiado débil",
+      });
+    return z.object({ password: passwordSchema }).parse(input);
+  })
+
   .handler(async ({ data }) => {
+    const ALPHABET_LOCAL = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const generateCode = () => {
+      const bytes = new Uint8Array(9);
+      crypto.getRandomValues(bytes);
+      const chars: string[] = [];
+      for (let i = 0; i < 9; i++) chars.push(ALPHABET_LOCAL[bytes[i] % ALPHABET_LOCAL.length]);
+      return `${chars.slice(0, 3).join("")}-${chars.slice(3, 6).join("")}-${chars.slice(6, 9).join("")}`;
+    };
+    const codeToEmail = (c: string) => `${c.replace(/-/g, "").toLowerCase()}@mvt-accounts.local`;
+
     // Generar código único (reintenta hasta 5 veces si colisiona)
     let code = "";
     let email = "";
@@ -44,6 +54,7 @@ export const registerAccount = createServerFn({ method: "POST" })
     for (let attempt = 0; attempt < 5; attempt++) {
       code = generateCode();
       email = codeToEmail(code);
+
       const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
         email,
         password: data.password,

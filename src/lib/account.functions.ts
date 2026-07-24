@@ -113,28 +113,25 @@ export const resolveLoginEmail = createServerFn({ method: "POST" })
   });
 
 export const touchLastLogin = createServerFn({ method: "POST" })
-  .inputValidator((input: { userId: string }) =>
-    z.object({ userId: z.string().uuid() }).parse(input),
-  )
-  .handler(async ({ data }) => {
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
     const { error } = await supabaseAdmin
       .from("accounts")
       .update({ last_login_at: new Date().toISOString() })
-      .eq("id", data.userId);
+      .eq("id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const getMyAccount = createServerFn({ method: "GET" })
-  .inputValidator((input: { userId: string }) =>
-    z.object({ userId: z.string().uuid() }).parse(input),
-  )
-  .handler(async ({ data }) => {
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
     const { data: row, error } = await supabaseAdmin
       .from("accounts")
       .select("user_code, created_at, last_login_at")
-      .eq("id", data.userId)
+      .eq("id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return row;
   });
+

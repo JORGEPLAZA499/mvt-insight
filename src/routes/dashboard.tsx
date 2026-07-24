@@ -168,7 +168,9 @@ function Dashboard() {
           <StatTile icon={Activity} label={t("dashboard.stats.total")} value={stats.total} tone="primary" />
           <StatTile icon={ShieldCheck} label={t("dashboard.stats.completed")} value={stats.completed} tone="success" />
           <StatTile icon={AlertTriangle} label={t("dashboard.stats.highRisk")} value={stats.highRisk} tone="destructive" />
-          <StatTile icon={Sparkles} label={t("dashboard.stats.credits")} value={credits} tone="warning" />
+          {!isAdmin && (
+            <StatTile icon={Sparkles} label={t("dashboard.stats.credits")} value={credits} tone="warning" />
+          )}
         </section>
 
       </div>

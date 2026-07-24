@@ -756,11 +756,26 @@ export function App() {
                 color: "var(--fg, #fff)",
               }}
             />
+            <input
+              type="password"
+              value={linkPassword}
+              onChange={(e) => setLinkPassword(e.target.value)}
+              placeholder={tr("link.passwordPlaceholder", "Contraseña de tu cuenta")}
+              autoComplete="current-password"
+              style={{
+                fontSize: 15,
+                padding: "12px 16px",
+                borderRadius: 8,
+                border: "1px solid var(--border, #333)",
+                background: "var(--bg-soft, #1a1a22)",
+                color: "var(--fg, #fff)",
+              }}
+            />
             {linkError && (
               <div style={{ color: "var(--danger)", fontSize: 13 }}>{linkError}</div>
             )}
             <div className="row">
-              <button className="btn" onClick={handleLink} disabled={linkBusy || linkCode.length !== 11}>
+              <button className="btn" onClick={handleLink} disabled={linkBusy || linkCode.length !== 11 || !linkPassword}>
                 {linkBusy ? tr("link.linking", "Vinculando…") : tr("link.action", "Vincular")}
               </button>
               {account && (
@@ -768,6 +783,7 @@ export function App() {
                   {tr("link.cancel", "Cancelar")}
                 </button>
               )}
+
 
               <button
                 className="btn btn-secondary"

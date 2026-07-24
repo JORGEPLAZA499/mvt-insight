@@ -40,6 +40,8 @@ function Dashboard() {
   const navigate = Route.useNavigate();
   const [items, setItems] = useState<Analysis[]>([]);
   const [credits, setCredits] = useState<number>(0);
+  const [userCode, setUserCode] = useState<string | null>(null);
+  const isAdmin = userCode === "Admin";
   const [successOpen, setSuccessOpen] = useState(false);
   const fetchAnalyses = useServerFn(listMyAnalyses);
 

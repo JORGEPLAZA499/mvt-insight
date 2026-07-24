@@ -392,7 +392,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1 min-w-0 h-screen overflow-y-auto">
         <div className="md:hidden border-b border-border px-4 py-3 flex items-center justify-between gap-2">
           <img src={logoAsset.url} alt="" className="h-[210px] w-[210px] object-contain" />
-          {userCode && (
+          {userCode && userCode !== "Admin" && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium shrink-0">
               <Coins className="h-3.5 w-3.5" />
               <span>{credits}</span>
@@ -400,7 +400,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </div>
         <div className="hidden md:flex items-center justify-end border-b border-border/60 px-6 py-3 gap-4">
-          {userCode && (
+          {userCode && userCode !== "Admin" && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
               <Coins className="h-4 w-4" />
               <span>{t("shell.creditsBadge", { count: credits })}</span>

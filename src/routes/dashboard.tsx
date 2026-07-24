@@ -141,15 +141,17 @@ function Dashboard() {
               cta={t("dashboard.shortcuts.desktop.cta")}
               tone="accent"
             />
-            <ActionCard
-              onClick={() => openPurchaseCard()}
-              icon={Coins}
-              title={t("dashboard.shortcuts.credits.title")}
-              desc={t("dashboard.shortcuts.credits.desc")}
-              cta={t("dashboard.shortcuts.credits.cta")}
-              tone="warning"
-              badge={String(credits)}
-            />
+            {!isAdmin && (
+              <ActionCard
+                onClick={() => openPurchaseCard()}
+                icon={Coins}
+                title={t("dashboard.shortcuts.credits.title")}
+                desc={t("dashboard.shortcuts.credits.desc")}
+                cta={t("dashboard.shortcuts.credits.cta")}
+                tone="warning"
+                badge={String(credits)}
+              />
+            )}
             <ActionCard
               href="https://www.rpjsoftware.com/help#contacto"
               icon={Headset}

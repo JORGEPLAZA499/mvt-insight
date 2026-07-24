@@ -172,6 +172,7 @@ export function App() {
   const [account, setAccount] = useState<Account | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [linkCode, setLinkCode] = useState("");
+  const [linkPassword, setLinkPassword] = useState("");
   const [linkBusy, setLinkBusy] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   // Upload state for the "done" screen

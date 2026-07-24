@@ -496,17 +496,25 @@ export function App() {
       setLinkError(tr("link.errors.format", "El código debe tener el formato XXX-XXX-XXX."));
       return;
     }
+    if (!linkPassword) {
+      setLinkError(tr("link.errors.passwordRequired", "Introduce tu contraseña."));
+      return;
+    }
     setLinkBusy(true);
     try {
       const r = await fetch(`${WEB_BASE_URL}/api/public/desktop/pair`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, password: linkPassword }),
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data?.ok) {
         setLinkError(
-          data?.error === "USER_CODE_NOT_FOUND" || data?.error === "INVALID_CODE"
+          data?.error === "INVALID_CREDENTIALS"
+            ? tr("link.errors.credentials", "Código o contraseña incorrectos.")
+            : data?.error === "PASSWORD_REQUIRED"
+            ? tr("link.errors.passwordRequired", "Introduce tu contraseña.")
+            : data?.error === "INVALID_CODE"
             ? tr("link.errors.invalid", "Código de usuario no válido.")
             : tr("link.errors.generic", "No se pudo vincular."),
         );
@@ -525,6 +533,7 @@ export function App() {
         }
       } catch {}
       setLinkCode("");
+      setLinkPassword("");
       setScreen("welcome");
     } catch (e: any) {
       setLinkError(e?.message || tr("link.errors.generic", "No se pudo vincular."));
@@ -532,6 +541,7 @@ export function App() {
       setLinkBusy(false);
     }
   };
+
 
   const formatUserCode = (raw: string) => {
     const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 9);

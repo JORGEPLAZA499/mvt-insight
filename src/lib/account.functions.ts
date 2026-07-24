@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { scorePassword } from "@/lib/password-strength";
 
 // Alfabeto sin caracteres ambiguos (sin O/0/I/1)

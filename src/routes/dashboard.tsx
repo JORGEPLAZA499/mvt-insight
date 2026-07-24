@@ -63,10 +63,13 @@ function Dashboard() {
       if (!user || !alive) return;
       const { data: acc } = await supabase
         .from("accounts")
-        .select("credits")
+        .select("credits, user_code")
         .eq("id", user.id)
         .maybeSingle();
-      if (alive) setCredits(acc?.credits ?? 0);
+      if (alive) {
+        setCredits(acc?.credits ?? 0);
+        setUserCode(acc?.user_code ?? null);
+      }
     })();
     return () => { alive = false; };
   }, []);

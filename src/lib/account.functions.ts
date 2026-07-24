@@ -37,6 +37,16 @@ export const registerAccount = createServerFn({ method: "POST" })
   })
 
   .handler(async ({ data }) => {
+    const ALPHABET_LOCAL = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const generateCode = () => {
+      const bytes = new Uint8Array(9);
+      crypto.getRandomValues(bytes);
+      const chars: string[] = [];
+      for (let i = 0; i < 9; i++) chars.push(ALPHABET_LOCAL[bytes[i] % ALPHABET_LOCAL.length]);
+      return `${chars.slice(0, 3).join("")}-${chars.slice(3, 6).join("")}-${chars.slice(6, 9).join("")}`;
+    };
+    const codeToEmail = (c: string) => `${c.replace(/-/g, "").toLowerCase()}@mvt-accounts.local`;
+
     // Generar código único (reintenta hasta 5 veces si colisiona)
     let code = "";
     let email = "";
@@ -44,6 +54,7 @@ export const registerAccount = createServerFn({ method: "POST" })
     for (let attempt = 0; attempt < 5; attempt++) {
       code = generateCode();
       email = codeToEmail(code);
+
       const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
         email,
         password: data.password,

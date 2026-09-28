@@ -51,7 +51,9 @@ export function LegalAcceptanceModal() {
   useEffect(() => {
     if (!open) return;
     window.dispatchEvent(new Event("sfa:suspend-cookie-banner"));
-    return () => window.dispatchEvent(new Event("sfa:resume-cookie-banner"));
+    return () => {
+      window.dispatchEvent(new Event("sfa:resume-cookie-banner"));
+    };
   }, [open]);
 
   const onScroll = (e: React.UIEvent<HTMLDivElement>) => {

@@ -28,7 +28,7 @@ export const Route = createFileRoute("/analysis/$id")({
     const t = i18n.getFixedT(null, "translation");
     return { meta: [{ title: t("analysisPage.metaTitle") }] };
   },
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { export?: 1 } => ({
     export: search.export === 1 || search.export === "1" ? 1 : undefined,
   }),
   component: AnalysisPage,

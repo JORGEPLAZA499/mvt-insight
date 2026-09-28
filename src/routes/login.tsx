@@ -25,9 +25,8 @@ export const Route = createFileRoute("/login")({
     const t = i18n.getFixedT(null, "translation");
     return { meta: [{ title: t("login.meta.title") }] };
   },
-  validateSearch: (search: Record<string, unknown>) => {
-    const mode = search.mode === "register" ? "register" : "login";
-    return { mode };
+  validateSearch: (search: Record<string, unknown>): { mode?: "login" | "register" } => {
+    return { mode: search.mode === "register" ? "register" : undefined };
   },
   component: Login,
 });

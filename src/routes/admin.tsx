@@ -28,7 +28,7 @@ export const Route = createFileRoute("/admin")({
     const t = i18n.getFixedT(null, "translation");
     return { meta: [{ title: t("admin.metaTitle") }] };
   },
-  validateSearch: (search: Record<string, unknown>): { tab: AdminTab } => {
+  validateSearch: (search: Record<string, unknown>): { tab?: AdminTab } => {
     const t = search.tab;
     return {
       tab:

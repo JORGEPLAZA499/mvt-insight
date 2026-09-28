@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Keyboard } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { VirtualKeyboard } from "./virtual-keyboard";
 
@@ -11,8 +11,6 @@ interface Props {
   autoComplete?: string;
   required?: boolean;
 }
-
-const block = (e: React.SyntheticEvent) => e.preventDefault();
 
 export function PasswordField({
   id,
@@ -35,21 +33,24 @@ export function PasswordField({
           autoComplete={autoComplete}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setVk(true)}
           placeholder={placeholder}
-          readOnly={vk}
-          inputMode="none"
+          inputMode="text"
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
-          onCopy={block}
-          onCut={block}
-          onPaste={block}
-          onDrop={block}
-          onContextMenu={block}
-          className="pr-10"
+          className="pr-20"
         />
         <div className="absolute inset-y-0 right-1 flex items-center">
+          <button
+            type="button"
+            onClick={() => setVk((open) => !open)}
+            className="p-1.5 rounded text-muted-foreground hover:bg-accent transition"
+            aria-label="Teclado virtual"
+            aria-pressed={vk}
+            title="Teclado virtual"
+          >
+            <Keyboard className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={() => setShow((s) => !s)}
@@ -63,7 +64,9 @@ export function PasswordField({
         </div>
       </div>
       {vk && (
-        <VirtualKeyboard value={value} onChange={onChange} onClose={() => setVk(false)} />
+        <div className="max-h-[52vh] overflow-auto">
+          <VirtualKeyboard value={value} onChange={onChange} onClose={() => setVk(false)} />
+        </div>
       )}
     </div>
   );

@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { scorePassword } from "@/lib/password-strength";
 
@@ -38,6 +37,7 @@ export const registerAccount = createServerFn({ method: "POST" })
   })
 
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const ALPHABET_LOCAL = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const generateCode = () => {
       const bytes = new Uint8Array(9);
@@ -94,6 +94,7 @@ export const resolveLoginEmail = createServerFn({ method: "POST" })
     return { code: isWord ? normalized : normalized.toUpperCase() };
   })
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const normalizedCode = data.code.trim().replace(/\s+/g, "");
     const { data: row, error } = await supabaseAdmin
       .from("accounts")
@@ -115,6 +116,7 @@ export const resolveLoginEmail = createServerFn({ method: "POST" })
 export const touchLastLogin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("accounts")
       .update({ last_login_at: new Date().toISOString() })
@@ -126,6 +128,7 @@ export const touchLastLogin = createServerFn({ method: "POST" })
 export const getMyAccount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("accounts")
       .select("user_code, created_at, last_login_at")

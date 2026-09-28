@@ -91,6 +91,7 @@ function Login() {
   }, []);
 
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
+  const [registrationSignedIn, setRegistrationSignedIn] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
 
   const submitLogin = async (e: React.FormEvent) => {
@@ -150,12 +151,13 @@ function Login() {
     setBusy(true);
     try {
       const { code: newCode, email } = await register({ data: { password } });
-      await supabase.auth.signInWithPassword({ email, password });
+      setIssuedCode(newCode);
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      setRegistrationSignedIn(!signInError);
       pwdBuf.current.clear();
       confirmBuf.current.clear();
       setPassword("");
       setConfirm("");
-      setIssuedCode(newCode);
     } catch (err: any) {
       setError(err?.message || t("loginExt.errors.signupFail"));
     } finally {
@@ -226,7 +228,7 @@ function Login() {
             <Button
               type="button"
               disabled={!acknowledged}
-              onClick={() => navigate({ to: "/dashboard" })}
+              onClick={() => navigate({ to: registrationSignedIn ? "/dashboard" : "/login" })}
               className="mt-5 w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
             >
               {t("loginExt.continueToPanel")}

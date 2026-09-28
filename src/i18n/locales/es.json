@@ -772,6 +772,7 @@
     "acceptUse": "He leído y acepto los Términos de uso del servicio.",
     "acceptPay": "He leído y acepto las Condiciones de pago y la renuncia expresa al derecho de desistimiento.",
     "acceptCta": "Aceptar y continuar",
-    "error": "No se ha podido registrar la aceptación. Inténtalo de nuevo."
+    "error": "No se ha podido registrar la aceptación. Inténtalo de nuevo.",
+    "timeout": "La conexión está tardando demasiado. Comprueba tu conexión e inténtalo de nuevo."
   }
 }

@@ -48,6 +48,12 @@ export function LegalAcceptanceModal() {
     };
   }, [fetchStatus, fetchDoc, locale]);
 
+  useEffect(() => {
+    if (!open) return;
+    window.dispatchEvent(new Event("sfa:suspend-cookie-banner"));
+    return () => window.dispatchEvent(new Event("sfa:resume-cookie-banner"));
+  }, [open]);
+
   const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 24) setScrolledEnd(true);
@@ -56,11 +62,16 @@ export function LegalAcceptanceModal() {
   const canAccept = scrolledEnd && checkedUse && checkedPay && !submitting && !!doc;
 
   const onAccept = async () => {
-    if (!doc) return;
+    if (!doc || !canAccept) return;
     setSubmitting(true);
     setError(null);
     try {
-      await accept({ data: { version: doc.version, hash: doc.hash, locale: doc.locale } });
+      await Promise.race([
+        accept({ data: { version: doc.version, hash: doc.hash, locale: doc.locale } }),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error(t("legalModal.timeout"))), 15000);
+        }),
+      ]);
       setOpen(false);
       // Force a refresh so any gated UI reacts immediately.
       window.location.reload();
@@ -75,7 +86,7 @@ export function LegalAcceptanceModal() {
   return (
     <Dialog open={open} onOpenChange={() => { /* not closable */ }}>
       <DialogContent
-        className="max-w-3xl p-0 gap-0 [&>button]:hidden"
+        className="z-[70] flex max-h-[calc(100dvh-2rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0 [&>button]:hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
@@ -93,7 +104,7 @@ export function LegalAcceptanceModal() {
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="px-6 py-4 max-h-[55vh] overflow-y-auto whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-foreground/90 bg-muted/30"
+          className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap bg-muted/30 px-6 py-4 font-mono text-[12px] leading-relaxed text-foreground/90"
         >
           {doc.text}
         </div>

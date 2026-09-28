@@ -23,7 +23,17 @@ import i18n from "@/i18n";
 export const Route = createFileRoute("/login")({
   head: () => {
     const t = i18n.getFixedT(null, "translation");
-    return { meta: [{ title: t("login.meta.title") }] };
+    const description = "Acceso privado y creación de cuenta anónima para SPYWARE FORENSIC ANALIZER.";
+    return {
+      meta: [
+        { title: t("login.meta.title") },
+        { name: "description", content: description },
+        { property: "og:title", content: t("login.meta.title") },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary" },
+      ],
+    };
   },
   validateSearch: (search: Record<string, unknown>): { mode?: "login" | "register" } => {
     return { mode: search.mode === "register" ? "register" : undefined };
@@ -186,6 +196,11 @@ function Login() {
             <p className="text-sm text-muted-foreground">
               <Trans i18nKey="loginExt.savePwd" components={{ b: <b /> }} />
             </p>
+            {!registrationSignedIn && (
+              <p className="mt-3 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
+                {t("loginExt.createdSignInPending")}
+              </p>
+            )}
 
             <div className="mt-6 rounded-xl bg-gradient-primary p-px shadow-glow">
               <div className="rounded-[11px] bg-background px-6 py-5 text-center">

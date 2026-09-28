@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, Keyboard } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { VirtualKeyboard } from "./virtual-keyboard";
 
 interface Props {
@@ -20,6 +22,7 @@ export function PasswordField({
   autoComplete,
   required,
 }: Props) {
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   const [vk, setVk] = useState(false);
 
@@ -41,26 +44,30 @@ export function PasswordField({
           className="pr-20"
         />
         <div className="absolute inset-y-0 right-1 flex items-center">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => setVk((open) => !open)}
-            className="p-1.5 rounded text-muted-foreground hover:bg-accent transition"
-            aria-label="Teclado virtual"
+            className="h-8 w-8 text-muted-foreground"
+            aria-label={t("a11y.virtualKeyboard")}
             aria-pressed={vk}
-            title="Teclado virtual"
+            title={t("a11y.virtualKeyboard")}
           >
             <Keyboard className="h-4 w-4" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => setShow((s) => !s)}
-            className="p-1.5 rounded text-muted-foreground hover:bg-accent transition"
+            className="h-8 w-8 text-muted-foreground"
             aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
             aria-pressed={show}
             tabIndex={-1}
           >
             {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
+          </Button>
         </div>
       </div>
       {vk && (

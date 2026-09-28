@@ -622,6 +622,7 @@
     "autoDelete": "Si no inicias sesión durante 10 días, la cuenta se elimina automáticamente.",
     "ack": "He guardado mi código en un lugar seguro.",
     "continueToPanel": "Continuar al panel",
+    "createdSignInPending": "La cuenta está creada. Guarda el código y pulsa continuar para iniciar sesión manualmente.",
     "loginTitle": "Acceder con tu código",
     "registerTitle": "Crear cuenta anónima",
     "loginSubtitle": "Introduce tu código de usuario y contraseña.",

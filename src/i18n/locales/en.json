@@ -622,6 +622,7 @@
     "autoDelete": "If you don't sign in for 10 days, the account is deleted automatically.",
     "ack": "I have saved my code in a safe place.",
     "continueToPanel": "Continue to dashboard",
+    "createdSignInPending": "The account has been created. Save the code and continue to sign in manually.",
     "loginTitle": "Sign in with your code",
     "registerTitle": "Create anonymous account",
     "loginSubtitle": "Enter your user code and password.",

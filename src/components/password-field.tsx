@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Eye, EyeOff, Keyboard } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { VirtualKeyboard } from "./virtual-keyboard";
 
 interface Props {
@@ -12,8 +14,6 @@ interface Props {
   required?: boolean;
 }
 
-const block = (e: React.SyntheticEvent) => e.preventDefault();
-
 export function PasswordField({
   id,
   value,
@@ -22,6 +22,7 @@ export function PasswordField({
   autoComplete,
   required,
 }: Props) {
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   const [vk, setVk] = useState(false);
 
@@ -35,35 +36,44 @@ export function PasswordField({
           autoComplete={autoComplete}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setVk(true)}
           placeholder={placeholder}
-          readOnly={vk}
-          inputMode="none"
+          inputMode="text"
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
-          onCopy={block}
-          onCut={block}
-          onPaste={block}
-          onDrop={block}
-          onContextMenu={block}
-          className="pr-10"
+          className="pr-20"
         />
         <div className="absolute inset-y-0 right-1 flex items-center">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => setVk((open) => !open)}
+            className="h-8 w-8 text-muted-foreground"
+            aria-label={t("a11y.virtualKeyboard")}
+            aria-pressed={vk}
+            title={t("a11y.virtualKeyboard")}
+          >
+            <Keyboard className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => setShow((s) => !s)}
-            className="p-1.5 rounded text-muted-foreground hover:bg-accent transition"
+            className="h-8 w-8 text-muted-foreground"
             aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
             aria-pressed={show}
             tabIndex={-1}
           >
             {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
+          </Button>
         </div>
       </div>
       {vk && (
-        <VirtualKeyboard value={value} onChange={onChange} onClose={() => setVk(false)} />
+        <div className="max-h-[52vh] overflow-auto">
+          <VirtualKeyboard value={value} onChange={onChange} onClose={() => setVk(false)} />
+        </div>
       )}
     </div>
   );

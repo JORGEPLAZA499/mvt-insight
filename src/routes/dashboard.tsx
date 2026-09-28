@@ -27,7 +27,7 @@ import { LegalAcceptanceModal } from "@/components/legal-acceptance-modal";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Spyware Forensic Analyzer" }] }),
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { checkout?: string; session_id?: string } => ({
     checkout: typeof search.checkout === "string" ? search.checkout : undefined,
     session_id: typeof search.session_id === "string" ? search.session_id : undefined,
   }),

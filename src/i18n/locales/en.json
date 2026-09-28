@@ -772,6 +772,7 @@
     "acceptUse": "I have read and accept the Terms of Service.",
     "acceptPay": "I have read and accept the Payment Conditions and the express waiver of the right of withdrawal.",
     "acceptCta": "Accept and continue",
-    "error": "Could not register the acceptance. Please try again."
+    "error": "Could not register the acceptance. Please try again.",
+    "timeout": "The connection is taking too long. Check your connection and try again."
   }
 }

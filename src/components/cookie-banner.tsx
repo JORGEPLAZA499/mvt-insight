@@ -73,6 +73,7 @@ export function CookieBanner() {
   const [customize, setCustomize] = useState(false);
   const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
+  const [suspended, setSuspended] = useState(false);
 
   useEffect(() => {
     const existing = readConsent();
@@ -103,6 +104,17 @@ export function CookieBanner() {
     return () => window.removeEventListener("sfa:open-cookie-settings", reopen);
   }, []);
 
+  useEffect(() => {
+    const suspend = () => setSuspended(true);
+    const resume = () => setSuspended(false);
+    window.addEventListener("sfa:suspend-cookie-banner", suspend);
+    window.addEventListener("sfa:resume-cookie-banner", resume);
+    return () => {
+      window.removeEventListener("sfa:suspend-cookie-banner", suspend);
+      window.removeEventListener("sfa:resume-cookie-banner", resume);
+    };
+  }, []);
+
   const close = () => {
     setMounted(false);
     setTimeout(() => {
@@ -124,7 +136,7 @@ export function CookieBanner() {
     close();
   };
 
-  if (!open) return null;
+  if (!open || suspended) return null;
 
   return (
     <div
